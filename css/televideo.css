@@ -1,0 +1,160 @@
+/* =========================================================
+   TELE VENTURE CAPITAL 3000 — Stile Televideo classico
+   Palette teletext: nero / bianco / giallo / ciano / verde
+                     magenta / rosso / blu
+   Griglia 40 colonne × 24 righe, font monospace VT323
+   ========================================================= */
+
+:root {
+  --tv-bg: #000000;
+  --tv-white: #ffffff;
+  --tv-yellow: #ffff00;
+  --tv-cyan: #00ffff;
+  --tv-green: #00ff00;
+  --tv-magenta: #ff00ff;
+  --tv-red: #ff3030;
+  --tv-blue: #1a1aff;
+  --tv-header-bg: #1a1aff;
+  --tv-footer-bg: #b00000;
+
+  --cols: 40;
+  --rows: 24;
+  --content-rows: 22;    /* righe disponibili per il body pagina */
+  --cell: 19px;          /* altezza riga */
+  --char: 14px;          /* larghezza cella */
+  --screen-w: calc(var(--char) * var(--cols));   /* 560px */
+  --screen-h: calc(var(--cell) * var(--rows));   /* 456px */
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #0a0a0a;
+  color: var(--tv-white);
+  font-family: "VT323", "Courier New", "Lucida Console", monospace;
+  font-size: 20px;
+  line-height: var(--cell);
+}
+
+/* CRT outer frame */
+#crt {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(ellipse at center, #1a1a1a 0%, #000 70%);
+}
+
+#screen {
+  position: relative;
+  width: var(--screen-w);
+  background: var(--tv-bg);
+  border: 6px solid #2a2a2a;
+  border-radius: 6px;
+  box-shadow:
+    0 0 24px rgba(0, 255, 255, 0.12),
+    inset 0 0 60px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+
+/* scanlines leggere */
+#screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.18) 3px
+  );
+  z-index: 10;
+}
+
+/* ---------- HEADER ---------- */
+#tv-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--tv-header-bg);
+  color: var(--tv-white);
+  padding: 0 8px;
+  height: var(--cell);
+  font-weight: normal;
+  letter-spacing: 1px;
+}
+.hdr-left { color: var(--tv-yellow); }
+.hdr-right { color: var(--tv-white); }
+.hdr-right #hdr-page { color: var(--tv-white); margin-right: 12px; }
+.hdr-right #hdr-clock { color: var(--tv-cyan); }
+
+/* ---------- CONTENT ---------- */
+#tv-content {
+  padding: 4px 8px;
+  min-height: calc(var(--cell) * var(--content-rows));
+  height: calc(var(--cell) * var(--content-rows));
+  overflow: hidden;
+  white-space: pre;          /* preserva layout monospace */
+  word-spacing: 0;
+}
+
+/* ---------- FOOTER ---------- */
+#tv-footer {
+  background: var(--tv-footer-bg);
+  color: var(--tv-white);
+  height: var(--cell);
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.prompt { color: var(--tv-white); letter-spacing: 1px; }
+#tv-input { color: var(--tv-yellow); min-width: 60px; }
+.cursor {
+  color: var(--tv-yellow);
+  animation: blink 1s steps(2, start) infinite;
+}
+
+/* ---------- COLORI TELETEXT ---------- */
+.c-white   { color: var(--tv-white); }
+.c-yellow  { color: var(--tv-yellow); }
+.c-cyan    { color: var(--tv-cyan); }
+.c-green   { color: var(--tv-green); }
+.c-magenta { color: var(--tv-magenta); }
+.c-red     { color: var(--tv-red); }
+.c-blue    { color: var(--tv-blue); }
+
+/* sfondi (per titoli sezione tipo header colorati) */
+.bg-blue    { background: var(--tv-header-bg); color: var(--tv-white); padding: 0 4px; }
+.bg-red     { background: var(--tv-footer-bg); color: var(--tv-white); padding: 0 4px; }
+.bg-cyan    { background: var(--tv-cyan); color: #000; padding: 0 4px; }
+.bg-yellow  { background: var(--tv-yellow); color: #000; padding: 0 4px; }
+.bg-green   { background: var(--tv-green); color: #000; padding: 0 4px; }
+.bg-magenta { background: var(--tv-magenta); color: #000; padding: 0 4px; }
+
+/* lampeggio classico Ultim'Ora */
+.blink { animation: blink 0.9s steps(2, start) infinite; }
+@keyframes blink {
+  to { visibility: hidden; }
+}
+
+/* "barra" caricamento */
+.loading-bar {
+  color: var(--tv-yellow);
+  letter-spacing: 0;
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 620px) {
+  :root {
+    --char: 11px;
+    --cell: 16px;
+  }
+  html, body { font-size: 16px; }
+}

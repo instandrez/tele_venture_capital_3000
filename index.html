@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Tele Venture Capital 3000</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/televideo.css">
+</head>
+<body>
+  <div id="crt">
+    <div id="screen">
+      <header id="tv-header">
+        <span class="hdr-left">TELE VENTURE CAPITAL 3000</span>
+        <span class="hdr-right">
+          <span id="hdr-page">P.100</span>
+          <span id="hdr-clock">--:--</span>
+        </span>
+      </header>
+
+      <main id="tv-content" aria-live="polite">
+        <!-- contenuto pagina renderizzato qui -->
+      </main>
+
+      <footer id="tv-footer">
+        <span class="prompt">INSERISCI PAGINA:</span>
+        <span id="tv-input"></span><span class="cursor">_</span>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ordine importante: data → engine → ui → pages → main -->
+  <script src="js/engine/audio.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/data/sectorIndices.js"></script>
+  <script src="js/data/lpProfiles.js"></script>
+  <script src="js/data/newsCalendar.js"></script>
+  <script src="js/data/startups.js"></script>
+  <script src="js/data/lpCalls.js"></script>
+  <script src="js/data/titles.js"></script>
+  <script src="js/engine/dealflow.js"></script>
+  <script src="js/engine/marketEngine.js"></script>
+  <script src="js/engine/scoring.js"></script>
+  <script src="js/ui/header.js"></script>
+  <script src="js/ui/render.js"></script>
+  <script src="js/ui/loading.js"></script>
+  <script src="js/pages/home.js"></script>
+  <script src="js/pages/fund.js"></script>
+  <script src="js/pages/newsSection.js"></script>
+  <script src="js/pages/borsa.js"></script>
+  <script src="js/pages/dealflow.js"></script>
+  <script src="js/pages/startupDetail.js"></script>
+  <script src="js/pages/portfolio.js"></script>
+  <script src="js/pages/icMoment.js"></script>
+  <script src="js/pages/lpCall.js"></script>
+  <script src="js/pages/finalReport.js"></script>
+  <script src="js/pages/leaderboard.js"></script>
+  <script src="js/pages/credits.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

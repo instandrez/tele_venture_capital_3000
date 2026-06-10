@@ -113,7 +113,7 @@
           effects: { lpSat: { endowment: -4, sovereign: -2 } } },
         { label: "Faremo write-off etico nell'anno corrente",
           effects: { lpSat: { endowment: +14, sovereign: -6 },
-                     reputation: -3 } },
+                     reputation: -3, special: "writeoff_crypto" } },
         { label: "Stiamo applicando una thesis dual-track",
           effects: { lpSat: { endowment: -10 }, reputation: -1 } }
       ]

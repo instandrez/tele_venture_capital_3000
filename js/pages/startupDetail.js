@@ -1,6 +1,15 @@
 /* Pagine 301-303 — Scheda startup.
-   8 azioni a costo variabile + investimento. I reveal sono persistiti
-   sullo stato in state.startupReveals[id]. */
+
+   REGOLE:
+   - Ogni startup dell'anno è pending / invested / passed (TVDealflow).
+     Una volta deliberata, la scheda diventa di sola consultazione.
+   - La valuation negoziata incide sul ritorno: pagare il 20% in meno
+     significa partire con un multiplo iniziale di 1.25x (val/negoziata).
+   - EDGE INFORMATIVO: se il giocatore ha letto almeno una news di
+     settore rilevante dell'anno (readPages), la DD costa la metà e
+     rivela SIA il rischio SIA l'upside. Il Televideo ripaga chi legge.
+   - DD e negoziazione usano TVState.roll(): esiti deterministici per
+     partita, niente save-scumming. */
 (function (global) {
 
   function reveals(state, id) {
@@ -9,8 +18,20 @@
     return state.startupReveals[id];
   }
 
-  function fmtScore(n) {
-    return n + "/10";
+  function fmtScore(n) { return n + "/10"; }
+
+  function rootOf(st) { return (st.sectorTag || "").split("_")[0]; }
+
+  // Il giocatore ha letto una news di quest'anno il cui signal riguarda
+  // il settore della startup? Allora il suo team "ha il dossier".
+  function hasSectorDossier(state, st) {
+    const root = rootOf(st);
+    if (!root || root === "UNKNOWN") return false;
+    return TVNews.NEWS.some(n =>
+      n.year === state.year &&
+      n.signal && n.signal.sector === root &&
+      (state.readPages || []).includes(n.page)
+    );
   }
 
   function render(pageNum) {
@@ -21,16 +42,18 @@
     const id = (s._dealflowMap || {})[pageNum];
     const st = id ? TVStartups.byId(id) : null;
     if (!st) {
-      // pagina non valida → torna al dealflow
       TVRouter.goto(200, { skipLoading: true });
       return;
     }
     const rv = reveals(s, id);
+    const decision = TVDealflow.getDecision(s, id);
+    const dossier = hasSectorDossier(s, st);
 
     const lines = [];
     lines.push(r.bg("bg-yellow", "  " + r.pad(st.name + " — " + st.stage, 38)));
     lines.push(" " + r.color("c-cyan", st.sector) +
-               r.color("c-white", "   val. " + r.eur(st.valuation)));
+               r.color("c-white", "   val. " + r.eur(rv.negotiatedValuation || st.valuation)) +
+               (rv.negotiatedValuation ? r.color("c-green", " (-20%)") : ""));
     lines.push(r.color("c-blue", " " + "─".repeat(38)));
 
     lines.push(" " +
@@ -40,22 +63,53 @@
       r.color("c-white", "Fit " + fmtScore(st.strategicFit))
     );
 
-    // reveal area (compatta)
-    const revealLines = [];
-    if (rv.dd)         revealLines.push(r.color("c-yellow", " ! ") + r.color("c-white", "DD: " + (rv.ddText || "")));
-    if (rv.refCall)    revealLines.push(r.color("c-yellow", " ! ") + r.color("c-white", "Founder: " + revealFounder(st)));
-    if (rv.coInvest)   revealLines.push(r.color("c-yellow", " ! ") + r.color("c-white", "Co-invest: " + revealCoInvest(st)));
-    if (rv.sector)     revealLines.push(r.color("c-yellow", " ! ") + r.color("c-white", "Settore: " + revealSector(st)));
+    if (dossier) {
+      lines.push(" " + r.color("c-green", "» dossier settore: news incrociate"));
+    }
 
+    // reveal area
+    const revealLines = [];
+    if (rv.dd) {
+      (rv.ddTexts || [rv.ddText]).filter(Boolean).forEach(t =>
+        revealLines.push(r.color("c-yellow", " ! ") + r.color("c-white", "DD: " + t)));
+    }
+    if (rv.refCall)  revealLines.push(r.color("c-yellow", " ! ") + r.color("c-white", "Founder: " + revealFounder(st)));
+    if (rv.coInvest) revealLines.push(r.color("c-yellow", " ! ") + r.color("c-white", "Co-invest: " + revealCoInvest(st)));
+    if (rv.sector)   revealLines.push(r.color("c-yellow", " ! ") + r.color("c-white", "Settore: " + revealSector(st)));
     if (revealLines.length) {
       lines.push("");
       revealLines.forEach(l => lines.push(l));
     }
 
     lines.push("");
+
+    if (decision !== "pending") {
+      // sola consultazione: la decisione è presa
+      const badge = decision === "invested"
+        ? r.color("c-green", "HAI INVESTITO IN QUESTA STARTUP")
+        : r.color("c-magenta", "HAI PASSATO QUESTO DEAL");
+      lines.push(r.bg("bg-blue", "  DECISIONE PRESA                       "));
+      lines.push(" " + badge);
+      if (decision === "invested") {
+        const pos = s.portfolio.find(p => p.id === id);
+        if (pos) {
+          lines.push(" " + r.color("c-white", "ticket " + r.eur(pos.investedAmount) +
+                     "  multiplo " + pos.currentValueMultiplier.toFixed(2) + "x"));
+        }
+      }
+      while (lines.length < 21) lines.push("");
+      lines.push(r.color("c-white", " 0 TORNA AL DEALFLOW    200 DEALFLOW"));
+      r.show(pageNum, lines.join("\n"), { title: "STARTUP" });
+      TVRouter.setActionHandler(num => {
+        if (num === 0) TVRouter.goto(200, { skipLoading: true });
+      });
+      return;
+    }
+
+    const ddCost = dossier ? 50_000 : 100_000;
     lines.push(r.bg("bg-magenta", "  AZIONI                                "));
     lines.push(" " + r.color("c-yellow", "1") + " investi 1M€      " +
-               r.color("c-yellow", "4") + " DD tecnica  -100k");
+               r.color("c-yellow", "4") + " DD tecnica  -" + (ddCost / 1000) + "k");
     lines.push(" " + r.color("c-yellow", "2") + " investi 3M€      " +
                r.color("c-yellow", "5") + " ref. call    -50k");
     lines.push(" " + r.color("c-yellow", "3") + " investi 5M€      " +
@@ -96,8 +150,7 @@
     return "round senza lead, in costruzione";
   }
   function revealSector(st) {
-    const root = (st.sectorTag || "").split("_")[0];
-    // legge momentum delle news pubblicate
+    const root = rootOf(st);
     let mom = 0;
     TVNews.NEWS.filter(n => n.year <= TVState.current.year && n.signal && n.signal.sector === root)
       .forEach(n => { mom += n.signal.delta; });
@@ -112,6 +165,7 @@
   function handleAction(num, st, pageNum) {
     const s = TVState.current;
     const rv = reveals(s, st.id);
+    const dossier = hasSectorDossier(s, st);
 
     function flashAndRefresh(msg, errSound) {
       if (errSound) TVAudio.error(); else TVAudio.success();
@@ -121,9 +175,8 @@
 
     function tryInvest(amount) {
       if (s.cash < amount) { flashAndRefresh("CASH INSUFFICIENTE", true); return; }
-      // negotiated valuation se applicato
-      const val = rv.negotiatedValuation || st.valuation;
-      const equityPct = amount / val;
+      const baseVal = st.valuation;
+      const payVal = rv.negotiatedValuation || baseVal;
       s.cash -= amount;
       s.invested += amount;
       const pos = {
@@ -132,18 +185,19 @@
         sector: st.sector,
         sectorTag: st.sectorTag,
         investedAmount: amount,
-        entryValuation: val,
-        equityPct: equityPct,
+        entryValuation: payVal,
+        equityPct: amount / payVal,
         entryYear: s.year,
-        currentValueMultiplier: 1.0,
+        // lo sconto negoziato parte come vantaggio reale sul multiplo:
+        // stessa quota pagata meno = multiplo iniziale > 1
+        currentValueMultiplier: baseVal / payVal,
+        status: "active",
+        realizedAmount: 0,
         revealed: Object.assign({}, rv)
       };
       s.portfolio.push(pos);
-      s._dealflowMap = s._dealflowMap || {};
-      // rimuovi dal dealflow map così il dealflow si rigenera senza lei
-      Object.keys(s._dealflowMap).forEach(k => {
-        if (s._dealflowMap[k] === st.id) delete s._dealflowMap[k];
-      });
+      TVDealflow.setDecision(s, st.id, "invested");
+      s.history.push({ year: s.year, type: "invest", startup: st.name, amount: amount });
       TVState.save();
       TVAudio.success();
       TVRouter.flash("INVESTITO " + TVRender.eur(amount));
@@ -156,14 +210,22 @@
       case 3: tryInvest(5_000_000); break;
       case 4: {
         if (rv.dd) { flashAndRefresh("DD GIA' FATTA", true); return; }
-        if (s.cash < 100_000) { flashAndRefresh("CASH INSUFFICIENTE", true); return; }
-        s.cash -= 100_000;
+        const cost = dossier ? 50_000 : 100_000;
+        if (s.cash < cost) { flashAndRefresh("CASH INSUFFICIENTE", true); return; }
+        s.cash -= cost;
         rv.dd = true;
-        rv.ddText = Math.random() < 0.5 ?
-          ("rischio - " + st.hiddenRisk) :
-          ("upside + " + st.hiddenUpside);
+        if (dossier) {
+          // chi ha letto le news ottiene il quadro completo
+          rv.ddTexts = ["rischio - " + st.hiddenRisk,
+                        "upside + " + st.hiddenUpside];
+        } else {
+          const showRisk = TVState.roll("dd|" + st.id + "|" + s.year) < 0.5;
+          rv.ddTexts = [showRisk
+            ? "rischio - " + st.hiddenRisk
+            : "upside + " + st.hiddenUpside];
+        }
         TVState.save();
-        flashAndRefresh("DD COMPLETATA");
+        flashAndRefresh(dossier ? "DD COMPLETA (DOSSIER)" : "DD COMPLETATA");
         break;
       }
       case 5: {
@@ -184,8 +246,9 @@
       }
       case 7: {
         if (rv.negotiated) { flashAndRefresh("NEGOZIATA", true); return; }
-        const successProb = rv.dd ? 0.7 : 0.4;
-        const ok = Math.random() < successProb;
+        let prob = rv.dd ? 0.7 : 0.4;
+        if (dossier) prob += 0.1;
+        const ok = TVState.roll("nego|" + st.id + "|" + s.year) < prob;
         rv.negotiated = true;
         if (ok) {
           rv.negotiatedValuation = Math.round(st.valuation * 0.8);
@@ -207,11 +270,8 @@
         break;
       }
       case 9: {
-        // passa: rimuovi dal dealflow map
-        s._dealflowMap = s._dealflowMap || {};
-        Object.keys(s._dealflowMap).forEach(k => {
-          if (s._dealflowMap[k] === st.id) delete s._dealflowMap[k];
-        });
+        TVDealflow.setDecision(s, st.id, "passed");
+        s.history.push({ year: s.year, type: "pass", startup: st.name });
         TVState.save();
         TVAudio.pageChange();
         TVRouter.goto(200, { skipLoading: true });

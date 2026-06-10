@@ -5,10 +5,10 @@
 
   function makeNewState() {
     return {
-      version: 1,
+      version: 2,
       year: 1,
       maxYear: 5,
-      quarter: 1,
+      gameSeed: Math.floor(Math.random() * 1e9),
       gameStarted: false,
       fundSize: 100_000_000,
       cash: 100_000_000,
@@ -24,17 +24,33 @@
       },
       portfolio: [],
       seenStartups: [],
-      readPages: [],          // pagine news che l'utente ha effettivamente visitato (per "edge informativo")
-      publishedNews: [],      // id news pubblicate nel corso del gioco
-      pendingLPCalls: [],
-      pendingICEvents: [],
-      history: [],            // log eventi/IC per il report finale
+      readPages: [],          // pagine news visitate → edge informativo su DD
+      dealDecisions: {},      // { yN: { startupId: "invested"|"passed" } }
+      followOnCache: {},      // { yN: [offerte follow-on] }
+      usedLPCalls: [],
+      history: [],            // log decisioni/exit per il report finale
       currentPage: 100,
       previousPage: null,
       fundName: null,
       nickname: null,
       gameOver: false
     };
+  }
+
+  /* Porta i save di versioni precedenti al formato corrente. */
+  function migrateState(s) {
+    if (!s.gameSeed) s.gameSeed = Math.floor(Math.random() * 1e9);
+    if (!s.dealDecisions) s.dealDecisions = {};
+    if (!s.followOnCache) s.followOnCache = {};
+    if (!s.usedLPCalls) s.usedLPCalls = [];
+    if (!s.readPages) s.readPages = [];
+    if (!s.history) s.history = [];
+    (s.portfolio || []).forEach(p => {
+      if (!p.status) p.status = "active";
+      if (typeof p.realizedAmount !== "number") p.realizedAmount = 0;
+    });
+    s.version = 2;
+    return s;
   }
 
   const TVState = {
@@ -66,9 +82,22 @@
       if (!raw) return false;
       try {
         const data = JSON.parse(raw);
-        this.current = Object.assign(makeNewState(), data);
+        this.current = migrateState(Object.assign(makeNewState(), data));
         return true;
       } catch (e) { return false; }
+    },
+
+    /* RNG deterministico legato al seed di partita.
+       Stessa chiave → stesso esito: impedisce il save-scumming
+       su DD e negoziazioni. Ritorna un numero in [0, 1). */
+    roll(key) {
+      const src = String((this.current && this.current.gameSeed) || 0) + "|" + key;
+      let h = 2166136261;
+      for (let i = 0; i < src.length; i++) {
+        h ^= src.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return ((h >>> 0) % 10000) / 10000;
     },
 
     clear() {
@@ -83,7 +112,12 @@
     importSave(str) {
       try {
         const json = atob(str);
-        JSON.parse(json); // validate
+        const data = JSON.parse(json);
+        // validazione strutturale minima prima di accettare il save
+        if (!data || typeof data !== "object" ||
+            typeof data.year !== "number" ||
+            typeof data.cash !== "number" ||
+            !Array.isArray(data.portfolio)) return false;
         localStorage.setItem(SAVE_KEY, json);
         return this.load();
       } catch (e) { return false; }

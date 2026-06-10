@@ -22,22 +22,26 @@
 
       const doRender = () => {
         actionHandler = null; // resetta su ogni cambio pagina
+        // Stato PRIMA del render: se la pagina fa redirect durante il
+        // render (goto annidato), il suo currentPage deve restare quello
+        // finale e non essere sovrascritto da questo goto esterno.
+        if (TVState.current) {
+          TVState.current.previousPage = TVState.current.currentPage;
+          TVState.current.currentPage = pageNum;
+          // log lettura news per "edge informativo": qualsiasi pagina
+          // che corrisponde a una news del calendario (tutti gli anni)
+          if (typeof TVNews !== "undefined" && TVNews.byPage(pageNum)) {
+            const rp = TVState.current.readPages;
+            if (rp && !rp.includes(pageNum)) rp.push(pageNum);
+          }
+        }
         try { page.render(pageNum); }
         catch (e) {
           console.error("page render error", e);
           showError(pageNum, e.message);
         }
-        if (TVState.current) {
-          TVState.current.previousPage = TVState.current.currentPage;
-          TVState.current.currentPage = pageNum;
-          // log lettura news per "edge informativo"
-          if (pageNum >= 110 && pageNum <= 189) {
-            const rp = TVState.current.readPages;
-            if (rp && !rp.includes(pageNum)) rp.push(pageNum);
-          }
-          // Salva SOLO se è una partita realmente avviata
-          if (TVState.current.gameStarted) TVState.save();
-        }
+        // Salva SOLO se è una partita realmente avviata
+        if (TVState.current && TVState.current.gameStarted) TVState.save();
       };
 
       if (opts.skipLoading) doRender();

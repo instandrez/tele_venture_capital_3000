@@ -1,19 +1,31 @@
 /* Pagina 200 — Dealflow.
-   Mostra le 3 startup dell'anno e lo stato fondo (cash, invested,
-   portfolio). Nessuna info "spoiler" sulle startup: solo nome,
-   settore, stage, valuation. I dettagli si vedono sulla scheda 3XX. */
+   Mostra le 3 startup dell'anno con lo stato della decisione:
+   pending (da deliberare), invested, passed.
+   L'anno si chiude solo quando tutto è deliberato, oppure con
+   doppia conferma (le startup rimaste vengono passate d'ufficio). */
 (function (global) {
+
+  let confirmCloseArmed = false; // transiente, si resetta a ogni render
+
+  function statusBadge(r, decision) {
+    switch (decision) {
+      case "invested": return r.color("c-green", "[INVESTITO]");
+      case "passed":   return r.color("c-magenta", "[PASSATO]");
+      default:          return r.color("c-yellow", "[DA DECIDERE]");
+    }
+  }
 
   function render(pageNum) {
     const r = TVRender;
     const s = TVState.current;
     if (!s || !s.gameStarted) {
-      // partita non avviata → reindirizza
       TVRouter.goto(101, { skipLoading: true });
       return;
     }
+    confirmCloseArmed = false;
 
     const picks = TVDealflow.currentYearDealflow(s);
+    const pending = TVDealflow.pendingDeals(s);
 
     const lines = [];
     lines.push(r.bg("bg-green", "  " + r.pad("DEALFLOW — ANNO " + s.year + "/" + s.maxYear, 38)));
@@ -22,7 +34,7 @@
       "   " +
       r.color("c-yellow", "Inv:") + "  " + r.color("c-cyan", r.eur(s.invested)) +
       "   " +
-      r.color("c-yellow", "N:") + " " + r.color("c-white", String(s.portfolio.length))
+      r.color("c-yellow", "N:") + " " + r.color("c-white", String(s.portfolio.filter(p => !p.status || p.status === "active").length))
     );
     lines.push(r.color("c-blue", " " + "─".repeat(38)));
 
@@ -31,17 +43,26 @@
       lines.push(" " + r.color("c-magenta", "nessun deal disponibile quest'anno."));
       lines.push(" " + r.color("c-white", "premi 9 per chiudere l'anno."));
     } else {
+      // mapping stabile per indice: 301, 302, 303 (anche per i deliberati,
+      // così la scheda resta consultabile in sola lettura)
+      s._dealflowMap = {};
       picks.forEach((st, i) => {
-        const pageId = 300 + i + 1; // 301, 302, 303
+        const pageId = 301 + i;
+        s._dealflowMap[pageId] = st.id;
+        const decision = TVDealflow.getDecision(s, st.id);
         lines.push(" " + r.color("c-yellow", String(pageId)) + " " +
-                   r.color("c-white", r.pad(st.name, 22)));
+                   r.color("c-white", r.pad(st.name, 20)) + statusBadge(r, decision));
         lines.push("     " + r.color("c-cyan", st.sector) + r.color("c-white", "  " + st.stage));
         lines.push("     " + r.color("c-white", "val. " + r.eur(st.valuation)));
         lines.push("");
       });
-      // memorizza mapping per pagina dettaglio
-      s._dealflowMap = {};
-      picks.forEach((st, i) => { s._dealflowMap[301 + i] = st.id; });
+    }
+
+    if (pending.length > 0) {
+      lines.push(" " + r.color("c-yellow", pending.length + " deal da deliberare") +
+                 r.color("c-white", " prima di chiudere l'anno"));
+    } else {
+      lines.push(" " + r.color("c-green", "tutto deliberato — puoi chiudere l'anno"));
     }
 
     while (lines.length < 19) lines.push("");
@@ -51,10 +72,24 @@
     r.show(pageNum, lines.join("\n"), { title: "DEALFLOW" });
 
     TVRouter.setActionHandler(num => {
-      if (num === 9) {
-        // chiusura anno → IC moment (Sprint 4 lo implementa pienamente)
-        TVRouter.goto(500);
+      if (num !== 9) return;
+      const stillPending = TVDealflow.pendingDeals(s);
+      if (stillPending.length === 0) {
+        // la chiusura passa per il follow-on (450): se non ci sono
+        // offerte, la pagina reindirizza da sola all'IC (500)
+        TVRouter.goto(450);
+        return;
       }
+      if (!confirmCloseArmed) {
+        confirmCloseArmed = true;
+        TVAudio.error();
+        TVRouter.flash(stillPending.length + " DEAL PENDENTI - 9 PER CONFERMARE");
+        return;
+      }
+      // conferma: i deal rimasti vengono passati d'ufficio
+      stillPending.forEach(st => TVDealflow.setDecision(s, st.id, "passed"));
+      TVState.save();
+      TVRouter.goto(450);
     });
   }
 

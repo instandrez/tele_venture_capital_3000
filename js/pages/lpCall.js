@@ -75,6 +75,22 @@
     if (typeof eff.innovationImpact === "number")
       state.innovationImpact = Math.max(0, Math.min(100, (state.innovationImpact || 50) + eff.innovationImpact));
 
+    // effetti speciali: le promesse fatte agli LP vengono mantenute davvero
+    if (eff.special === "writeoff_crypto") {
+      state.portfolio.forEach(p => {
+        const root = (p.sectorTag || "").split("_")[0];
+        if (root === "CRYPTO" && (!p.status || p.status === "active")) {
+          p.status = "writeoff";
+          p.exitYear = state.year;
+          p.exitKind = "writeoff";
+          p.realizedAmount = 0;
+          state.history.push({ year: state.year, type: "writeoff",
+                               startup: p.name, proceeds: 0,
+                               invested: p.investedAmount, note: "write-off etico" });
+        }
+      });
+    }
+
     if (!state.usedLPCalls) state.usedLPCalls = [];
     state.usedLPCalls.push(call.id);
 

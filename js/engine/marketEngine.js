@@ -127,7 +127,9 @@
   function runYearEnd(state) {
     const allNews = TVNews.NEWS;
     const events = [];
+    // 1) rivalutazione annuale delle posizioni attive
     state.portfolio.forEach(pos => {
+      if (pos.status && pos.status !== "active") return;
       const startup = TVStartups.byId(pos.id);
       if (!startup) return;
       const result = applyYearToPosition(pos, state.year, allNews, startup);
@@ -139,7 +141,45 @@
         triggers: result.matchedNews.map(m => m.news.headline)
       });
     });
-    return events;
+
+    // 2) eventi di liquidità scriptati (exit, IPO, acqui-hire, write-off)
+    const exits = [];
+    state.portfolio.forEach(pos => {
+      if (pos.status && pos.status !== "active") return;
+      const ev = (typeof TVExits !== "undefined") ? TVExits.forYear(pos.id, state.year) : null;
+      if (!ev) return;
+
+      if (ev.kind === "writedown") {
+        const before = pos.currentValueMultiplier;
+        pos.currentValueMultiplier = Math.max(0.01, before * ev.factor);
+        exits.push({ startup: pos.name, kind: "writedown", note: ev.note,
+                     proceeds: 0, before: before, after: pos.currentValueMultiplier });
+        return;
+      }
+
+      const proceeds = Math.round(pos.investedAmount * pos.currentValueMultiplier * ev.premium);
+      state.realized += proceeds;
+      pos.realizedAmount = proceeds;
+      pos.status = (ev.kind === "writeoff") ? "writeoff" : "exited";
+      pos.exitYear = state.year;
+      pos.exitKind = ev.kind;
+      exits.push({ startup: pos.name, kind: ev.kind, note: ev.note,
+                   proceeds: proceeds, invested: pos.investedAmount });
+
+      // gli LP reagiscono: exit vere piacciono a tutti, i write-off no
+      const dir = (ev.kind === "exit" || ev.kind === "ipo") ? +3 :
+                  (ev.kind === "acquihire") ? 0 : -2;
+      Object.keys(state.lpSat || {}).forEach(k => {
+        state.lpSat[k] = Math.max(0, Math.min(100, state.lpSat[k] + dir));
+      });
+
+      state.history.push({
+        year: state.year, type: ev.kind, startup: pos.name,
+        proceeds: proceeds, invested: pos.investedAmount
+      });
+    });
+
+    return { events: events, exits: exits };
   }
 
   // Indice settore "live": base + signal accumulati dello stesso anno

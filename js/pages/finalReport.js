@@ -6,6 +6,12 @@
     const r = TVRender;
     const s = TVState.current;
     if (!s) { TVRouter.goto(100, { skipLoading: true }); return; }
+    // il report esiste solo a partita conclusa
+    if (!s.gameOver) {
+      TVRouter.flash("LA PARTITA NON E' FINITA");
+      TVRouter.goto(s.gameStarted ? 200 : 100, { skipLoading: true });
+      return;
+    }
 
     const m = TVScoring.computeMetrics(s);
     const title = TVTitles.pickTitle(m);

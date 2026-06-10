@@ -3,8 +3,11 @@
 (function (global) {
 
   function computeMetrics(state) {
-    const portfolioValue = state.portfolio.reduce(
-      (sum, p) => sum + p.investedAmount * p.currentValueMultiplier, 0);
+    // contano solo le posizioni ancora attive: le altre sono già
+    // confluite in state.realized al momento dell'exit/write-off
+    const portfolioValue = state.portfolio
+      .filter(p => !p.status || p.status === "active")
+      .reduce((sum, p) => sum + p.investedAmount * p.currentValueMultiplier, 0);
     const moic = state.invested > 0
       ? (portfolioValue + state.realized) / state.invested : 0;
     const dpi  = state.invested > 0

@@ -11,8 +11,10 @@
 (function (global) {
 
   function seedFor(state) {
-    // hash semplice da fundSize + year per riproducibilità
-    return (state.year * 9301 + 49297) % 233280;
+    // gameSeed varia tra partite, year varia dentro la partita:
+    // stessa partita → stesso dealflow (save-compatibile),
+    // nuova partita → percorso diverso.
+    return ((state.gameSeed || 0) + state.year * 9301 + 49297) % 233280;
   }
   function rng(seed) {
     let s = seed;
@@ -100,5 +102,31 @@
     return state.dealflowCache[key].map(id => TVStartups.byId(id)).filter(Boolean);
   }
 
-  global.TVDealflow = { currentYearDealflow };
+  // ---- Stato delle decisioni annuali (pending / invested / passed) ----
+  // Una startup deliberata non può essere rideliberata nello stesso anno
+  // e il dealflow riflette sempre lo stato reale.
+  function decisionsForYear(state) {
+    if (!state.dealDecisions) state.dealDecisions = {};
+    const key = "y" + state.year;
+    if (!state.dealDecisions[key]) state.dealDecisions[key] = {};
+    return state.dealDecisions[key];
+  }
+
+  function getDecision(state, startupId) {
+    return decisionsForYear(state)[startupId] || "pending";
+  }
+
+  function setDecision(state, startupId, decision) {
+    decisionsForYear(state)[startupId] = decision;
+    TVState.save();
+  }
+
+  function pendingDeals(state) {
+    return currentYearDealflow(state)
+      .filter(s => getDecision(state, s.id) === "pending");
+  }
+
+  global.TVDealflow = {
+    currentYearDealflow, decisionsForYear, getDecision, setDecision, pendingDeals
+  };
 })(window);

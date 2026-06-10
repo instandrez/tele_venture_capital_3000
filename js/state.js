@@ -22,6 +22,7 @@
         sovereign: 50,
         endowment: 50
       },
+      researchSpent: 0,       // totale speso in DD / ref call / co-invest
       portfolio: [],
       seenStartups: [],
       readPages: [],          // pagine news visitate → edge informativo su DD
@@ -45,6 +46,7 @@
     if (!s.usedLPCalls) s.usedLPCalls = [];
     if (!s.readPages) s.readPages = [];
     if (!s.history) s.history = [];
+    if (typeof s.researchSpent !== "number") s.researchSpent = 0;
     (s.portfolio || []).forEach(p => {
       if (!p.status) p.status = "active";
       if (typeof p.realizedAmount !== "number") p.realizedAmount = 0;

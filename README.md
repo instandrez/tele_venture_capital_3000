@@ -1,0 +1,111 @@
+# Tele Venture Capital 3000
+
+Browser game ironico-didattico in stile Televideo RAI anni '90: gestisci un
+fondo VC da 100M€ per 5 anni navigando **solo per numeri di pagina**, come nel
+teletext originale. Niente mouse: digiti un numero, premi INVIO.
+
+Il cuore del gioco è il **motore di news**: il Televideo è pieno di pagine
+(ultim'ora, politica, borsa, cronaca startup, corporate watch) e nessuna è lì
+per caso. Chi legge e incrocia le informazioni costruisce il portfolio
+migliore; chi investe alla cieca scopre a fine anno cosa diceva la pagina che
+non ha mai aperto. La dinamica è ispirata a Markstrat: l'edge è informativo.
+
+## Avvio locale
+
+Serve un qualsiasi server statico (i moduli sono `<script>` semplici, nessuna
+build):
+
+```
+python -m http.server 5173
+# poi apri http://localhost:5173
+```
+
+## Comandi di gioco
+
+| Tasto | Azione |
+|---|---|
+| `0-9` + INVIO | naviga a pagina / esegue azione contestuale |
+| ESC | torna alla home (pag 100) |
+| M | toggle audio |
+
+## Mappa delle pagine
+
+| Pagina | Contenuto |
+|---|---|
+| 100 | Home / indice |
+| 101–109 | Nuovo fondo, riprendi, regole, gestione save |
+| 110–119 | Ultim'Ora (+ dettagli anni 2-5 su 211+, 311+, 411+, 511+) |
+| 120–139 | Politica & Regolazione |
+| 140–159 | Borsa & indici settoriali (live, signal inclusi) |
+| 160–179 | Cronaca Startup |
+| 180–189 | Corporate Watch |
+| 200 | Dealflow dell'anno (3 startup, stato delibera) |
+| 301–303 | Scheda startup (8 azioni) |
+| 400 | Portfolio (attive + chiuse) |
+| 450 | Follow-on round (pro-rata / raddoppio / diluizione) |
+| 500 | IC Moment / chiusura anno (effetti news + exit) |
+| 600 | LP Call (4 archetipi di LP) |
+| 700 / 701 | Report finale / post-mortem |
+| 800 | Classifica locale |
+| 900 | Crediti & easter egg |
+
+## Struttura del progetto
+
+```
+index.html            entry unico, carica gli script in ordine
+css/televideo.css     palette teletext, griglia 40×24, header/footer
+js/main.js            router pagine + input tastiera
+js/state.js           gameState, save/load LocalStorage, seed, migrazioni
+js/data/              contenuti: startups, newsCalendar (signal inclusi),
+                      exitEvents, lpProfiles, lpCalls, sectorIndices, titles
+js/engine/            marketEngine (signal→effetti), dealflow (pesca HOT/
+                      TRAP/NEUTRAL), scoring (MOIC/DPI/score), audio
+js/pages/             una funzione render per pagina
+js/ui/                render monospace, header, effetto loading
+tests/run.js          test del motore (node, zero dipendenze)
+```
+
+## Come funziona il motore (per chi scrive contenuti)
+
+- Ogni news in `newsCalendar.js` può avere un `signal`:
+  `{ sector, delta, materializeYear, type, scope }`. Il giocatore vede solo il
+  testo; il motore applica il delta a fine `materializeYear`.
+- I `type` granulari (`regulation`, `founder_risk`, `corporate_opp`...)
+  colpiscono solo le startup il cui `sectorTag` / `corporateFitTag` matcha lo
+  `scope` (es. la regolazione AI colpisce `AI_FOUNDATION`, non `AI_INFRA`).
+- Gli eventi di liquidità sono scriptati in `exitEvents.js` e allineati alle
+  news di Cronaca: chi legge sa in anticipo chi esce bene e chi muore.
+- **Edge informativo**: se il giocatore ha letto una news di settore
+  dell'anno, sulla scheda startup compare il "dossier" e la DD costa metà
+  rivelando sia il rischio sia l'upside.
+- DD e negoziazioni usano un RNG deterministico legato al `gameSeed`
+  (`TVState.roll`): ricaricare il save non cambia gli esiti.
+
+### Aggiungere una startup
+
+Aggiungi un oggetto a `js/data/startups.js` (vedi i campi commentati in
+testa al file). I nomi sono in inglese, allusivi, mai brand reali.
+
+### Aggiungere una news
+
+Aggiungi un oggetto a `js/data/newsCalendar.js` con `page` univoca e corpo di
+max ~36 caratteri per riga. Se ha un `signal`, verifica che `sector` esista in
+`sectorIndices.js`.
+
+## Test
+
+```
+node tests/run.js
+```
+
+15 test su stato iniziale, dealflow, decisioni, scoring, exit/write-off e
+integrità dei dati. Vanno eseguiti prima di ogni commit che tocca il motore.
+
+## Deploy su GitHub Pages
+
+1. Push del repo su GitHub.
+2. Settings → Pages → Source: branch `master`, cartella `/ (root)`.
+3. Il gioco è completamente statico: nessuna configurazione ulteriore.
+
+Nota: il font VT323 è caricato da Google Fonts con fallback monospace; offline
+l'estetica degrada con grazia ma il gioco funziona.

@@ -213,6 +213,7 @@
         const cost = dossier ? 50_000 : 100_000;
         if (s.cash < cost) { flashAndRefresh("CASH INSUFFICIENTE", true); return; }
         s.cash -= cost;
+        s.researchSpent += cost;
         rv.dd = true;
         if (dossier) {
           // chi ha letto le news ottiene il quadro completo
@@ -232,6 +233,7 @@
         if (rv.refCall) { flashAndRefresh("REF. CALL FATTA", true); return; }
         if (s.cash < 50_000) { flashAndRefresh("CASH INSUFFICIENTE", true); return; }
         s.cash -= 50_000;
+        s.researchSpent += 50_000;
         rv.refCall = true;
         TVState.save();
         flashAndRefresh("REF. CALL OK");
@@ -264,6 +266,7 @@
         if (rv.coInvest) { flashAndRefresh("GIA' VERIFICATO", true); return; }
         if (s.cash < 30_000) { flashAndRefresh("CASH INSUFFICIENTE", true); return; }
         s.cash -= 30_000;
+        s.researchSpent += 30_000;
         rv.coInvest = true;
         TVState.save();
         flashAndRefresh("SIGNAL OTTENUTO");

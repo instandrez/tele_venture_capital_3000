@@ -18,8 +18,6 @@
     return state.startupReveals[id];
   }
 
-  function fmtScore(n) { return n + "/10"; }
-
   function rootOf(st) { return (st.sectorTag || "").split("_")[0]; }
 
   // Il giocatore ha letto una news di quest'anno il cui signal riguarda
@@ -56,12 +54,10 @@
                (rv.negotiatedValuation ? r.color("c-green", " (-20%)") : ""));
     lines.push(r.color("c-blue", " " + "─".repeat(38)));
 
-    lines.push(" " +
-      r.color("c-white", "Team " + fmtScore(st.team)) + "  " +
-      r.color("c-white", "Tract " + fmtScore(st.traction)) + "  " +
-      r.color("c-white", "Hype " + fmtScore(st.hype)) + "  " +
-      r.color("c-white", "Fit " + fmtScore(st.strategicFit))
-    );
+    const pitch = TVPitches.forStartup(st.id);
+    if (pitch) {
+      pitch.forEach(line => lines.push(" " + r.color("c-white", line)));
+    }
 
     if (dossier) {
       lines.push(" " + r.color("c-green", "» dossier settore: news incrociate"));
@@ -75,7 +71,13 @@
     }
     if (rv.refCall)  revealLines.push(r.color("c-yellow", " ! ") + r.color("c-white", "Founder: " + revealFounder(st)));
     if (rv.coInvest) revealLines.push(r.color("c-yellow", " ! ") + r.color("c-white", "Co-invest: " + revealCoInvest(st)));
-    if (rv.sector)   revealLines.push(r.color("c-yellow", " ! ") + r.color("c-white", "Settore: " + revealSector(st)));
+    if (rv.pitchTruth) {
+      revealLines.push(r.color("c-yellow", " ! ") + r.color("c-green", "Pitch: " + rv.pitchTruth));
+    } else if (rv.pitchLost) {
+      revealLines.push(r.color("c-yellow", " ! ") + r.color("c-red", "Pitch: hai perso la sala."));
+    } else if (rv.pitchPlayed) {
+      revealLines.push(r.color("c-yellow", " ! ") + r.color("c-white", "Pitch: ascoltato. Nessuna verità."));
+    }
     if (revealLines.length) {
       lines.push("");
       revealLines.forEach(l => lines.push(l));
@@ -113,7 +115,7 @@
     lines.push(" " + r.color("c-yellow", "2") + " investi 3M€      " +
                r.color("c-yellow", "5") + " ref. call    -50k");
     lines.push(" " + r.color("c-yellow", "3") + " investi 5M€      " +
-               r.color("c-yellow", "6") + " trend settore  -");
+               r.color("c-yellow", "6") + " PITCH LIVE  gratis");
     lines.push(" " + r.color("c-yellow", "7") + " negozia valuation");
     lines.push(" " + r.color("c-yellow", "8") + " co-invest sig.  -30k");
     lines.push(" " + r.color("c-yellow", "9") + " passa            " +
@@ -149,18 +151,6 @@
     if (st.founderProfile === "red_flag") return "ex-investor sta uscendo";
     return "round senza lead, in costruzione";
   }
-  function revealSector(st) {
-    const root = rootOf(st);
-    let mom = 0;
-    TVNews.NEWS.filter(n => n.year <= TVState.current.year && n.signal && n.signal.sector === root)
-      .forEach(n => { mom += n.signal.delta; });
-    if (mom > 10)  return "settore caldo (signal +" + mom + ")";
-    if (mom > 0)   return "settore positivo (+" + mom + ")";
-    if (mom < -10) return "settore sotto pressione (" + mom + ")";
-    if (mom < 0)   return "settore debole (" + mom + ")";
-    return "settore in equilibrio";
-  }
-
   // ----- handle action -----
   function handleAction(num, st, pageNum) {
     const s = TVState.current;
@@ -240,16 +230,21 @@
         break;
       }
       case 6: {
-        if (rv.sector) { flashAndRefresh("GIA' CONSULTATO", true); return; }
-        rv.sector = true;
+        if (rv.pitchPlayed) { flashAndRefresh("IL FOUNDER HA GIA' PITCHATO", true); return; }
+        // si consuma all'avvio: ricaricare il save non regala un retry
+        rv.pitchPlayed = true;
         TVState.save();
-        flashAndRefresh("TREND CONSULTATO");
+        TVPitchLive.start(st, pageNum, () => render(pageNum));
         break;
       }
       case 7: {
         if (rv.negotiated) { flashAndRefresh("NEGOZIATA", true); return; }
         let prob = rv.dd ? 0.7 : 0.4;
         if (dossier) prob += 0.1;
+        // il pitch live pesa al tavolo: chi ha rotto la guardia negozia
+        // da una posizione di forza, chi ha perso la sala da una di scuse
+        if (rv.pitchWon) prob += 0.15;
+        if (rv.pitchLost) prob -= 0.1;
         const ok = TVState.roll("nego|" + st.id + "|" + s.year) < prob;
         rv.negotiated = true;
         if (ok) {

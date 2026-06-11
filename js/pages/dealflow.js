@@ -50,10 +50,14 @@
         const pageId = 301 + i;
         s._dealflowMap[pageId] = st.id;
         const decision = TVDealflow.getDecision(s, st.id);
+        const teaser = TVPitches.forStartup(st.id);
         lines.push(" " + r.color("c-yellow", String(pageId)) + " " +
                    r.color("c-white", r.pad(st.name, 20)) + statusBadge(r, decision));
-        lines.push("     " + r.color("c-cyan", st.sector) + r.color("c-white", "  " + st.stage));
-        lines.push("     " + r.color("c-white", "val. " + r.eur(st.valuation)));
+        lines.push("     " + r.color("c-cyan", st.sector) + r.color("c-white", "  " + st.stage) +
+                   r.color("c-white", "  val. " + r.eur(st.valuation)));
+        if (teaser && teaser[0]) {
+          lines.push("     " + r.color("c-cyan", "» ") + r.color("c-white", teaser[0]));
+        }
         lines.push("");
       });
     }
@@ -65,6 +69,9 @@
       lines.push(" " + r.color("c-green", "tutto deliberato — puoi chiudere l'anno"));
     }
 
+    const alert = r.lpAlert(s);
+    if (alert) lines.push(alert);
+
     while (lines.length < 19) lines.push("");
     lines.push(r.color("c-white", " 9 CHIUDI ANNO     100 HOME"));
     lines.push(r.color("c-white", " 110 ULTIM'ORA  140 BORSA  160 CRONACA"));
@@ -75,6 +82,16 @@
       if (num !== 9) return;
       const stillPending = TVDealflow.pendingDeals(s);
       if (stillPending.length === 0) {
+        // LP al telefono? chiudere l'anno senza rispondere costa caro:
+        // chiedi conferma esplicita (ignorare resta una scelta legittima)
+        let lpPending = [];
+        try { lpPending = TVLPCalls.pickCallsForYear(s); } catch (e) {}
+        if (lpPending.length > 0 && !confirmCloseArmed) {
+          confirmCloseArmed = true;
+          TVAudio.error();
+          TVRouter.flash("LP IN LINEA (600) - 9 PER IGNORARLI");
+          return;
+        }
         // la chiusura passa per il follow-on (450): se non ci sono
         // offerte, la pagina reindirizza da sola all'IC (500)
         TVRouter.goto(450);

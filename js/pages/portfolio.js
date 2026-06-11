@@ -65,6 +65,9 @@
     const moic = s.invested > 0 ? ((totalCurrentValue + s.realized) / s.invested) : 0;
     const dpi  = s.invested > 0 ? (s.realized / s.invested) : 0;
 
+    const alert = r.lpAlert(s);
+    if (alert) lines.push(alert);
+
     while (lines.length < 17) lines.push("");
     lines.push(r.color("c-blue", " " + "─".repeat(38)));
     lines.push(" " +

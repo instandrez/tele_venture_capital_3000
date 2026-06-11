@@ -28,11 +28,23 @@
     osc.stop(c.currentTime + durMs / 1000);
   }
 
+  /* Sigla d'apertura: melodia originale di 8 note, onda triangolare,
+     vagamente da annuncio teletext anni '90. */
+  function jingle() {
+    if (muted) return;
+    const notes = [523, 659, 784, 659, 784, 988, 784, 1319];
+    notes.forEach((freq, i) => {
+      setTimeout(() => beep(freq, i === notes.length - 1 ? 360 : 140, "triangle"),
+                 i * 160);
+    });
+  }
+
   global.TVAudio = {
     pageChange: () => beep(1200, 70, "square"),
     keyPress:   () => beep(2000, 25, "square"),
     error:      () => beep(220, 180, "sawtooth"),
     success:    () => beep(1600, 120, "triangle"),
+    jingle:     jingle,
     toggleMute() {
       muted = !muted;
       localStorage.setItem("tvc3000.muted", muted ? "1" : "0");

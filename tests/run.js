@@ -30,12 +30,14 @@ load("data/sectorIndices.js");
 load("data/lpProfiles.js");
 load("data/newsCalendar.js");
 load("data/startups.js");
+load("data/pitches.js");
 load("data/exitEvents.js");
 load("data/lpCalls.js");
 load("data/titles.js");
 load("engine/scoring.js");
 load("engine/marketEngine.js");
 load("engine/dealflow.js");
+load("engine/pitchBattle.js");
 
 // ---------- micro harness ----------
 let passed = 0, failed = 0;
@@ -192,6 +194,64 @@ test("writedown taglia il multiplo ma non chiude", () => {
   const pos = s.portfolio[0];
   assert(!pos.status || pos.status === "active", "resta attiva");
   assert(pos.currentValueMultiplier < 0.1, "multiplo schiacciato");
+});
+
+console.log("\n== Pitch Live ==");
+const TVPitchBattle = global.TVPitchBattle, TVPitches = global.TVPitches;
+
+test("ogni startup ha il pitch qualitativo (4 righe)", () => {
+  TVStartups.STARTUPS.forEach(st => {
+    const p = TVPitches.forStartup(st.id);
+    assert(p && p.length >= 3, "pitch mancante o corto: " + st.id);
+  });
+});
+
+test("ogni founderProfile ha un profilo di battaglia completo", () => {
+  const used = new Set(TVStartups.STARTUPS.map(st => st.founderProfile));
+  used.forEach(fp => {
+    const p = TVPitchBattle.PROFILES[fp];
+    assert(p, "profilo battaglia mancante: " + fp);
+    assert(p.weak >= 1 && p.weak <= 4, "weak fuori range: " + fp);
+    assert(p.resist >= 1 && p.resist <= 4, "resist fuori range: " + fp);
+    assert(p.weak !== p.resist, "weak == resist: " + fp);
+    for (let m = 1; m <= 4; m++)
+      assert(p.react[m], "reazione mancante " + fp + " mossa " + m);
+    assert(p.open.length > 0 && p.crack, "open/crack mancanti: " + fp);
+  });
+});
+
+test("giocare la debolezza vince sempre (skill premiata)", () => {
+  Object.keys(TVPitchBattle.PROFILES).forEach(fp => {
+    const b = TVPitchBattle.newBattle(fp);
+    const weak = TVPitchBattle.PROFILES[fp].weak;
+    let guard = 0;
+    while (!b.over && guard++ < 20) TVPitchBattle.applyMove(b, weak);
+    assert(b.over && b.won, "weak spam dovrebbe vincere: " + fp);
+    assert(b.turn === 3, fp + ": atteso 3 turni, ottenuto " + b.turn);
+  });
+});
+
+test("la mossa parata non scalfisce e costa credibilita'", () => {
+  const b = TVPitchBattle.newBattle("ego");
+  const resist = TVPitchBattle.PROFILES.ego.resist;
+  TVPitchBattle.applyMove(b, resist);
+  eq(b.guard, TVPitchBattle.GUARD_MAX, "guardia intatta");
+  eq(b.cred, TVPitchBattle.CRED_MAX - 3, "-2 parata -1 contrattacco");
+});
+
+test("spammare la parata fa perdere la sala", () => {
+  const b = TVPitchBattle.newBattle("hustle");
+  const resist = TVPitchBattle.PROFILES.hustle.resist;
+  let guard = 0;
+  while (!b.over && guard++ < 20) TVPitchBattle.applyMove(b, resist);
+  assert(b.over && !b.won, "resist spam deve perdere");
+});
+
+test("truthFor da' una verita' per ogni startup", () => {
+  TVStartups.STARTUPS.forEach(st => {
+    const t = TVPitchBattle.truthFor(st);
+    assert(typeof t === "string" && t.length > 5, "truth vuota: " + st.id);
+  });
 });
 
 console.log("\n== Dati ==");

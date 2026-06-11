@@ -61,6 +61,19 @@
     return v + "€";
   }
 
+  // Banner "LP IN LINEA" — una riga lampeggiante se ci sono call
+  // pendenti. Le pagine principali la mostrano così il giocatore
+  // sa SEMPRE quando il telefono squilla. Ritorna null se silenzio.
+  function lpAlert(state) {
+    try {
+      if (!state || !state.gameStarted || state.gameOver) return null;
+      const calls = global.TVLPCalls.pickCallsForYear(state);
+      if (!calls.length) return null;
+      return ' <span class="blink c-red">((( LP IN LINEA )))</span> ' +
+             color("c-yellow", "rispondi a pag 600");
+    } catch (e) { return null; }
+  }
+
   // Renderizza una pagina (stringa HTML) nel contenitore.
   // Applica un cap rigoroso a ROWS righe: se la pagina sfora,
   // sostituisce l'ultima riga con un marker visibile per il dev.
@@ -83,6 +96,6 @@
   }
 
   global.TVRender = {
-    COLS, ROWS, escape, center, pad, padLeft, line, row, color, bg, blink, eur, show
+    COLS, ROWS, escape, center, pad, padLeft, line, row, color, bg, blink, eur, lpAlert, show
   };
 })(window);

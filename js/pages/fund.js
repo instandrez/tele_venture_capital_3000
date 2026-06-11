@@ -28,7 +28,7 @@
     TVRouter.setActionHandler(num => {
       if (num === 1) {
         TVState.newGame();
-        TVRouter.goto(200);
+        TVRouter.goto(105); // sigla d'apertura, poi dealflow
       } else if (num === 9) {
         TVRouter.goto(100);
       }
@@ -68,21 +68,21 @@
     lines.push(" Alla fine: punteggio e classifica.");
     lines.push("");
     lines.push(r.color("c-yellow", " COMANDI"));
-    lines.push(" Digita un numero di pagina e INVIO.");
-    lines.push(" ESC torna alla home.  M muta l'audio.");
+    lines.push(" Pagina + INVIO · ESC home · M audio");
+    lines.push("");
+    lines.push(r.color("c-yellow", " GLI LP TI CHIAMANO"));
+    lines.push(" Quando il portfolio li innervosisce");
+    lines.push(" (o li esalta) parte la chiamata:");
+    lines.push(" \"((( LP IN LINEA )))\" lampeggia.");
+    lines.push(" Rispondi a pag 600 prima di chiudere");
+    lines.push(" l'anno: ignorarli ha un costo.");
     lines.push("");
     lines.push(r.color("c-yellow", " METRICHE"));
-    lines.push(" MOIC  rapporto valore/capitale investito");
-    lines.push(" DPI   ritorni distribuiti / investito");
-    lines.push(" LP    soddisfazione dei tuoi investitori");
-    lines.push(" REP   reputazione nell'ecosistema");
-    lines.push(" IMP   impatto innovazione");
-    lines.push("");
+    lines.push(" MOIC valore/investito · DPI incassato");
+    lines.push(" LP fiducia · REP fama · IMP impatto");
     lines.push(r.color("c-magenta", " UN CONSIGLIO"));
-    lines.push(" Il Televideo è pieno di pagine.");
-    lines.push(" Nessuna è lì per caso.");
-    lines.push("");
-    lines.push(r.color("c-white", " 100 HOME"));
+    lines.push(" Nessuna pagina è lì per caso.");
+    lines.push(r.color("c-white", " 100 HOME      105 RIVEDI LA SIGLA"));
 
     r.show(pageNum, lines.join("\n"), { title: "REGOLE" });
   }

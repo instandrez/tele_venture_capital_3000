@@ -45,15 +45,8 @@
                r.color("c-green", "800") + "  CLASSIFICA");
     lines.push("");
     // notifica LP call attiva se partita in corso
-    if (hasSave && typeof TVLPCalls !== "undefined" && TVState.current && TVState.current.gameStarted) {
-      try {
-        const pending = TVLPCalls.pickCallsForYear(TVState.current);
-        if (pending && pending.length > 0) {
-          lines.push(r.color("c-red", " " + '<span class="blink">[!]</span>') +
-                     r.color("c-yellow", " hai " + pending.length + " LP call attive — vai a 600"));
-        }
-      } catch (e) {}
-    }
+    const alert = r.lpAlert(TVState.current);
+    if (alert) lines.push(alert);
     lines.push(r.color("c-white", r.center("digita il numero pagina + INVIO  •  M=audio")));
 
     r.show(100, lines.join("\n"));

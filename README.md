@@ -34,13 +34,14 @@ python -m http.server 5173
 |---|---|
 | 100 | Home / indice |
 | 101–109 | Nuovo fondo, riprendi, regole, gestione save |
+| 105 | Sigla d'apertura (parte su nuovo fondo, rivedibile) |
 | 110–119 | Ultim'Ora (+ dettagli anni 2-5 su 211+, 311+, 411+, 511+) |
 | 120–139 | Politica & Regolazione |
 | 140–159 | Borsa & indici settoriali (live, signal inclusi) |
 | 160–179 | Cronaca Startup |
 | 180–189 | Corporate Watch |
 | 200 | Dealflow dell'anno (3 startup, stato delibera) |
-| 301–303 | Scheda startup (8 azioni) |
+| 301–303 | Scheda startup (8 azioni, incluso PITCH LIVE) |
 | 400 | Portfolio (attive + chiuse) |
 | 450 | Follow-on round (pro-rata / raddoppio / diluizione) |
 | 500 | IC Moment / chiusura anno (effetti news + exit) |
@@ -80,6 +81,16 @@ tests/run.js          test del motore (node, zero dipendenze)
   rivelando sia il rischio sia l'upside.
 - DD e negoziazioni usano un RNG deterministico legato al `gameSeed`
   (`TVState.roll`): ricaricare il save non cambia gli esiti.
+- **PITCH LIVE** (azione 6 sulla scheda startup): battaglia a turni col
+  founder. Ogni `founderProfile` ha una mossa che lo fa crollare e una
+  che ti si ritorce contro; la debolezza si deduce dal pitch qualitativo
+  (`js/data/pitches.js`) o dalla ref call. Vincere rivela gli unit
+  economics reali (che nessuna DD dà) e migliora la negoziazione; il
+  pitch si consuma all'avvio, niente retry da save.
+- **LP Call**: triggerate dalle condizioni di portfolio
+  (`js/data/lpCalls.js`). Quando una call è attiva, le pagine principali
+  mostrano il banner lampeggiante "((( LP IN LINEA )))"; chiudere l'anno
+  senza rispondere chiede conferma e costa satisfaction.
 
 ### Aggiungere una startup
 
@@ -98,8 +109,9 @@ max ~36 caratteri per riga. Se ha un `signal`, verifica che `sector` esista in
 node tests/run.js
 ```
 
-15 test su stato iniziale, dealflow, decisioni, scoring, exit/write-off e
-integrità dei dati. Vanno eseguiti prima di ogni commit che tocca il motore.
+21 test su stato iniziale, dealflow, decisioni, scoring, exit/write-off,
+pitch battle e integrità dei dati. Vanno eseguiti prima di ogni commit che
+tocca il motore.
 
 ## Deploy su GitHub Pages
 

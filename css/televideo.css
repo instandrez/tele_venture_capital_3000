@@ -20,10 +20,13 @@
   --cols: 40;
   --rows: 24;
   --content-rows: 22;    /* righe disponibili per il body pagina */
-  --cell: 19px;          /* altezza riga */
-  --char: 14px;          /* larghezza cella */
-  --screen-w: calc(var(--char) * var(--cols));   /* 560px */
-  --screen-h: calc(var(--cell) * var(--rows));   /* 456px */
+
+  /* Dimensione fluida: il televisore riempie il viewport.
+     VT323 avanza di 0.5em a carattere → 40 col = 20em; 24 righe
+     a 0.95em = 22.8em. I due vincoli (altezza/larghezza) danno
+     il font-size massimo che ci sta. */
+  --fs: clamp(14px, min(3.9vh, 4.4vw), 80px);
+  --cell: calc(var(--fs) * 0.95);   /* altezza riga */
 }
 
 * { box-sizing: border-box; }
@@ -35,7 +38,7 @@ html, body {
   background: #0a0a0a;
   color: var(--tv-white);
   font-family: "VT323", "Courier New", "Lucida Console", monospace;
-  font-size: 20px;
+  font-size: var(--fs);
   line-height: var(--cell);
 }
 
@@ -45,17 +48,18 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 8px;
   background:
     radial-gradient(ellipse at center, #1a1a1a 0%, #000 70%);
 }
 
 #screen {
   position: relative;
-  width: var(--screen-w);
+  /* 40 col × 0.5em + padding contenuto 0.8em + cornice 0.6em */
+  width: calc(20em + 0.8em + 0.6em);
   background: var(--tv-bg);
-  border: 6px solid #2a2a2a;
-  border-radius: 6px;
+  border: 0.3em solid #2a2a2a;
+  border-radius: 0.3em;
   box-shadow:
     0 0 24px rgba(0, 255, 255, 0.12),
     inset 0 0 60px rgba(0, 0, 0, 0.6);
@@ -84,7 +88,7 @@ html, body {
   align-items: center;
   background: var(--tv-header-bg);
   color: var(--tv-white);
-  padding: 0 8px;
+  padding: 0 0.4em;
   height: var(--cell);
   font-weight: normal;
   letter-spacing: 1px;
@@ -96,7 +100,7 @@ html, body {
 
 /* ---------- CONTENT ---------- */
 #tv-content {
-  padding: 4px 8px;
+  padding: 0.1em 0.4em;
   min-height: calc(var(--cell) * var(--content-rows));
   height: calc(var(--cell) * var(--content-rows));
   overflow: hidden;
@@ -109,13 +113,13 @@ html, body {
   background: var(--tv-footer-bg);
   color: var(--tv-white);
   height: var(--cell);
-  padding: 0 8px;
+  padding: 0 0.4em;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.4em;
 }
 .prompt { color: var(--tv-white); letter-spacing: 1px; }
-#tv-input { color: var(--tv-yellow); min-width: 60px; }
+#tv-input { color: var(--tv-yellow); min-width: 3em; }
 .cursor {
   color: var(--tv-yellow);
   animation: blink 1s steps(2, start) infinite;
@@ -168,11 +172,3 @@ html, body {
   100% { filter: invert(0); }
 }
 
-/* ---------- RESPONSIVE ---------- */
-@media (max-width: 620px) {
-  :root {
-    --char: 11px;
-    --cell: 16px;
-  }
-  html, body { font-size: 16px; }
-}

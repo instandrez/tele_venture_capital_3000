@@ -31,6 +31,7 @@ load("data/lpProfiles.js");
 load("data/newsCalendar.js");
 load("data/startups.js");
 load("data/pitches.js");
+load("data/founderSprites.js");
 load("data/exitEvents.js");
 load("data/lpCalls.js");
 load("data/titles.js");
@@ -253,6 +254,38 @@ test("truthFor da' una verita' per ogni startup", () => {
   TVStartups.STARTUPS.forEach(st => {
     const t = TVPitchBattle.truthFor(st);
     assert(typeof t === "string" && t.length > 5, "truth vuota: " + st.id);
+  });
+});
+
+console.log("\n== Sprite battaglia ==");
+const TVSprites = global.TVSprites;
+
+test("ogni founderProfile usato ha uno sprite (e c'e' il player)", () => {
+  const used = new Set(TVStartups.STARTUPS.map(st => st.founderProfile));
+  used.add("player");
+  used.forEach(key => {
+    assert(TVSprites.SPRITES[key], "sprite mancante: " + key);
+  });
+});
+
+test("gli sprite sono griglie valide (10 col, solo palette)", () => {
+  Object.keys(TVSprites.SPRITES).forEach(key => {
+    const rows = TVSprites.SPRITES[key];
+    assert(rows.length >= 6, "sprite troppo basso: " + key);
+    rows.forEach((row, i) => {
+      eq(row.length, 10, key + " riga " + i + " larghezza");
+      assert(/^[.WYCGMRB]+$/.test(row),
+        key + " riga " + i + ": carattere fuori palette");
+    });
+  });
+});
+
+test("spriteRows rende 20 colonne visibili per riga", () => {
+  const strip = h => String(h).replace(/<[^>]*>/g, "");
+  Object.keys(TVSprites.SPRITES).forEach(key => {
+    TVSprites.spriteRows(key).forEach((html, i) => {
+      eq(strip(html).length, 20, key + " riga html " + i);
+    });
   });
 });
 

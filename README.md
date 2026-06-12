@@ -58,7 +58,8 @@ css/televideo.css     palette teletext, griglia 40×24, header/footer
 js/main.js            router pagine + input tastiera
 js/state.js           gameState, save/load LocalStorage, seed, migrazioni
 js/data/              contenuti: startups, newsCalendar (signal inclusi),
-                      exitEvents, lpProfiles, lpCalls, sectorIndices, titles
+                      exitEvents, lpProfiles, lpCalls, sectorIndices, titles,
+                      pitches (copy qualitativo), founderSprites (pixel art)
 js/engine/            marketEngine (signal→effetti), dealflow (pesca HOT/
                       TRAP/NEUTRAL), scoring (MOIC/DPI/score), audio
 js/pages/             una funzione render per pagina
@@ -82,14 +83,19 @@ tests/run.js          test del motore (node, zero dipendenze)
 - DD e negoziazioni usano un RNG deterministico legato al `gameSeed`
   (`TVState.roll`): ricaricare il save non cambia gli esiti.
 - **PITCH BATTLE**: aprire una startup pendente (301-303) fa partire la
-  battaglia a turni col founder — musica in loop, animazioni a frame,
-  barre GUARDIA/CREDIBILITÀ. Tutte le azioni vivono nella battle:
-  domande (1-4, con debolezza/parata per `founderProfile`), DD, ref
-  call, negoziazione (più la guardia è bassa più funziona), co-invest,
-  passa, investi (term sheet 1/3/5M). Credibilità a zero = fuori dal
-  round, deal perso. La debolezza si deduce dal pitch qualitativo
-  (`js/data/pitches.js`) o dalla ref call. Lo stato della battaglia si
-  salva a ogni turno (`rv.snap`): niente retry da save.
+  battaglia a turni col founder — arena stile console portatile anni
+  '90: sprite pixel-art "mosaico teletext" del founder in alto a destra
+  (con targhetta `Stage Lv.<valuation>`), tu di spalle in basso a
+  sinistra, dialog box bordata, musica in loop. Gli sprite
+  (`js/data/founderSprites.js`) sono il tipo del founder: si imparano
+  a riconoscere partita dopo partita. Tutte le azioni vivono nella
+  battle: domande (1-4, con debolezza/parata per `founderProfile`),
+  DD, ref call, negoziazione (più la guardia è bassa più funziona),
+  co-invest, passa, investi (term sheet 1/3/5M). Credibilità a zero =
+  fuori dal round, deal perso (e il tuo sprite crolla). La debolezza
+  si deduce dal pitch qualitativo (`js/data/pitches.js`) o dalla ref
+  call. Lo stato della battaglia si salva a ogni turno (`rv.snap`):
+  niente retry da save.
 - **LP Call**: triggerate dalle condizioni di portfolio
   (`js/data/lpCalls.js`). Quando una call è attiva, le pagine principali
   mostrano il banner lampeggiante "((( LP IN LINEA )))"; chiudere l'anno
@@ -112,9 +118,9 @@ max ~36 caratteri per riga. Se ha un `signal`, verifica che `sector` esista in
 node tests/run.js
 ```
 
-21 test su stato iniziale, dealflow, decisioni, scoring, exit/write-off,
-pitch battle e integrità dei dati. Vanno eseguiti prima di ogni commit che
-tocca il motore.
+24 test su stato iniziale, dealflow, decisioni, scoring, exit/write-off,
+pitch battle, sprite e integrità dei dati. Vanno eseguiti prima di ogni
+commit che tocca il motore.
 
 ## Deploy su GitHub Pages
 

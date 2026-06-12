@@ -21,7 +21,7 @@
    ogni turno; ricaricare riprende ESATTAMENTE da dov'eri. */
 (function (global) {
 
-  let B = null; // { st, pageNum, battle, rv, phase, log, dispGuard, dispCred, busy }
+  let B = null; // { st, pageNum, battle, rv, phase, log, dispGuard, dispCred, fx, busy }
 
   // ---------- entry ----------
   function start(st, pageNum) {
@@ -43,6 +43,13 @@
       log: [],
       dispGuard: battle.guard,
       dispCred: battle.cred,
+      /* fx sprite: enemyReveal = righe materializzate dall'alto,
+         enemyDrop/playerDrop = caduta stile svenimento */
+      fx: {
+        enemyReveal: resumed ? 8 : 0,
+        enemyDrop: (battle.over && battle.won) ? 8 : 0,
+        playerDrop: 0
+      },
       busy: false
     };
 
@@ -117,80 +124,137 @@
            c("c-blue", "░".repeat(Math.max(0, max - value)));
   }
 
+  /* lunghezza visibile di una riga HTML (ignora i tag span) */
+  function visLen(html) { return String(html).replace(/<[^>]*>/g, "").length; }
+  function padVis(html, w) {
+    const d = w - visLen(html);
+    return d > 0 ? html + " ".repeat(d) : html;
+  }
+  /* taglia a w caratteri visibili richiudendo gli span aperti:
+     rete di sicurezza perche' nessuna riga sfondi la dialog box */
+  function clipVis(html, w) {
+    const s = String(html);
+    if (visLen(s) <= w) return s;
+    let out = "", vis = 0, i = 0, depth = 0;
+    while (i < s.length && vis < w) {
+      if (s[i] === "<") {
+        const j = s.indexOf(">", i);
+        const tag = s.slice(i, j + 1);
+        out += tag;
+        depth += tag[1] === "/" ? -1 : 1;
+        i = j + 1;
+      } else { out += s[i++]; vis++; }
+    }
+    while (depth-- > 0) out += "</span>";
+    return out;
+  }
+
+  /* ARENA stile battaglia portatile anni '90 (11 righe × 40 col):
+     founder in alto a destra con targhetta a sinistra (il livello
+     E' la valuation), tu di spalle in basso a sinistra con la tua
+     targhetta a destra. */
+  function arenaLines() {
+    const r = TVRender;
+    const s = TVState.current;
+    const st = B.st;
+    const b = B.battle;
+    const p = TVPitchBattle.PROFILES[b.profile];
+    const fx = B.fx;
+
+    const eRows = TVSprites.spriteRows(b.profile); // 8 righe × 20 col
+    const pRows = TVSprites.spriteRows("player");  // 6 righe × 20 col
+
+    // colonna destra: sprite founder (righe 0-7) + targhetta tua (8-10)
+    const right = [];
+    for (let i = 0; i < 8; i++) {
+      let cell = "";
+      const idx = i - (fx.enemyDrop || 0);          // cade verso il basso
+      if (idx >= 0 && idx < Math.min(8, fx.enemyReveal)) cell = eRows[idx];
+      right.push(cell);
+    }
+    if (b.over && b.won && (fx.enemyDrop || 0) >= 8) {
+      right[3] = "      " + c("c-yellow", p.faceDown);
+      right[4] = "      " + c("c-magenta", "crollato");
+    }
+    right.push(c("c-white", "TU — GENERAL PARTNER"));
+    right.push("  " + c("c-cyan", "CRED ") + bar(B.dispCred, TVPitchBattle.CRED_MAX, "c-green"));
+    right.push("  " + c("c-white", "CASH " + r.eur(s.cash)));
+
+    // colonna sinistra: targhetta founder (1-4) + tuo sprite (5-10)
+    const left = ["", "", "", "", "", "", "", "", "", "", ""];
+    left[1] = " " + c("c-yellow", st.name.slice(0, 18));
+    left[2] = " " + c("c-white", (st.stage + " Lv." + r.eur(st.valuation)).slice(0, 18));
+    left[3] = " " + c("c-cyan", "GUARDIA");
+    left[4] = " " + bar(B.dispGuard, TVPitchBattle.GUARD_MAX, "c-yellow");
+    for (let i = 0; i < 6; i++) {
+      const idx = i - (fx.playerDrop || 0);
+      left[5 + i] = (idx >= 0 && idx < 6 && (fx.playerDrop || 0) < 6) ? pRows[idx] : "";
+    }
+
+    const out = [];
+    for (let i = 0; i < 11; i++) out.push(padVis(left[i], 20) + (right[i] || ""));
+    return out;
+  }
+
   function draw() {
     if (!alive()) return;
     const r = TVRender;
     const s = TVState.current;
     const st = B.st;
     const b = B.battle;
-    const p = TVPitchBattle.PROFILES[b.profile];
     const rv = B.rv;
-    const face = (b.over && b.won) ? p.faceDown : p.face;
 
     const lines = [];
-    lines.push(r.bg("bg-magenta", "  " + r.pad("PITCH BATTLE — " + st.name, 38)));
-    lines.push(" FOUNDER " + bar(B.dispGuard, TVPitchBattle.GUARD_MAX, "c-yellow") +
-               "  " + c("c-yellow", face));
-    lines.push(" TU      " + bar(B.dispCred, TVPitchBattle.CRED_MAX, "c-green") +
-               "      " + c("c-green", "cash " + r.eur(s.cash)));
-    lines.push(c("c-blue", " " + "─".repeat(38)));
+    lines.push(r.bg("bg-magenta", "  " + r.pad("PITCH BATTLE ─ " + st.name.toUpperCase(), 38)));
+    arenaLines().forEach(l => lines.push(l));
 
-    // zona log (8 righe)
-    const logZone = B.log.slice(-8);
-    for (let i = 0; i < 8; i++) lines.push(logZone[i] !== undefined ? " " + logZone[i] : "");
+    // dialog box bordata (4 righe di log)
+    lines.push(c("c-white", "┌" + "─".repeat(38) + "┐"));
+    const logZone = B.log.slice(-4);
+    for (let i = 0; i < 4; i++) {
+      const inner = logZone[i] !== undefined ? clipVis(logZone[i], 36) : "";
+      lines.push(c("c-white", "│ ") + padVis(inner, 36) + c("c-white", " │"));
+    }
+    lines.push(c("c-white", "└" + "─".repeat(38) + "┘"));
 
-    lines.push(c("c-blue", " " + "─".repeat(38)));
-
-    // menu
+    // menu (3 righe)
     if (B.phase === "invest") {
       lines.push(r.bg("bg-yellow", "  " + r.pad("LANCIA IL TERM SHEET", 38)));
-      lines.push(" " + c("c-yellow", "1") + " ticket 1M€      " + c("c-yellow", "2") + " ticket 3M€");
-      lines.push(" " + c("c-yellow", "3") + " ticket 5M€      " + c("c-yellow", "0") + " annulla");
+      lines.push(" " + c("c-yellow", "1") + "► 1M€    " + c("c-yellow", "2") + "► 3M€    " +
+                 c("c-yellow", "3") + "► 5M€    " + c("c-yellow", "0") + " no");
       lines.push(" " + c("c-white", "valuation: " + r.eur(rv.negotiatedValuation || st.valuation)) +
-                 (rv.negotiatedValuation ? c("c-green", " (-20%)") : ""));
+                 (rv.negotiatedValuation ? c("c-green", " (-20% strappato)") : ""));
     } else {
       const broken = B.phase === "broken";
-      lines.push(r.bg("bg-blue", "  " + r.pad(broken ? "DECISIONE" : "LE TUE MOSSE", 38)));
       if (broken) {
-        lines.push(" " + c("c-magenta", "- il founder e' crollato: decidi -"));
+        lines.push(r.bg("bg-blue", "  " + r.pad("E' CROLLATO. SI FIRMA O SI SALUTA.", 38)));
       } else {
-        lines.push(" " + c("c-yellow", "1") + " NUMERI    " + c("c-yellow", "2") + " COMPETITOR  " +
-                   c("c-yellow", "3") + " TEAM");
-        lines.push(" " + c("c-yellow", "4") + " SILENZIO" +
-                   c("c-white", "   (le domande costano tempo)"));
+        lines.push(" " + c("c-yellow", "1") + " NUMERI " + c("c-yellow", "2") + " COMPET. " +
+                   c("c-yellow", "3") + " TEAM " + c("c-yellow", "4") + " SILENZIO");
       }
-      const ddLbl  = rv.dd ? c("c-blue", "5 DD fatta") :
-        c("c-yellow", "5") + " DD " + c("c-cyan", "-" + (hasSectorDossier(TVState.current, st) ? "50k" : "100k"));
+      const ddLbl  = rv.dd ? c("c-blue", "5 DD ok") :
+        c("c-yellow", "5") + " DD" + c("c-cyan", "-" + (hasSectorDossier(s, st) ? "50k" : "100k"));
       const refLbl = rv.refCall ? c("c-blue", "6 REF ok") :
-        c("c-yellow", "6") + " REF " + c("c-cyan", "-50k");
-      const negLbl = rv.negotiated ? c("c-blue", "7 negoziata") :
+        c("c-yellow", "6") + " REF" + c("c-cyan", "-50k");
+      const negLbl = rv.negotiated ? c("c-blue", "7 negoz.") :
         c("c-yellow", "7") + " NEGOZIA";
       const coLbl  = rv.coInvest ? c("c-blue", "8 COINV ok") :
-        c("c-yellow", "8") + " COINV " + c("c-cyan", "-30k");
-      lines.push(" " + ddLbl + "   " + refLbl + "   " + negLbl);
-      lines.push(" " + coLbl + "   " + c("c-yellow", "9") + " PASSA   " +
-                 c("c-yellow", "0") + " INVESTI");
+        c("c-yellow", "8") + " COINV";
+      lines.push(" " + ddLbl + " " + refLbl + " " + negLbl + " " + coLbl);
+      lines.push(" " + c("c-yellow", "9") + " PASSA        " +
+                 c("c-yellow", "0") + " LANCIA IL TERM SHEET");
     }
 
-    // reveal persistenti (max 2)
-    const facts = [];
-    if (rv.pitchTruth) facts.push(c("c-green", "★ " + rv.pitchTruth));
-    if (rv.ddTexts && rv.ddTexts[0]) facts.push(c("c-white", "★ " + rv.ddTexts[0].slice(0, 36)));
-    if (facts.length < 2 && rv.ddTexts && rv.ddTexts[1])
-      facts.push(c("c-white", "★ " + rv.ddTexts[1].slice(0, 36)));
-    if (facts.length < 2 && rv.coInvest)
-      facts.push(c("c-cyan", "★ " + TVPitchBattle.coInvestSignal(st)));
-    facts.slice(0, 2).forEach(f => lines.push(" " + f));
-
-    while (lines.length < 21) lines.push("");
-    if (rv.refCall) {
-      lines.push(" " + c("c-cyan", "ref call: " + TVPitchBattle.founderLabel(b.profile) +
-                 " — " + (TVPitchBattle.PROFILES[b.profile].hint || "")));
-    } else if (hasSectorDossier(s, st)) {
-      lines.push(" " + c("c-green", "» dossier settore: news incrociate"));
-    } else {
-      lines.push(" " + c("c-white", "leggi il pitch: la debolezza e' li'."));
-    }
+    // riga finale: il fatto più utile che conosci adesso
+    let hint;
+    if (rv.pitchTruth) hint = c("c-green", "★ " + rv.pitchTruth.slice(0, 37));
+    else if (rv.refCall) hint = c("c-cyan", ("ref: " + TVPitchBattle.founderLabel(b.profile) +
+      " — " + (TVPitchBattle.PROFILES[b.profile].hint || "")).slice(0, 38));
+    else if (rv.ddTexts && rv.ddTexts[0]) hint = c("c-white", "★ " + rv.ddTexts[0].slice(0, 36));
+    else if (rv.coInvest) hint = c("c-cyan", "★ " + TVPitchBattle.coInvestSignal(st).slice(0, 36));
+    else if (hasSectorDossier(s, st)) hint = c("c-green", "» dossier settore: news incrociate");
+    else hint = c("c-white", "leggi il pitch: la debolezza e' li'.");
+    lines.push(" " + hint);
 
     r.show(B.pageNum, lines.join("\n"), { title: "PITCH BATTLE" });
   }
@@ -233,21 +297,28 @@
   function playIntro() {
     const st = B.st;
     const pitch = (TVPitches.forStartup(st.id) || []).slice(0, 4);
-    const p = TVPitchBattle.PROFILES[B.battle.profile];
 
     const steps = [
-      { log: ["", c("c-white", "   IL FOUNDER ENTRA IN SALA...")], ms: 900,
-        sound: () => TVAudio.pageChange() },
-      { log: ["", c("c-white", "   IL FOUNDER ENTRA IN SALA..."), "",
-              c("c-yellow", "        " + p.face)], ms: 700,
-        sound: () => TVAudio.success() },
-      { log: [c("c-yellow", p.face + "  attacca il pitch:")], ms: 600 }
+      { log: [c("c-white", "Sala riunioni. Neon. Acqua frizzante.")], ms: 800 },
+      { push: [c("c-white", "IL FOUNDER ENTRA IN SALA...")], ms: 700,
+        sound: () => TVAudio.pageChange() }
     ];
+    // lo sprite si materializza riga per riga (decode teletext)
+    for (let i = 1; i <= 8; i++) {
+      steps.push({
+        fn: (v => () => { B.fx.enemyReveal = v; })(i),
+        ms: 110, sound: () => TVAudio.keyPress()
+      });
+    }
+    steps.push({ log: [c("c-yellow", "Un FOUNDER selvaggio ti pitcha:")], ms: 650,
+                 sound: () => TVAudio.success() });
+    // niente virgolette e niente riga "COSA FAI?": le 4 righe del
+    // pitch devono restare TUTTE nel box — e' li' che si legge la
+    // debolezza. Il menu sotto e' gia' la domanda.
     pitch.forEach(line => {
-      steps.push({ push: [c("c-cyan", '"' + line + '"')], ms: 520,
+      steps.push({ push: [c("c-cyan", String(line).slice(0, 36))], ms: 520,
                    sound: () => TVAudio.keyPress() });
     });
-    steps.push({ push: ["", c("c-white", "COSA FAI?")], ms: 300 });
 
     seq(steps, () => arm());
   }
@@ -294,6 +365,11 @@
       steps.push({ log: [c("c-yellow", "LA GUARDIA E' CROLLATA!")],
                    ms: 600, flash: true, sound: () => TVAudio.fanfare() });
       steps.push.apply(steps, drainSteps("dispGuard", 0));
+      // lo sprite del founder cade fuori scena, riga dopo riga
+      for (let d = 1; d <= 8; d++) {
+        steps.push({ fn: (v => () => { B.fx.enemyDrop = v; })(d),
+                     ms: 80, sound: () => TVAudio.keyPress() });
+      }
       const crack = wrap(p.crack, 36).map(l => c("c-yellow", l));
       steps.push({ push: crack, ms: 1100 });
       steps.push({
@@ -304,8 +380,9 @@
           B.phase = "broken";
           snap();
         },
-        push: ["", c("c-white", "LA VERITA': ") + c("c-green", TVPitchBattle.truthFor(B.st)),
-               c("c-cyan", "+1 reputazione. Ora decidi.")],
+        push: [c("c-white", "LA VERITA':")]
+          .concat(wrap(TVPitchBattle.truthFor(B.st), 34).map(l => c("c-green", l)))
+          .concat([c("c-cyan", "+1 reputazione. Ora decidi.")]),
         ms: 700
       });
       seq(steps, () => arm());
@@ -319,9 +396,13 @@
     steps.push.apply(steps, drainSteps("dispCred", b.cred));
 
     if (b.over && !b.won) {
-      // sconfitta: fuori dal round
+      // sconfitta: fuori dal round — stavolta cadi tu
       steps.push({ log: [c("c-red", "LA TUA CREDIBILITA' E' A ZERO.")],
                    ms: 900, shake: true, sound: () => TVAudio.dirge() });
+      for (let d = 1; d <= 6; d++) {
+        steps.push({ fn: (v => () => { B.fx.playerDrop = v; })(d),
+                     ms: 90, sound: () => TVAudio.keyPress() });
+      }
       steps.push({ push: [c("c-white", "Il founder guarda l'orologio."),
                           c("c-yellow", '"Abbiamo altri 12 fondi in coda."')], ms: 1300 });
       steps.push({
@@ -367,7 +448,7 @@
     }
     TVState.save();
 
-    const result = rv.ddTexts.map(t => c("c-yellow", "! ") + c("c-white", t.slice(0, 36)));
+    const result = rv.ddTexts.map(t => c("c-yellow", "! ") + c("c-white", t.slice(0, 34)));
     seq([
       { log: [c("c-white", "Mandi gli analisti nel data room...")], ms: 800,
         sound: () => TVAudio.keyPress() },

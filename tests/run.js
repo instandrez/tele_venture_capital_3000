@@ -217,6 +217,8 @@ test("ogni founderProfile ha un profilo di battaglia completo", () => {
     for (let m = 1; m <= 4; m++)
       assert(p.react[m], "reazione mancante " + fp + " mossa " + m);
     assert(p.open.length > 0 && p.crack, "open/crack mancanti: " + fp);
+    assert(p.face && p.faceDown && p.hint, "face/hint mancanti: " + fp);
+    assert(TVPitchBattle.founderLabel(fp).length > 3, "label mancante: " + fp);
   });
 });
 

@@ -35,9 +35,14 @@
      attack/attackLine: il "contrattacco" di flavor a ogni turno.
      crack: cosa succede quando la guardia crolla.
      winLine/loseLine: chiusura della sessione. */
+  /* face: lo "sprite" del founder — un tell visivo che si impara
+     partita dopo partita, come i tipi dei Pokemon.
+     hint: il suggerimento che compri con la ref call. */
   const PROFILES = {
     ego: {
       weak: 4, resist: 3,
+      face: "( B-)", faceDown: "(x_x)",
+      hint: "il silenzio lo uccide",
       open: [
         "Questa non e' una startup.",
         "E' un movimento.",
@@ -57,6 +62,8 @@
     },
     hustle: {
       weak: 1, resist: 2,
+      face: "\\(^o^)/", faceDown: "(x_x)",
+      hint: "incalzalo sui numeri",
       open: [
         "Siamo in hypergrowth. Tipo, tanto.",
         "Questo e' il momento. IL momento.",
@@ -75,6 +82,8 @@
     },
     red_flag: {
       weak: 3, resist: 1,
+      face: "(o_O;)", faceDown: "(x_x)",
+      hint: "chiedi del team. Fidati.",
       open: [
         "Il passato e' passato.",
         "Parliamo di futuro.",
@@ -93,6 +102,8 @@
     },
     competent: {
       weak: 1, resist: 4,
+      face: "[o_o]", faceDown: "(x_x)",
+      hint: "i numeri: li ha davvero",
       open: [
         "Vi ho mandato il data room ieri.",
         "Partiamo dai numeri, se vi va.",
@@ -111,6 +122,8 @@
     },
     grit: {
       weak: 2, resist: 3,
+      face: "(o_o)9", faceDown: "(x_x)",
+      hint: "parlagli di mercato e rivali",
       open: [
         "Settimo anno. Le mode passano.",
         "Noi no.",
@@ -129,6 +142,8 @@
     },
     first_time: {
       weak: 4, resist: 1,
+      face: "(^_^;)", faceDown: "(x_x)",
+      hint: "lascia un silenzio: parlera'",
       open: [
         "Ok wow, grazie per il tempo. Davvero.",
         "Allora, la slide 1... no aspetta.",
@@ -189,6 +204,27 @@
     return b;
   }
 
+  /* Etichette per la ref call: cosa dicono gli ex colleghi. */
+  const FOUNDER_LABELS = {
+    grit:        "grit, esecuzione solida",
+    competent:   "competente, lucido",
+    hustle:      "hustler, vendita forte",
+    ego:         "ego pronunciato",
+    red_flag:    "red flag: gestione problematica",
+    first_time:  "first-time founder, in apprendimento"
+  };
+  function founderLabel(key) { return FOUNDER_LABELS[key] || "profilo non chiaro"; }
+
+  /* Il segnale co-investitori: chi altro è nel round. */
+  function coInvestSignal(st) {
+    if (["AI_FOUNDATION", "ROBOTICS_FRONTIER"].includes(st.sectorTag))
+      return "due top fund già dentro";
+    if (["BATTERY_INDUSTRIAL", "SPACE_DUAL_USE"].includes(st.sectorTag))
+      return "lead industriale già committed";
+    if (st.founderProfile === "red_flag") return "ex-investor sta uscendo";
+    return "round senza lead, in costruzione";
+  }
+
   /* La verità che il founder rivela quando crolla: gli unit economics
      reali. E' l'unica fonte di gioco per questo dato (la DD rivela
      rischio/upside, non i margini). */
@@ -203,6 +239,6 @@
 
   global.TVPitchBattle = {
     GUARD_MAX, CRED_MAX, MOVES, PROFILES,
-    newBattle, applyMove, truthFor
+    newBattle, applyMove, truthFor, founderLabel, coInvestSignal
   };
 })(typeof window !== "undefined" ? window : global);

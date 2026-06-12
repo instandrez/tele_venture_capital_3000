@@ -22,6 +22,8 @@
 
       const doRender = () => {
         actionHandler = null; // resetta su ogni cambio pagina
+        // la musica della pitch battle non sopravvive alla navigazione
+        if (TVAudio.stopBattleMusic) TVAudio.stopBattleMusic();
         // Stato PRIMA del render: se la pagina fa redirect durante il
         // render (goto annidato), il suo currentPage deve restare quello
         // finale e non essere sovrascritto da questo goto esterno.

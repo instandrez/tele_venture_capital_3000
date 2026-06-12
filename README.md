@@ -41,7 +41,7 @@ python -m http.server 5173
 | 160–179 | Cronaca Startup |
 | 180–189 | Corporate Watch |
 | 200 | Dealflow dell'anno (3 startup, stato delibera) |
-| 301–303 | Scheda startup (8 azioni, incluso PITCH LIVE) |
+| 301–303 | PITCH BATTLE (deal pendente) / scheda consultazione (deliberato) |
 | 400 | Portfolio (attive + chiuse) |
 | 450 | Follow-on round (pro-rata / raddoppio / diluizione) |
 | 500 | IC Moment / chiusura anno (effetti news + exit) |
@@ -81,12 +81,15 @@ tests/run.js          test del motore (node, zero dipendenze)
   rivelando sia il rischio sia l'upside.
 - DD e negoziazioni usano un RNG deterministico legato al `gameSeed`
   (`TVState.roll`): ricaricare il save non cambia gli esiti.
-- **PITCH LIVE** (azione 6 sulla scheda startup): battaglia a turni col
-  founder. Ogni `founderProfile` ha una mossa che lo fa crollare e una
-  che ti si ritorce contro; la debolezza si deduce dal pitch qualitativo
-  (`js/data/pitches.js`) o dalla ref call. Vincere rivela gli unit
-  economics reali (che nessuna DD dà) e migliora la negoziazione; il
-  pitch si consuma all'avvio, niente retry da save.
+- **PITCH BATTLE**: aprire una startup pendente (301-303) fa partire la
+  battaglia a turni col founder — musica in loop, animazioni a frame,
+  barre GUARDIA/CREDIBILITÀ. Tutte le azioni vivono nella battle:
+  domande (1-4, con debolezza/parata per `founderProfile`), DD, ref
+  call, negoziazione (più la guardia è bassa più funziona), co-invest,
+  passa, investi (term sheet 1/3/5M). Credibilità a zero = fuori dal
+  round, deal perso. La debolezza si deduce dal pitch qualitativo
+  (`js/data/pitches.js`) o dalla ref call. Lo stato della battaglia si
+  salva a ogni turno (`rv.snap`): niente retry da save.
 - **LP Call**: triggerate dalle condizioni di portfolio
   (`js/data/lpCalls.js`). Quando una call è attiva, le pagine principali
   mostrano il banner lampeggiante "((( LP IN LINEA )))"; chiudere l'anno

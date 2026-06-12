@@ -268,23 +268,23 @@ test("ogni founderProfile usato ha uno sprite (e c'e' il player)", () => {
   });
 });
 
-test("gli sprite sono griglie valide (10 col, solo palette)", () => {
+test("gli sprite sono griglie valide (18 col, solo palette)", () => {
   Object.keys(TVSprites.SPRITES).forEach(key => {
     const rows = TVSprites.SPRITES[key];
-    assert(rows.length >= 6, "sprite troppo basso: " + key);
+    assert(rows.length >= 5, "sprite troppo basso: " + key);
     rows.forEach((row, i) => {
-      eq(row.length, 10, key + " riga " + i + " larghezza");
-      assert(/^[.WYCGMRB]+$/.test(row),
+      eq(row.length, 18, key + " riga " + i + " larghezza");
+      assert(/^[.WYCGMRBSAKO]+$/.test(row),
         key + " riga " + i + ": carattere fuori palette");
     });
   });
 });
 
-test("spriteRows rende 20 colonne visibili per riga", () => {
+test("spriteRows rende 18 colonne visibili per riga", () => {
   const strip = h => String(h).replace(/<[^>]*>/g, "");
   Object.keys(TVSprites.SPRITES).forEach(key => {
     TVSprites.spriteRows(key).forEach((html, i) => {
-      eq(strip(html).length, 20, key + " riga html " + i);
+      eq(strip(html).length, 18, key + " riga html " + i);
     });
   });
 });

@@ -1,8 +1,13 @@
 /* =========================================================
-   TELE VENTURE CAPITAL 3000 — Stile Televideo classico
+   TELE VENTURE CAPITAL 3000 — Televideo su tubo catodico
    Palette teletext: nero / bianco / giallo / ciano / verde
-                     magenta / rosso / blu
-   Griglia 40 colonne × 24 righe, font monospace VT323
+                     magenta / rosso / blu (+ tinte sprite)
+   Griglia 40 colonne × 24 righe, font monospace VT323.
+
+   ASPECT RATIO: come sui TV veri, il segnale a 40 colonne è
+   STIRATO in orizzontale fino al 4:3 (scaleX sul tubo): i
+   caratteri diventano larghi come sul Televideo originale e
+   i pixel degli sprite quasi quadrati.
    ========================================================= */
 
 :root {
@@ -17,15 +22,21 @@
   --tv-header-bg: #1a1aff;
   --tv-footer-bg: #b00000;
 
+  /* tinte extra per gli sprite (palette da 16-bit) */
+  --px-skin: #f2c094;
+  --px-silver: #b8bcc4;
+  --px-dark: #4a4e58;
+  --px-brown: #a8632f;
+  --px-dim: #1d4d4a;
+
   --cols: 40;
   --rows: 24;
   --content-rows: 22;    /* righe disponibili per il body pagina */
 
-  /* Dimensione fluida: il televisore riempie il viewport.
-     VT323 avanza di 0.5em a carattere → 40 col = 20em; 24 righe
-     a 0.95em = 22.8em. I due vincoli (altezza/larghezza) danno
-     il font-size massimo che ci sta. */
-  --fs: clamp(14px, min(3.9vh, 4.4vw), 80px);
+  /* Geometria: 40 col × 0.5em = 20em naturali; 24 righe × 0.95em
+     = 22.8em. Lo stretch porta la larghezza visiva a ~4:3. */
+  --stretch: 1.5;
+  --fs: clamp(10px, min(3.8vh, 2.95vw), 72px);
   --cell: calc(var(--fs) * 0.95);   /* altezza riga */
 }
 
@@ -35,14 +46,14 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  background: #0a0a0a;
+  background: #07080b;
   color: var(--tv-white);
   font-family: "VT323", "Courier New", "Lucida Console", monospace;
   font-size: var(--fs);
   line-height: var(--cell);
 }
 
-/* CRT outer frame */
+/* la stanza buia dietro il televisore */
 #crt {
   min-height: 100vh;
   display: flex;
@@ -50,36 +61,65 @@ html, body {
   justify-content: center;
   padding: 8px;
   background:
-    radial-gradient(ellipse at center, #1a1a1a 0%, #000 70%);
+    radial-gradient(ellipse at 50% 38%, #161a22 0%, #090b10 55%, #030305 100%);
 }
 
+/* il tubo catodico: cornice plastica, vetro, stretch 4:3 */
 #screen {
   position: relative;
-  /* 40 col × 0.5em + padding contenuto 0.8em + cornice 0.6em */
-  width: calc(20em + 0.8em + 0.6em);
+  width: calc(20em + 0.8em + 1.1em);
   background: var(--tv-bg);
-  border: 0.3em solid #2a2a2a;
-  border-radius: 0.3em;
+  transform: scaleX(var(--stretch));
+  transform-origin: center;
+  border: 0.55em solid;
+  border-color: #32333a #26272d #1b1c21 #26272d;
+  border-radius: 1em / 1.3em;
   box-shadow:
-    0 0 24px rgba(0, 255, 255, 0.12),
-    inset 0 0 60px rgba(0, 0, 0, 0.6);
+    0 0 0 0.14em #0b0b0d,                 /* bordo esterno della scocca */
+    0 1.4em 3.5em rgba(0, 0, 0, 0.75),    /* ombra in sala */
+    0 0 4em rgba(80, 140, 255, 0.14),     /* alone del tubo acceso */
+    inset 0 0 4.5em rgba(0, 0, 0, 0.55);  /* curvatura interna */
   overflow: hidden;
 }
 
-/* scanlines leggere */
+/* vetro: vignettatura curva + riflesso diagonale */
+#screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 12;
+  border-radius: 0.6em / 0.9em;
+  background:
+    radial-gradient(ellipse at center,
+      rgba(0, 0, 0, 0) 56%, rgba(0, 0, 0, 0.26) 86%, rgba(0, 0, 0, 0.52) 100%),
+    linear-gradient(112deg,
+      rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.03) 14%,
+      rgba(255, 255, 255, 0) 26%);
+}
+
+/* fosfori: scanline orizzontali + griglia RGB verticale */
 #screen::after {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: repeating-linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0) 0px,
-    rgba(0, 0, 0, 0) 2px,
-    rgba(0, 0, 0, 0.18) 3px
-  );
   z-index: 10;
+  background:
+    repeating-linear-gradient(to bottom,
+      rgba(0, 0, 0, 0) 0px, rgba(0, 0, 0, 0) 2px, rgba(0, 0, 0, 0.22) 3px),
+    repeating-linear-gradient(to right,
+      rgba(255, 60, 60, 0.04) 0px, rgba(255, 60, 60, 0.04) 1px,
+      rgba(60, 255, 60, 0.03) 1px, rgba(60, 255, 60, 0.03) 2px,
+      rgba(60, 100, 255, 0.05) 2px, rgba(60, 100, 255, 0.05) 3px);
 }
+
+/* il tubo "respira" appena, come un CRT vero */
+@keyframes crt-breathe {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.965; }
+}
+#screen { animation: crt-breathe 3.4s ease-in-out infinite; }
 
 /* ---------- HEADER ---------- */
 #tv-header {
@@ -95,7 +135,7 @@ html, body {
 }
 .hdr-left { color: var(--tv-yellow); }
 .hdr-right { color: var(--tv-white); }
-.hdr-right #hdr-page { color: var(--tv-white); margin-right: 12px; }
+.hdr-right #hdr-page { color: var(--tv-white); margin-right: 0.6em; }
 .hdr-right #hdr-clock { color: var(--tv-cyan); }
 
 /* ---------- CONTENT ---------- */
@@ -106,6 +146,8 @@ html, body {
   overflow: hidden;
   white-space: pre;          /* preserva layout monospace */
   word-spacing: 0;
+  /* bloom dei fosfori: bagliore tenue attorno a ogni glifo */
+  filter: drop-shadow(0 0 0.22em rgba(255, 255, 255, 0.16));
 }
 
 /* ---------- FOOTER ---------- */
@@ -134,13 +176,20 @@ html, body {
 .c-red     { color: var(--tv-red); }
 .c-blue    { color: var(--tv-blue); }
 
+/* tinte sprite (16-bit) */
+.c-skin    { color: var(--px-skin); }
+.c-silver  { color: var(--px-silver); }
+.c-dark    { color: var(--px-dark); }
+.c-brown   { color: var(--px-brown); }
+.c-dim     { color: var(--px-dim); }
+
 /* sfondi (per titoli sezione tipo header colorati) */
-.bg-blue    { background: var(--tv-header-bg); color: var(--tv-white); padding: 0 4px; }
-.bg-red     { background: var(--tv-footer-bg); color: var(--tv-white); padding: 0 4px; }
-.bg-cyan    { background: var(--tv-cyan); color: #000; padding: 0 4px; }
-.bg-yellow  { background: var(--tv-yellow); color: #000; padding: 0 4px; }
-.bg-green   { background: var(--tv-green); color: #000; padding: 0 4px; }
-.bg-magenta { background: var(--tv-magenta); color: #000; padding: 0 4px; }
+.bg-blue    { background: var(--tv-header-bg); color: var(--tv-white); padding: 0 0.2em; }
+.bg-red     { background: var(--tv-footer-bg); color: var(--tv-white); padding: 0 0.2em; }
+.bg-cyan    { background: var(--tv-cyan); color: #000; padding: 0 0.2em; }
+.bg-yellow  { background: var(--tv-yellow); color: #000; padding: 0 0.2em; }
+.bg-green   { background: var(--tv-green); color: #000; padding: 0 0.2em; }
+.bg-magenta { background: var(--tv-magenta); color: #000; padding: 0 0.2em; }
 
 /* lampeggio classico Ultim'Ora */
 .blink { animation: blink 0.9s steps(2, start) infinite; }
@@ -171,4 +220,3 @@ html, body {
   0%   { filter: invert(1); }
   100% { filter: invert(0); }
 }
-

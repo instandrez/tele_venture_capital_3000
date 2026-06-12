@@ -82,11 +82,15 @@ tests/run.js          test del motore (node, zero dipendenze)
   rivelando sia il rischio sia l'upside.
 - DD e negoziazioni usano un RNG deterministico legato al `gameSeed`
   (`TVState.roll`): ricaricare il save non cambia gli esiti.
+- **Resa CRT 4:3**: come sui TV veri, le 40 colonne del teletext sono
+  stirate in orizzontale fino al 4:3 (`--stretch` in `televideo.css`):
+  caratteri larghi, vetro bombato, scanline e griglia RGB.
 - **PITCH BATTLE**: aprire una startup pendente (301-303) fa partire la
   battaglia a turni col founder — arena stile console portatile anni
-  '90: sprite pixel-art "mosaico teletext" del founder in alto a destra
-  (con targhetta `Stage Lv.<valuation>`), tu di spalle in basso a
-  sinistra, dialog box bordata, musica in loop. Gli sprite
+  '90: sprite pixel-art 18×9 del founder (palette estesa con tono
+  pelle) sulla sua pedana in alto a destra, targhetta incorniciata
+  `Stage Lv.<valuation>`, tu di spalle in basso a sinistra, idle bob,
+  dialog box bordata, musica in loop. Gli sprite
   (`js/data/founderSprites.js`) sono il tipo del founder: si imparano
   a riconoscere partita dopo partita. Tutte le azioni vivono nella
   battle: domande (1-4, con debolezza/parata per `founderProfile`),

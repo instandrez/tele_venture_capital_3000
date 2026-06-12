@@ -44,14 +44,26 @@
       dispGuard: battle.guard,
       dispCred: battle.cred,
       /* fx sprite: enemyReveal = righe materializzate dall'alto,
-         enemyDrop/playerDrop = caduta stile svenimento */
+         enemyDrop/playerDrop = caduta stile svenimento,
+         bob = ondeggiamento idle (0/1) */
       fx: {
-        enemyReveal: resumed ? 8 : 0,
-        enemyDrop: (battle.over && battle.won) ? 8 : 0,
-        playerDrop: 0
+        enemyReveal: resumed ? 9 : 0,
+        enemyDrop: (battle.over && battle.won) ? 9 : 0,
+        playerDrop: 0,
+        bob: 0
       },
       busy: false
     };
+
+    // idle bob: il founder ondeggia in attesa, come su console
+    const t = setInterval(function () {
+      if (!B || B.bobTimer !== t || !alive()) { clearInterval(t); return; }
+      if (!B.busy && !B.battle.over && B.fx.enemyReveal >= 9) {
+        B.fx.bob = B.fx.bob ? 0 : 1;
+        draw();
+      }
+    }, 680);
+    B.bobTimer = t;
 
     TVAudio.startBattleMusic();
 
@@ -149,10 +161,20 @@
     return out;
   }
 
-  /* ARENA stile battaglia portatile anni '90 (11 righe × 40 col):
-     founder in alto a destra con targhetta a sinistra (il livello
-     E' la valuation), tu di spalle in basso a sinistra con la tua
-     targhetta a destra. */
+  /* ARENA stile battaglia portatile anni '90 (12 righe × 40 col):
+     founder in alto a destra sulla sua pedana, targhetta
+     incorniciata a sinistra (il livello E' la valuation); tu di
+     spalle in basso a sinistra, la tua targhetta a destra. */
+  const PEDANA = "..░░░░░░░░░░░░░░..";
+
+  function pedanaHtml() {
+    return c("c-dim", PEDANA.replace(/\./g, " "));
+  }
+
+  function plateRow(inner) {
+    return c("c-white", "│") + padVis(inner, 16) + c("c-white", "│");
+  }
+
   function arenaLines() {
     const r = TVRender;
     const s = TVState.current;
@@ -161,38 +183,43 @@
     const p = TVPitchBattle.PROFILES[b.profile];
     const fx = B.fx;
 
-    const eRows = TVSprites.spriteRows(b.profile); // 8 righe × 20 col
-    const pRows = TVSprites.spriteRows("player");  // 6 righe × 20 col
+    const eRows = TVSprites.spriteRows(b.profile); // 9 righe × 18 col
+    const pRows = TVSprites.spriteRows("player");  // 5 righe × 18 col
+    const bob = (!b.over && fx.enemyReveal >= 9) ? (fx.bob || 0) : 0;
 
-    // colonna destra: sprite founder (righe 0-7) + targhetta tua (8-10)
+    // colonna destra: sprite founder (0-8), pedana (9), targhetta (10-11)
     const right = [];
-    for (let i = 0; i < 8; i++) {
-      let cell = "";
-      const idx = i - (fx.enemyDrop || 0);          // cade verso il basso
-      if (idx >= 0 && idx < Math.min(8, fx.enemyReveal)) cell = eRows[idx];
-      right.push(cell);
+    const eShift = (fx.enemyDrop || 0) + bob;
+    for (let i = 0; i < 9; i++) {
+      const idx = i - eShift;
+      right.push(idx >= 0 && idx < Math.min(9, fx.enemyReveal) ? " " + eRows[idx] : "");
     }
-    if (b.over && b.won && (fx.enemyDrop || 0) >= 8) {
+    right.push(" " + pedanaHtml());
+    if (b.over && b.won && (fx.enemyDrop || 0) >= 9) {
       right[3] = "      " + c("c-yellow", p.faceDown);
       right[4] = "      " + c("c-magenta", "crollato");
     }
     right.push(c("c-white", "TU — GENERAL PARTNER"));
-    right.push("  " + c("c-cyan", "CRED ") + bar(B.dispCred, TVPitchBattle.CRED_MAX, "c-green"));
-    right.push("  " + c("c-white", "CASH " + r.eur(s.cash)));
+    right.push(c("c-cyan", "C:") + bar(B.dispCred, TVPitchBattle.CRED_MAX, "c-green") +
+               " " + c("c-white", r.eur(s.cash)));
 
-    // colonna sinistra: targhetta founder (1-4) + tuo sprite (5-10)
-    const left = ["", "", "", "", "", "", "", "", "", "", ""];
-    left[1] = " " + c("c-yellow", st.name.slice(0, 18));
-    left[2] = " " + c("c-white", (st.stage + " Lv." + r.eur(st.valuation)).slice(0, 18));
-    left[3] = " " + c("c-cyan", "GUARDIA");
-    left[4] = " " + bar(B.dispGuard, TVPitchBattle.GUARD_MAX, "c-yellow");
-    for (let i = 0; i < 6; i++) {
-      const idx = i - (fx.playerDrop || 0);
-      left[5 + i] = (idx >= 0 && idx < 6 && (fx.playerDrop || 0) < 6) ? pRows[idx] : "";
+    // colonna sinistra: targhetta founder incorniciata (0-4),
+    // tuo sprite (6-10), pedana (11)
+    const left = ["", "", "", "", "", "", "", "", "", "", "", ""];
+    left[0] = c("c-white", "┌" + "─".repeat(16) + "┐");
+    left[1] = plateRow(c("c-yellow", st.name.slice(0, 16)));
+    left[2] = plateRow(c("c-white", (st.stage + " Lv." + r.eur(st.valuation)).slice(0, 16)));
+    left[3] = plateRow(c("c-cyan", "G:") + bar(B.dispGuard, TVPitchBattle.GUARD_MAX, "c-yellow"));
+    left[4] = c("c-white", "└" + "─".repeat(16) + "┘");
+    const pShift = fx.playerDrop || 0;
+    for (let i = 0; i < 5; i++) {
+      const idx = i - pShift;
+      left[6 + i] = (idx >= 0 && idx < 5) ? " " + pRows[idx] : "";
     }
+    left[11] = " " + pedanaHtml();
 
     const out = [];
-    for (let i = 0; i < 11; i++) out.push(padVis(left[i], 20) + (right[i] || ""));
+    for (let i = 0; i < 12; i++) out.push(padVis(left[i], 20) + (right[i] || ""));
     return out;
   }
 
@@ -205,7 +232,6 @@
     const rv = B.rv;
 
     const lines = [];
-    lines.push(r.bg("bg-magenta", "  " + r.pad("PITCH BATTLE ─ " + st.name.toUpperCase(), 38)));
     arenaLines().forEach(l => lines.push(l));
 
     // dialog box bordata (4 righe di log)
@@ -304,10 +330,10 @@
         sound: () => TVAudio.pageChange() }
     ];
     // lo sprite si materializza riga per riga (decode teletext)
-    for (let i = 1; i <= 8; i++) {
+    for (let i = 1; i <= 9; i++) {
       steps.push({
         fn: (v => () => { B.fx.enemyReveal = v; })(i),
-        ms: 110, sound: () => TVAudio.keyPress()
+        ms: 100, sound: () => TVAudio.keyPress()
       });
     }
     steps.push({ log: [c("c-yellow", "Un FOUNDER selvaggio ti pitcha:")], ms: 650,
@@ -365,10 +391,10 @@
       steps.push({ log: [c("c-yellow", "LA GUARDIA E' CROLLATA!")],
                    ms: 600, flash: true, sound: () => TVAudio.fanfare() });
       steps.push.apply(steps, drainSteps("dispGuard", 0));
-      // lo sprite del founder cade fuori scena, riga dopo riga
-      for (let d = 1; d <= 8; d++) {
+      // lo sprite del founder cade dietro la pedana, riga per riga
+      for (let d = 1; d <= 9; d++) {
         steps.push({ fn: (v => () => { B.fx.enemyDrop = v; })(d),
-                     ms: 80, sound: () => TVAudio.keyPress() });
+                     ms: 75, sound: () => TVAudio.keyPress() });
       }
       const crack = wrap(p.crack, 36).map(l => c("c-yellow", l));
       steps.push({ push: crack, ms: 1100 });
@@ -399,7 +425,7 @@
       // sconfitta: fuori dal round — stavolta cadi tu
       steps.push({ log: [c("c-red", "LA TUA CREDIBILITA' E' A ZERO.")],
                    ms: 900, shake: true, sound: () => TVAudio.dirge() });
-      for (let d = 1; d <= 6; d++) {
+      for (let d = 1; d <= 5; d++) {
         steps.push({ fn: (v => () => { B.fx.playerDrop = v; })(d),
                      ms: 90, sound: () => TVAudio.keyPress() });
       }
@@ -631,6 +657,7 @@
 
   function exitToDealflow() {
     TVAudio.stopBattleMusic();
+    if (B && B.bobTimer) clearInterval(B.bobTimer);
     B = null;
     TVRouter.goto(200, { skipLoading: true });
   }

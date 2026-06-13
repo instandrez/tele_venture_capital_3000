@@ -7,7 +7,8 @@
      .  trasparente
      W bianco   Y giallo   C ciano    G verde
      M magenta  R rosso    B blu
-     S pelle    A argento  K scuro    O castano
+     S pelle    L pelle chiara (luce)  D pelle scura (ombra)
+     A argento  K scuro    O castano
 
    Gli sprite sono il "tipo" del founder: si imparano partita dopo
    partita, come le silhouette dei mostri tascabili. Il giocatore
@@ -19,7 +20,8 @@
   const PAL = {
     W: "c-white", Y: "c-yellow", C: "c-cyan", G: "c-green",
     M: "c-magenta", R: "c-red", B: "c-blue",
-    S: "c-skin", A: "c-silver", K: "c-dark", O: "c-brown"
+    S: "c-skin", L: "c-skin-l", D: "c-skin-d",
+    A: "c-silver", K: "c-dark", O: "c-brown"
   };
 
   const SPRITES = {
@@ -28,11 +30,11 @@
     ego: [
       "......KKKKKK......",
       ".....KKKKKKKK.....",
-      "....SSSSSSSSSS....",
+      "....LSSSSSSSSD....",
       "....KKCKKKKKCK....",
-      "....SSSSSSSSSS....",
-      "....SSSSSRRSSS....",
-      ".....SSSSSSSS.....",
+      "....LSSSSSSSSD....",
+      "....LSSSSRRSSD....",
+      ".....LSSSSSSD.....",
       "...KKKKKKKKKKKK...",
       "..KKKKKKKKKKKKKK.."
     ],
@@ -42,10 +44,10 @@
       "....RRRRRRRR......",
       "...RRRRRRRRRR.....",
       "...RRRRRRRRRRRRR..",
-      "....SSSSSSSSSS....",
-      "....SSKSSSSKSS....",
+      "....LSSSSSSSSD....",
+      "....LSKSSSSKSD....",
       "....SWWWWWWWWS....",
-      ".....SSSSSSSS.....",
+      ".....LSSSSSSD.....",
       "...CCCCCCCCCCCC...",
       "..CCCWCCCCCCWCCC.."
     ],
@@ -54,11 +56,11 @@
     red_flag: [
       "....KK......KK....",
       "....KSSSSSSSSK....",
-      "....SSSSSSSSSS....",
+      "....LSSSSSSSSD....",
       "....SKKSSKKSSS..C.",
-      "....SSSSSSSSSS....",
-      "....SSRRRSSSSS....",
-      ".....SSSSSSSS.....",
+      "....LSSSSSSSSD....",
+      "....LSRRRSSSSD....",
+      ".....LSSSSSSD.....",
       "...WWWWWRRWWWWW...",
       "..WWWWWWWRRWWWWW.."
     ],
@@ -67,11 +69,11 @@
     competent: [
       ".....OOOOOOOO.....",
       "....OOOOOOOOOO....",
-      "....SSSSSSSSSS....",
+      "....LSSSSSSSSD....",
       "....SCKCSSCKCS....",
-      "....SSSSSSSSSS....",
-      "....SSSRRRSSSS....",
-      ".....SSSSSSSS.....",
+      "....LSSSSSSSSD....",
+      "....LSSRRRSSSD....",
+      ".....LSSSSSSD.....",
       "...BBBWWWWWWBBB...",
       "..BBBBBWWWWBBBBB.."
     ],
@@ -80,11 +82,11 @@
     grit: [
       ".....AAAAAAAA.....",
       "....AAAAAAAAAA....",
-      "....SSSSSSSSSS....",
-      "....SSKSSSSKSS....",
-      "....SSSSSSSSSS....",
-      "....SSKKKKKSSS....",
-      "....SSSSSSSSSS....",
+      "....LSSSSSSSSD....",
+      "....LSKSSSSKSD....",
+      "....LSSSSSSSSD....",
+      "....LSKKKKKSSD....",
+      "....LSSSSSSSSD....",
       "...GGGGGGGGGGGG...",
       "..GGGSSGGGGSSGGG.."
     ],
@@ -93,11 +95,11 @@
     first_time: [
       "....O.OO.OO.O.....",
       "....OOOOOOOOOO....",
-      "....SSSSSSSSSS....",
+      "....LSSSSSSSSD....",
       "....SWKSSSWKSS..C.",
-      "....SSSSSSSSSS....",
-      "....SSRSRSRSSS....",
-      ".....SSSSSSSS.....",
+      "....LSSSSSSSSD....",
+      "....LSRSRSRSSD....",
+      ".....LSSSSSSD.....",
       "...YYYYYYYYYYYY...",
       "..YYYYYWWYYYYYYY.."
     ],

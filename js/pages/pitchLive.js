@@ -200,7 +200,7 @@
       right[4] = "      " + c("c-magenta", "crollato");
     }
     right.push(c("c-white", "TU — GENERAL PARTNER"));
-    right.push(c("c-cyan", "C:") + bar(B.dispCred, TVPitchBattle.CRED_MAX, "c-green") +
+    right.push(c("c-cyan", "PV") + bar(B.dispCred, TVPitchBattle.CRED_MAX, "c-green") +
                " " + c("c-white", r.eur(s.cash)));
 
     // colonna sinistra: targhetta founder incorniciata (0-4),
@@ -209,7 +209,7 @@
     left[0] = c("c-white", "┌" + "─".repeat(16) + "┐");
     left[1] = plateRow(c("c-yellow", st.name.slice(0, 16)));
     left[2] = plateRow(c("c-white", (st.stage + " Lv." + r.eur(st.valuation)).slice(0, 16)));
-    left[3] = plateRow(c("c-cyan", "G:") + bar(B.dispGuard, TVPitchBattle.GUARD_MAX, "c-yellow"));
+    left[3] = plateRow(c("c-cyan", "PV") + bar(B.dispGuard, TVPitchBattle.GUARD_MAX, "c-yellow"));
     left[4] = c("c-white", "└" + "─".repeat(16) + "┘");
     const pShift = fx.playerDrop || 0;
     for (let i = 0; i < 5; i++) {
@@ -356,9 +356,11 @@
   function doQuestion(moveId) {
     const b = B.battle;
     const p = TVPitchBattle.PROFILES[b.profile];
+    const guardBefore = b.guard;
     const credBefore = b.cred;
 
     TVPitchBattle.applyMove(b, moveId);
+    const guardHit = guardBefore - b.guard;   // PV tolti al founder
 
     const youLine = c("c-white", "TU usi ") + c("c-yellow", MOVE_NAMES[moveId]) + c("c-white", "!");
     const steps = [
@@ -368,16 +370,19 @@
       { log: [youLine, c("c-cyan", "                  ►►►")], ms: 130 }
     ];
 
-    // impatto
+    // impatto — col numero di danno, gusto Pokemon
     if (b.lastOutcome === "weak") {
-      steps.push({ log: [youLine, c("c-green", "COLPITO! E' super efficace!")],
+      steps.push({ log: [youLine, c("c-green", "COLPITO! E' super efficace!  ") +
+                         c("c-yellow", "-" + guardHit + " PV")],
                    ms: 500, shake: true, sound: () => TVAudio.success() });
       steps.push.apply(steps, drainSteps("dispGuard", b.guard));
     } else if (b.lastOutcome === "resist") {
-      steps.push({ log: [youLine, c("c-red", "PARATA! Ti si ritorce contro!")],
+      steps.push({ log: [youLine, c("c-red", "PARATA! Ti si ritorce contro!  ") +
+                         c("c-yellow", "-2 PV")],
                    ms: 500, shake: true, sound: () => TVAudio.error() });
     } else {
-      steps.push({ log: [youLine, c("c-cyan", "Colpo messo a segno.")],
+      steps.push({ log: [youLine, c("c-cyan", "Colpo a segno.  ") +
+                         c("c-yellow", "-" + guardHit + " PV")],
                    ms: 450, sound: () => TVAudio.pageChange() });
       steps.push.apply(steps, drainSteps("dispGuard", b.guard));
     }
@@ -415,8 +420,9 @@
       return;
     }
 
-    // contrattacco del founder
-    steps.push({ push: ["", c("c-magenta", "FOUNDER usa " + p.attack + "!"),
+    // contrattacco del founder (ti lima 1 PV: il tempo della sala)
+    steps.push({ push: ["", c("c-magenta", "FOUNDER usa " + p.attack + "!  ") +
+                        c("c-yellow", "-1 PV"),
                         c("c-white", p.attackLine)],
                  ms: 800, sound: () => TVAudio.error() });
     steps.push.apply(steps, drainSteps("dispCred", b.cred));

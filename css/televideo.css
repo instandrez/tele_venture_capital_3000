@@ -24,7 +24,9 @@
   --tv-footer-bg: #b80018;
 
   /* tinte sprite (palette da 16-bit) */
-  --px-skin: #f2c094;
+  --px-skin: #f0bc8c;
+  --px-skin-l: #ffe0bb;   /* luce sul lato sinistro del volto */
+  --px-skin-d: #c2854f;   /* ombra sul lato destro */
   --px-silver: #b8bcc4;
   --px-dark: #2c3040;
   --px-brown: #a8632f;
@@ -252,6 +254,8 @@ body {
 
 /* tinte sprite (16-bit) */
 .c-skin    { color: var(--px-skin); }
+.c-skin-l  { color: var(--px-skin-l); }
+.c-skin-d  { color: var(--px-skin-d); }
 .c-silver  { color: var(--px-silver); }
 .c-dark    { color: var(--px-dark); }
 .c-brown   { color: var(--px-brown); }

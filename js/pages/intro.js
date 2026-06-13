@@ -27,23 +27,26 @@
   }
 
   // ---------- frames ----------
+  /* logo a blocchi VC3000, stile copertina cartuccia: "VC" giallo,
+     "3000" arancione, con riga d'ombra sotto per dare volume. */
   function frameLogo() {
     const r = TVRender;
-    const logo = [
-      "████████ ██    ██ ██████",
-      "   ██    ██    ██ ██",
-      "   ██    ██    ██ ██",
-      "   ██     ██  ██  ██",
-      "   ██      ████   ██████"
-    ];
+    const V  = ["█   █", "█   █", "█   █", " █ █ ", "  █  "];
+    const C  = [" ███ ", "█   █", "█    ", "█   █", " ███ "];
+    const N3 = ["████ ", "   ██", " ███ ", "   ██", "████ "];
+    const O0 = [" ███ ", "██ ██", "██ ██", "██ ██", " ███ "];
+
     const lines = ["", ""];
-    logo.forEach(l => lines.push("        " + r.color("c-cyan", l)));
+    for (let i = 0; i < 5; i++) {
+      const vc   = V[i] + " " + C[i];
+      const nums = N3[i] + " " + O0[i] + " " + O0[i] + " " + O0[i];
+      lines.push("  " + r.color("c-yellow", vc) + " " + r.color("c-orange", nums));
+    }
+    // riga d'ombra: la base delle lettere ripetuta in blu scuro
+    lines.push("  " + r.color("c-blue", "▀▀▀▀▀ ▀▀▀▀▀ ▀▀▀▀ ▀▀▀▀▀ ▀▀▀▀▀ ▀▀▀▀▀"));
     lines.push("");
-    lines.push(r.center('<span class="blink c-yellow">* 3 0 0 0 *</span>'));
-    lines.push("");
-    lines.push(r.center(r.color("c-white", "TELE VENTURE CAPITAL")));
+    lines.push(r.center(r.color("c-white", "VENTURE CAPITAL SIMULATOR")));
     lines.push(r.center(r.color("c-magenta", "~ il teletext del capitale di rischio ~")));
-    lines.push("");
     lines.push("");
     lines.push(r.center(r.color("c-green", "IL TELEVIDEO PRESENTA")));
     return lines;

@@ -82,15 +82,20 @@ tests/run.js          test del motore (node, zero dipendenze)
   rivelando sia il rischio sia l'upside.
 - DD e negoziazioni usano un RNG deterministico legato al `gameSeed`
   (`TVState.roll`): ricaricare il save non cambia gli esiti.
-- **Resa CRT 4:3**: come sui TV veri, le 40 colonne del teletext sono
-  stirate in orizzontale fino al 4:3 (`--stretch` in `televideo.css`):
-  caratteri larghi, vetro bombato, scanline e griglia RGB.
+- **Resa CRT 4:3**: il mobile del TV (`#crt`) resta dritto; lo stretch
+  4:3 vive solo sul vetro (`#screen`, `--stretch` in `televideo.css`)
+  ed è gentile, mascherato da scanline + griglia RGB. Scocca plastica,
+  vetro bombato, riflesso, vignettatura, LED di accensione.
+- **Barra FastText**: i tasti colorati `100/200/300/400/500` in fondo
+  a ogni pagina, come il Televideo vero.
+- **Logo VC3000** a blocchi pixel (sigla 105), stile copertina cartuccia.
 - **PITCH BATTLE**: aprire una startup pendente (301-303) fa partire la
   battaglia a turni col founder — arena stile console portatile anni
-  '90: sprite pixel-art 18×9 del founder (palette estesa con tono
-  pelle) sulla sua pedana in alto a destra, targhetta incorniciata
-  `Stage Lv.<valuation>`, tu di spalle in basso a sinistra, idle bob,
-  dialog box bordata, musica in loop. Gli sprite
+  '90: sprite pixel-art 18×9 del founder (palette 16-bit ombreggiata,
+  luce/ombra sul volto) sulla sua pedana in alto a destra, targhetta
+  incorniciata `Stage Lv.<valuation>` con barra `PV`, tu di spalle in
+  basso a sinistra, idle bob, dialog box bordata coi numeri di danno
+  (`-4 PV` super efficace, `-1 PV` contrattacco), musica in loop. Gli sprite
   (`js/data/founderSprites.js`) sono il tipo del founder: si imparano
   a riconoscere partita dopo partita. Tutte le azioni vivono nella
   battle: domande (1-4, con debolezza/parata per `founderProfile`),

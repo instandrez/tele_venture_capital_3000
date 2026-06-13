@@ -274,7 +274,7 @@ test("gli sprite sono griglie valide (18 col, solo palette)", () => {
     assert(rows.length >= 5, "sprite troppo basso: " + key);
     rows.forEach((row, i) => {
       eq(row.length, 18, key + " riga " + i + " larghezza");
-      assert(/^[.WYCGMRBSAKO]+$/.test(row),
+      assert(/^[.WYCGMRBSLDAKO]+$/.test(row),
         key + " riga " + i + ": carattere fuori palette");
     });
   });

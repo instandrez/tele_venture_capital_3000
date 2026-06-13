@@ -36,14 +36,14 @@
   --rows: 24;
   --content-rows: 22;    /* righe disponibili per il body pagina */
 
-  /* Geometria. VT323 avanza ~0.55em: 40 col ≈ 22em. Con righe
-     un po' compatte il vetro è quasi 4:3 già a stretch 1.22. */
-  /* il vetro stirato è largo ~27.8em e alto ~24em col mento:
-     i cap vh/vw tengono mobile + chin dentro al viewport. */
-  --fs: clamp(9px, min(4.0vh, 3.35vw), 60px);
-  --cell: calc(var(--fs) * 0.84);    /* altezza riga */
-  --stretch: 1.22;                   /* solo sul vetro */
-  --bezel: 0.75em;                   /* spessore cornice plastica */
+  /* Geometria — NIENTE stretch: i pixel restano quadrati e nitidi
+     (la pixel art stirata sembrava sbavata). Il formato largo ~4:3
+     si ottiene stringendo le righe: VT323 avanza ~0.55em → 40 col
+     ≈ 22em di larghezza; 24 righe a 0.74em ≈ 17.8em di altezza. */
+  --fs: clamp(10px, min(4.3vh, 4.0vw), 64px);
+  --cell: calc(var(--fs) * 0.74);    /* altezza riga compatta */
+  --stretch: 1;                      /* 1 = pixel quadrati */
+  --bezel: 0.7em;                    /* spessore cornice plastica */
 }
 
 * { box-sizing: border-box; }
@@ -156,7 +156,8 @@ body {
   mix-blend-mode: normal;
 }
 
-/* vetro bombato: vignettatura curva + riflesso diagonale */
+/* vetro bombato: solo vignettatura morbida agli angoli.
+   (niente riflesso diagonale: creava finte barre verticali) */
 #screen::before {
   content: "";
   position: absolute;
@@ -164,11 +165,8 @@ body {
   pointer-events: none;
   z-index: 11;
   background:
-    radial-gradient(ellipse 100% 100% at center,
-      rgba(0,0,0,0) 54%, rgba(0,0,0,0.30) 84%, rgba(0,0,0,0.6) 100%),
-    linear-gradient(118deg,
-      rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 12%,
-      rgba(255,255,255,0) 24%);
+    radial-gradient(ellipse 118% 112% at center,
+      rgba(0,0,0,0) 66%, rgba(0,0,0,0.22) 90%, rgba(0,0,0,0.45) 100%);
 }
 
 /* ---------- HEADER ---------- */

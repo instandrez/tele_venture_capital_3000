@@ -25,92 +25,93 @@
   };
 
   const SPRITES = {
-    /* ego — riga perfetta, occhiali da sole INDOOR (riflesso ciano),
+    /* ego — capelli impomatati, occhiali da sole INDOOR (banda nera),
        dolcevita nero. Monocromo come il suo personal brand. */
     ego: [
       "......KKKKKK......",
       ".....KKKKKKKK.....",
+      "....KKSSSSSSKK....",
       "....LSSSSSSSSD....",
-      "....KKCKKKKKCK....",
-      "....LSSSSSSSSD....",
-      "....LSSSSRRSSD....",
-      ".....LSSSSSSD.....",
-      "...KKKKKKKKKKKK...",
-      "..KKKKKKKKKKKKKK.."
+      "....KKKKKKKKKK....",
+      "....LSSSDDSSSD....",
+      "....LSSSRRSSSD....",
+      ".....DSSSSSSD.....",
+      "...KKKKKKKKKKKK..."
     ],
     /* hustle — cappellino della demo day con visiera lunga, grin
        a 32 denti, felpa col cordino. Energia da Series A. */
     hustle: [
       "....RRRRRRRR......",
       "...RRRRRRRRRR.....",
-      "...RRRRRRRRRRRRR..",
+      "..RRRRRRRRRRRRR...",
       "....LSSSSSSSSD....",
-      "....LSKSSSSKSD....",
+      "....SSWKSSWKSS....",
+      "....LSSSDDSSSD....",
       "....SWWWWWWWWS....",
-      ".....LSSSSSSD.....",
-      "...CCCCCCCCCCCC...",
-      "..CCCWCCCCCCWCCC.."
+      ".....DSSSSSSD.....",
+      "...CCCCWWWWCCCC..."
     ],
     /* red_flag — stempiatura a M, occhi che scappano di lato,
-       goccia di sudore, cravatta che migra come il co-founder. */
+       goccia di sudore, cravatta rossa storta come il co-founder. */
     red_flag: [
-      "....KK......KK....",
-      "....KSSSSSSSSK....",
+      "....KK....KK......",
+      "...KKKK..KKKK.....",
       "....LSSSSSSSSD....",
-      "....SKKSSKKSSS..C.",
-      "....LSSSSSSSSD....",
-      "....LSRRRSSSSD....",
-      ".....LSSSSSSD.....",
-      "...WWWWWRRWWWWW...",
-      "..WWWWWWWRRWWWWW.."
-    ],
-    /* competent — riga di lato, occhiali tondi, sorriso misurato,
-       blazer sopra la camicia. L'unico adulto nella stanza. */
-    competent: [
-      ".....OOOOOOOO.....",
-      "....OOOOOOOOOO....",
-      "....LSSSSSSSSD....",
-      "....SCKCSSCKCS....",
-      "....LSSSSSSSSD....",
+      "....SKWSSSSKWS....",
+      "....LSSSDDSSSC....",
       "....LSSRRRSSSD....",
-      ".....LSSSSSSD.....",
-      "...BBBWWWWWWBBB...",
-      "..BBBBBWWWWBBBBB.."
+      ".....DSSSSSSD.....",
+      "...WWWWWRRWWWWW...",
+      "..WWWWWWRRWWWWWW.."
+    ],
+    /* competent — capelli ordinati, occhiali (glint ciano), sorriso
+       misurato, blazer sopra la camicia. L'unico adulto in sala. */
+    competent: [
+      "......OOOOOO......",
+      ".....OOOOOOOO.....",
+      "....OOSSSSSSOO....",
+      "....LSSSSSSSSD....",
+      "....SCWKSSWKCS....",
+      "....LSSSDDSSSD....",
+      "....LSSRRRRSSD....",
+      ".....DSSSSSSD.....",
+      "...BBBBWWWWBBBB..."
     ],
     /* grit — sale e pepe, sguardo fermo, bocca a linea dritta,
-       mascella squadrata, braccia conserte sulla polo del 2019. */
+       polo del 2019 che funziona ancora. Come i suoi clienti. */
     grit: [
       ".....AAAAAAAA.....",
       "....AAAAAAAAAA....",
+      "....AASSSSSSAA....",
       "....LSSSSSSSSD....",
-      "....LSKSSSSKSD....",
-      "....LSSSSSSSSD....",
-      "....LSKKKKKSSD....",
-      "....LSSSSSSSSD....",
-      "...GGGGGGGGGGGG...",
-      "..GGGSSGGGGSSGGG.."
+      "....SSKSSSSKSS....",
+      "....LSSSDDSSSD....",
+      "....LSKKKKKKSD....",
+      ".....DSSSSSSD.....",
+      "...GGGGGGGGGGGG..."
     ],
-    /* first_time — ciuffi spettinati, occhioni sgranati, sorriso
-       nervoso a zigzag, t-shirt del proprio hackathon. Suda. */
+    /* first_time — ciuffi spettinati, occhioni sgranati, bocca aperta
+       nervosa, t-shirt del proprio hackathon. Suda verita'. */
     first_time: [
-      "....O.OO.OO.O.....",
+      "....OO.OO.OO.O....",
       "....OOOOOOOOOO....",
+      "....OSSSSSSSSO....",
       "....LSSSSSSSSD....",
-      "....SWKSSSWKSS..C.",
-      "....LSSSSSSSSD....",
-      "....LSRSRSRSSD....",
-      ".....LSSSSSSD.....",
-      "...YYYYYYYYYYYY...",
-      "..YYYYYWWYYYYYYY.."
+      "....SWKWWWKWSS....",
+      "....LSSSDDSSSC....",
+      "....LSSWWWWSSD....",
+      ".....DSSSSSSD.....",
+      "...YYYYYYYYYYYY..."
     ],
     /* player — TU, di spalle: il General Partner. Giacca blu
        istituzionale e term sheet già pronto nella destra. */
     player: [
       "......KKKKKK......",
       ".....KKKKKKKK.....",
+      "....KKKKKKKKKK....",
       "...BBBBBBBBBBBB...",
       ".BBBBBBBBBBBBBBBB.",
-      ".BBBBBBBBBBBBBWW.."
+      ".BBBBBBBBBBBWWWB.."
     ]
   };
 

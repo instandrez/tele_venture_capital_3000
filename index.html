@@ -6,14 +6,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/televideo.css?v=9">
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap"
+        rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet"></noscript>
+  <link rel="stylesheet" href="css/televideo.css?v=15">
 </head>
 <body>
+  <div id="pixel-city" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span>
+  </div>
   <div id="crt">
     <div id="screen">
       <header id="tv-header">
-        <span class="hdr-left">TELE VENTURE CAPITAL 3000</span>
+        <span class="hdr-left">
+          <span class="hdr-brand">VC3000</span>
+          <span id="hdr-title">TELE VENTURE CAPITAL</span>
+        </span>
         <span class="hdr-right">
           <span id="hdr-page">P.100</span>
           <span id="hdr-clock">--:--</span>
@@ -24,8 +35,15 @@
         <!-- contenuto pagina renderizzato qui -->
       </main>
 
-      <nav id="tv-nav" aria-hidden="true">
-        <span class="chip chip-r">100</span><span class="chip chip-g">200</span><span class="chip chip-c">300</span><span class="chip chip-o">400</span><span class="chip chip-m">500</span>
+      <main id="console-stage" aria-live="polite" aria-hidden="true"></main>
+
+      <nav id="tv-nav" aria-label="Navigazione rapida">
+        <button class="chip chip-r" type="button" data-page="100"><b>100</b><span>HOME</span></button>
+        <button class="chip chip-c" type="button" data-page="110"><b>110</b><span>NEWS</span></button>
+        <button class="chip chip-y" type="button" data-page="190"><b>190</b><span>TACCUINO</span></button>
+        <button class="chip chip-g" type="button" data-page="200"><b>200</b><span>DEAL</span></button>
+        <button class="chip chip-o" type="button" data-page="400"><b>400</b><span>PORTF.</span></button>
+        <button class="chip chip-m" type="button" data-page="600"><b>600</b><span>LP</span></button>
       </nav>
 
       <footer id="tv-footer">
@@ -33,43 +51,53 @@
         <span id="tv-input"></span><span class="cursor">_</span>
       </footer>
     </div>
-    <div id="tv-badge"><span class="led"></span>VC&middot;3000 COLORTEXT</div>
+    <div id="tv-badge">
+      <span class="badge-stripe"></span>
+      <span class="led"></span>
+      <span>8-BIT FUND SYSTEM</span>
+      <span class="badge-model">VC-3000</span>
+    </div>
   </div>
 
   <!-- ordine importante: data → engine → ui → pages → main -->
-  <script src="js/engine/audio.js?v=9"></script>
-  <script src="js/state.js?v=9"></script>
+  <script src="js/engine/audio.js?v=11"></script>
+  <script src="js/state.js?v=10"></script>
   <script src="js/data/sectorIndices.js?v=9"></script>
   <script src="js/data/lpProfiles.js?v=9"></script>
   <script src="js/data/newsCalendar.js?v=9"></script>
   <script src="js/data/startups.js?v=9"></script>
   <script src="js/data/pitches.js?v=9"></script>
-  <script src="js/data/founderSprites.js?v=9"></script>
+  <script src="js/data/founderSprites.js?v=11"></script>
   <script src="js/data/exitEvents.js?v=9"></script>
   <script src="js/data/lpCalls.js?v=9"></script>
   <script src="js/data/titles.js?v=9"></script>
   <script src="js/engine/dealflow.js?v=9"></script>
+  <script src="js/engine/fundMath.js?v=1"></script>
   <script src="js/engine/marketEngine.js?v=9"></script>
-  <script src="js/engine/scoring.js?v=9"></script>
-  <script src="js/engine/pitchBattle.js?v=9"></script>
-  <script src="js/ui/header.js?v=9"></script>
-  <script src="js/ui/render.js?v=9"></script>
+  <script src="js/engine/intelligence.js?v=5"></script>
+  <script src="js/engine/lpRelations.js?v=1"></script>
+  <script src="js/engine/scoring.js?v=10"></script>
+  <script src="js/engine/pitchBattle.js?v=12"></script>
+  <script src="js/ui/header.js?v=10"></script>
+  <script src="js/ui/render.js?v=13"></script>
   <script src="js/ui/loading.js?v=9"></script>
-  <script src="js/pages/home.js?v=9"></script>
-  <script src="js/pages/fund.js?v=9"></script>
-  <script src="js/pages/intro.js?v=9"></script>
-  <script src="js/pages/pitchLive.js?v=9"></script>
-  <script src="js/pages/newsSection.js?v=9"></script>
-  <script src="js/pages/borsa.js?v=9"></script>
-  <script src="js/pages/dealflow.js?v=9"></script>
-  <script src="js/pages/startupDetail.js?v=9"></script>
-  <script src="js/pages/portfolio.js?v=9"></script>
+  <script src="js/pages/home.js?v=10"></script>
+  <script src="js/pages/fund.js?v=11"></script>
+  <script src="js/pages/intro.js?v=12"></script>
+  <script src="js/pages/pitchLive.js?v=14"></script>
+  <script src="js/pages/newsSection.js?v=13"></script>
+  <script src="js/pages/borsa.js?v=12"></script>
+  <script src="js/pages/intelligence.js?v=5"></script>
+  <script src="js/pages/sourceDesk.js?v=1"></script>
+  <script src="js/pages/dealflow.js?v=13"></script>
+  <script src="js/pages/startupDetail.js?v=11"></script>
+  <script src="js/pages/portfolio.js?v=11"></script>
   <script src="js/pages/followOn.js?v=9"></script>
-  <script src="js/pages/icMoment.js?v=9"></script>
-  <script src="js/pages/lpCall.js?v=9"></script>
-  <script src="js/pages/finalReport.js?v=9"></script>
+  <script src="js/pages/icMoment.js?v=10"></script>
+  <script src="js/pages/lpCall.js?v=10"></script>
+  <script src="js/pages/finalReport.js?v=10"></script>
   <script src="js/pages/leaderboard.js?v=9"></script>
   <script src="js/pages/credits.js?v=9"></script>
-  <script src="js/main.js?v=9"></script>
+  <script src="js/main.js?v=13"></script>
 </body>
 </html>

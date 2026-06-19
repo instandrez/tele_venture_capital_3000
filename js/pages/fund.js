@@ -10,6 +10,8 @@
     lines.push(r.color("c-yellow", " BENVENUTO, GP."));
     lines.push("");
     lines.push(" Hai chiuso un fundraising da " + r.color("c-green", "100M€") + ".");
+    lines.push(" " + r.color("c-yellow", "10M€") + " coprono fee e struttura.");
+    lines.push(" Dry powder investibile: " + r.color("c-green", "90M€") + ".");
     lines.push(" Gli LP si aspettano:");
     lines.push("");
     lines.push(r.color("c-cyan", "  · rendimenti a doppia cifra"));
@@ -28,7 +30,7 @@
     TVRouter.setActionHandler(num => {
       if (num === 1) {
         TVState.newGame();
-        TVRouter.goto(105); // sigla d'apertura, poi dealflow
+        TVRouter.goto(105); // sigla d'apertura, poi indice del terminale
       } else if (num === 9) {
         TVRouter.goto(100);
       }
@@ -56,8 +58,6 @@
   }
 
   // ---------- 103 Regole ----------
-  // Nessuno spoiler sul motore: il giocatore deve scoprire da solo
-  // che ogni informazione del Televideo entra nel modello.
   function renderRules(pageNum) {
     const r = TVRender;
     const lines = [];
@@ -70,6 +70,15 @@
     lines.push(r.color("c-yellow", " COMANDI"));
     lines.push(" Pagina + INVIO · ESC home · M audio");
     lines.push("");
+    lines.push(r.color("c-yellow", " IL TACCUINO - PAG 190"));
+    lines.push(" Il Televideo e' il tuo vantaggio.");
+    lines.push(" Alcune pagine diventano ritagli.");
+    lines.push(" Il taccuino conserva le coincidenze,");
+    lines.push(" ma non spiega dove cercare o perche'.");
+    lines.push(" Prove diverse aprono una catena.");
+    lines.push(" Quando compare INTERNO 9xx, naviga:");
+    lines.push(" una fonte privata puo' chiudere il caso.");
+    lines.push("");
     lines.push(r.color("c-yellow", " GLI LP TI CHIAMANO"));
     lines.push(" Quando il portfolio li innervosisce");
     lines.push(" (o li esalta) parte la chiamata:");
@@ -77,12 +86,13 @@
     lines.push(" Rispondi a pag 600 prima di chiudere");
     lines.push(" l'anno: ignorarli ha un costo.");
     lines.push("");
-    lines.push(r.color("c-yellow", " METRICHE"));
-    lines.push(" MOIC valore/investito · DPI incassato");
-    lines.push(" LP fiducia · REP fama · IMP impatto");
-    lines.push(r.color("c-magenta", " UN CONSIGLIO"));
-    lines.push(" Nessuna pagina è lì per caso.");
-    lines.push(r.color("c-white", " 100 HOME      105 RIVEDI LA SIGLA"));
+    lines.push(r.color("c-yellow", " PITCH BATTLE"));
+    lines.push(" Guardia founder a 0: si scopre.");
+    lines.push(" Controllo sala a 0: perdi il deal.");
+    lines.push(" Ogni domanda costa 1 controllo.");
+    lines.push(" I ticket cambiano con lo stage.");
+    lines.push(" Il target di deployment cresce ogni anno.");
+    lines.push(r.color("c-white", " 100 HOME   190 INTEL   105 SIGLA"));
 
     r.show(pageNum, lines.join("\n"), { title: "REGOLE" });
   }

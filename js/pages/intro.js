@@ -1,15 +1,47 @@
-/* Pagina 105 — SIGLA D'APERTURA.
-
-   "Video" in formato Televideo: i frame si rivelano riga per riga
-   (come il teletext vero che decodificava le pagine) e avanzano
-   da soli. 1 = frame successivo, 0 = salta tutto.
-
-   Parte automaticamente su "AVVIA FONDO" (101); rivedibile in
-   qualsiasi momento digitando 105. */
+/* Pagina 105 — opening cinematic in-engine.
+   Non e' un video preregistrato: fondale pixel-art, camera, copy e
+   timing sono HTML/CSS, quindi restano nitidi e adattabili. */
 (function (global) {
-
-  let gen = 0;        // invalida i timer quando si ri-renderizza o si esce
+  let gen = 0;
   let timers = [];
+  let frameIdx = 0;
+
+  const FRAMES = [
+    {
+      shot: "shot-wide",
+      accent: "#18e0ff",
+      eyebrow: "MILANO // SETTEMBRE // 23:47",
+      title: "IL PRIMO CLOSING",
+      body: 'Hai appena raccolto <span class="hot">100 milioni</span>. Quattro LP hanno firmato. E conservato il tuo numero.',
+      hold: 4300,
+      logo: true
+    },
+    {
+      shot: "shot-city",
+      accent: "#ffe200",
+      eyebrow: "FUORI, IL MERCATO NON DORME",
+      title: "LE NOTIZIE SONO ALPHA",
+      body: "Regolazione, hype, crisi e corporate deal. Ogni pagina puo' cambiare il valore del tuo portfolio.",
+      hold: 4700
+    },
+    {
+      shot: "shot-crt",
+      accent: "#33ff66",
+      eyebrow: "IL TERMINALE CONOSCE COSE",
+      title: "LEGGI. INCROCIA. DECIDI.",
+      body: "Gli altri fondi guardano i deck. Tu hai una rete informativa, una tastiera numerica e pochissimo buon senso.",
+      hold: 4800
+    },
+    {
+      shot: "shot-desk",
+      accent: "#ff3df0",
+      eyebrow: "CINQUE ANNI // UNA SOLA REPUTAZIONE",
+      title: "COSTRUISCI IL FONDO",
+      body: "Combatti i pitch. Gestisci gli LP. Trova le exit. Evita di diventare un advisor.",
+      hold: 0,
+      final: true
+    }
+  ];
 
   function clearTimers() {
     timers.forEach(t => clearTimeout(t));
@@ -26,171 +58,69 @@
     }, ms));
   }
 
-  // ---------- frames ----------
-  /* logo a blocchi VC3000, stile copertina cartuccia: "VC" giallo,
-     "3000" arancione, con riga d'ombra sotto per dare volume. */
-  function frameLogo() {
-    const r = TVRender;
-    const V  = ["█   █", "█   █", "█   █", " █ █ ", "  █  "];
-    const C  = [" ███ ", "█   █", "█    ", "█   █", " ███ "];
-    const N3 = ["████ ", "   ██", " ███ ", "   ██", "████ "];
-    const O0 = [" ███ ", "██ ██", "██ ██", "██ ██", " ███ "];
-
-    const lines = ["", ""];
-    for (let i = 0; i < 5; i++) {
-      const vc   = V[i] + " " + C[i];
-      const nums = N3[i] + " " + O0[i] + " " + O0[i] + " " + O0[i];
-      lines.push("  " + r.color("c-yellow", vc) + " " + r.color("c-orange", nums));
-    }
-    // riga d'ombra: la base delle lettere ripetuta in blu scuro
-    lines.push("  " + r.color("c-blue", "▀▀▀▀▀ ▀▀▀▀▀ ▀▀▀▀ ▀▀▀▀▀ ▀▀▀▀▀ ▀▀▀▀▀"));
-    lines.push("");
-    lines.push(r.center(r.color("c-white", "VENTURE CAPITAL SIMULATOR")));
-    lines.push(r.center(r.color("c-magenta", "~ il teletext del capitale di rischio ~")));
-    lines.push("");
-    lines.push(r.center(r.color("c-green", "IL TELEVIDEO PRESENTA")));
-    return lines;
+  function sceneHtml(frame, idx) {
+    const logo = frame.logo
+      ? '<div class="intro-logo"><strong><span class="mark-vc">VC</span><span class="mark-3000">3000</span></strong><small>VENTURE CAPITAL SIMULATOR</small></div>'
+      : "";
+    const action = frame.final ? "COMINCIA" : "AVANTI";
+    return (
+      '<section class="console-scene intro-scene ' + frame.shot + '" style="--intro-accent:' + frame.accent +
+        ';--intro-progress:' + (((idx + 1) / FRAMES.length) * 100) + '%">' +
+        '<div class="intro-bg"></div>' +
+        '<div class="intro-grade"></div>' +
+        '<div class="intro-progress"></div>' +
+        logo +
+        '<div class="intro-copy">' +
+          '<div class="eyebrow">' + frame.eyebrow + '</div>' +
+          '<h1>' + frame.title + '</h1>' +
+          '<p>' + frame.body + '</p>' +
+        '</div>' +
+        '<div class="intro-controls">' +
+          '<span><b>1</b> ' + action + '</span>' +
+          '<span><b>0</b> SALTA SIGLA</span>' +
+        '</div>' +
+      '</section>'
+    );
   }
 
-  function frameStory() {
-    const r = TVRender;
-    return [
-      "",
-      " " + r.color("c-yellow", "ANNO UNO. SETTEMBRE."),
-      "",
-      " " + r.color("c-white", "Hai appena chiuso il primo closing:"),
-      " " + r.color("c-green", "100 MILIONI DI EURO."),
-      "",
-      " " + r.color("c-white", "Quattro investitori ci hanno messo"),
-      " " + r.color("c-white", "la firma. E il numero di telefono."),
-      " " + r.color("c-white", "Lo useranno."),
-      "",
-      " " + r.color("c-magenta", "Nessuno sa perche' te li abbiano"),
-      " " + r.color("c-magenta", "dati. Nemmeno tu.")
-    ];
-  }
-
-  function frameLPs() {
-    const r = TVRender;
-    return [
-      r.bg("bg-cyan", "  " + r.pad("I TUOI LP", 38)),
-      "",
-      " " + r.color("c-yellow", "FONDO PENSIONE LOMBARDIA"),
-      " " + r.color("c-white", '"i pensionati non capiscono i pivot"'),
-      "",
-      " " + r.color("c-yellow", "FAMIGLIA INDUSTRIALE VENETA"),
-      " " + r.color("c-white", '"avete pensato al nostro'),
-      " " + r.color("c-white", ' stabilimento di Schio?"'),
-      "",
-      " " + r.color("c-yellow", "SOVEREIGN FUND DEL GOLFO"),
-      " " + r.color("c-white", '"we talk unicorns."'),
-      "",
-      " " + r.color("c-yellow", "ENDOWMENT UNIV. DI BOLOGNA"),
-      " " + r.color("c-white", '"e\' ESG, questo?"')
-    ];
-  }
-
-  function frameSecret() {
-    const r = TVRender;
-    return [
-      r.bg("bg-yellow", "  " + r.pad("IL TUO UFFICIO HA", 38)),
-      "",
-      " " + r.color("c-white", "· una scrivania"),
-      " " + r.color("c-white", "· un telefono che squilla") +
-            r.color("c-cyan", "  (gli LP)"),
-      " " + r.color("c-white", "· un televisore sintonizzato sul") +
-            " " + r.color("c-cyan", "TELEVIDEO"),
-      "",
-      " " + r.color("c-white", "Gli altri fondi leggono i deck."),
-      " " + r.color("c-green", "Tu puoi leggere TUTTO."),
-      "",
-      " " + r.color("c-white", "Ultim'ora. Borsa. Cronaca startup."),
-      " " + r.color("c-white", "Politica. Corporate watch."),
-      "",
-      " " + r.color("c-magenta", "Nessuna pagina e' li' per caso.")
-    ];
-  }
-
-  function frameMission() {
-    const r = TVRender;
-    return [
-      r.bg("bg-red", "  " + r.pad("LA MISSIONE", 38)),
-      "",
-      r.center(r.color("c-yellow", "5 ANNI. 100 MILIONI.")),
-      r.center(r.color("c-yellow", "UNA REPUTAZIONE DA COSTRUIRE.")),
-      "",
-      r.center(r.color("c-green", "Investi bene: leggenda.")),
-      r.center(r.color("c-red", 'Investi male: "advisor".')),
-      "",
-      "",
-      r.center('<span class="blink c-white">PREMI 1 PER COMINCIARE</span>')
-    ];
-  }
-
-  const FRAMES = [
-    { build: frameLogo,    hold: 2800 },
-    { build: frameStory,   hold: 3400 },
-    { build: frameLPs,     hold: 4200 },
-    { build: frameSecret,  hold: 4200 },
-    { build: frameMission, hold: 0, final: true }
-  ];
-
-  // ---------- riproduzione ----------
   function showFrame(idx) {
-    const r = TVRender;
+    frameIdx = idx;
     const frame = FRAMES[idx];
-    const lines = frame.build();
-    const footer = frame.final ? " 1 COMINCIA" : " 1 AVANTI    0 SALTA SIGLA";
-
-    // reveal riga per riga, come il teletext che decodifica
-    const LINE_MS = 95;
-    lines.forEach((_, k) => {
-      schedule(() => {
-        const partial = lines.slice(0, k + 1);
-        const padded = partial.concat(
-          new Array(Math.max(0, 21 - partial.length)).fill(""));
-        padded.push(r.color("c-white", footer));
-        r.show(105, padded.join("\n"), { title: "SIGLA" });
-        if (k % 2 === 0) TVAudio.keyPress();
-      }, k * LINE_MS);
+    TVRender.showScene(105, sceneHtml(frame, idx), {
+      title: "OPENING CINEMATIC",
+      className: "intro-cinematic"
     });
-
-    if (!frame.final) {
-      schedule(() => showFrame(idx + 1), lines.length * LINE_MS + frame.hold);
-    }
+    if (idx > 0) TVAudio.pageChange();
+    if (!frame.final) schedule(() => showFrame(idx + 1), frame.hold);
   }
 
   function begin() {
-    gen++;
+    gen += 1;
     clearTimers();
-    const s = TVState.current;
-    TVRouter.goto(s && s.gameStarted ? 200 : 100);
+    TVRouter.goto(100, { skipLoading: true });
   }
 
-  let frameIdx = 0;
-
   function render() {
-    gen++;
+    gen += 1;
     clearTimers();
     frameIdx = 0;
-    if (TVAudio.jingle) TVAudio.jingle();
+    TVAudio.jingle();
     showFrame(0);
 
     TVRouter.setActionHandler(num => {
-      if (num === 0) { begin(); return; }
-      if (num === 1) {
-        if (frameIdx >= FRAMES.length - 1) { begin(); return; }
-        gen++;
+      if (num === 0) {
+        begin();
+      } else if (num === 1) {
+        if (frameIdx >= FRAMES.length - 1) {
+          begin();
+          return;
+        }
+        gen += 1;
         clearTimers();
-        frameIdx += 1;
-        showFrame(frameIdx);
+        showFrame(frameIdx + 1);
       }
     });
   }
-
-  // showFrame deve aggiornare frameIdx anche in auto-avanzamento
-  const _showFrame = showFrame;
-  showFrame = function (idx) { frameIdx = idx; _showFrame(idx); };
 
   const P = global.TVPages = global.TVPages || {};
   P[105] = { render };

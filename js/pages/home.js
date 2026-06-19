@@ -17,9 +17,11 @@
     const hasSave = savedYear !== null;
 
     const lines = [];
-    lines.push(r.color("c-yellow", r.center("« il televideo che ti rovina il fondo »")));
+    lines.push('<span class="home-logo"><span class="logo-vc">VC</span><span class="logo-3000">3000</span></span>');
+    lines.push(r.color("c-magenta", r.center("VENTURE CAPITAL SIMULATOR")));
+    lines.push(r.color("c-yellow", r.center("« il teletext che ti rovina il fondo »")));
     lines.push("");
-    lines.push(r.bg("bg-cyan", "  INDICE                                "));
+    lines.push(r.bg("bg-cyan", "  START / SYSTEM                         "));
     lines.push("  " + r.color("c-yellow", "101") + "  NUOVO FONDO");
     if (hasSave) {
       lines.push("  " + r.color("c-yellow", "102") + "  RIPRENDI PARTITA  " +
@@ -30,26 +32,25 @@
     }
     lines.push("  " + r.color("c-yellow", "103") + "  REGOLE DEL GIOCO");
     lines.push("  " + r.color("c-yellow", "109") + "  GESTIONE PARTITA");
-    lines.push("");
-    lines.push(r.bg("bg-yellow", "  TELEVIDEO INFORMATIVO                 "));
+    lines.push(r.bg("bg-yellow", "  INTELLIGENCE NETWORK                   "));
     lines.push("  " + r.color("c-cyan", "110") + "  ULTIM'ORA   " +
                r.color("c-cyan", "140") + "  BORSA & INDICI");
     lines.push("  " + r.color("c-cyan", "120") + "  POLITICA    " +
                r.color("c-cyan", "160") + "  CRONACA STARTUP");
     lines.push("  " + r.color("c-cyan", "180") + "  CORPORATE WATCH");
-    lines.push("");
-    lines.push(r.bg("bg-magenta", "  GIOCO                                  "));
+    lines.push("  " + r.color("c-yellow", "190") + "  TACCUINO DEL GP " +
+               r.color("c-white", "(CASI APERTI)"));
+    lines.push(r.bg("bg-magenta", "  FUND OPERATIONS                        "));
     lines.push("  " + r.color("c-green", "200") + "  DEALFLOW       " +
                r.color("c-green", "400") + "  PORTFOLIO");
     lines.push("  " + r.color("c-green", "600") + "  LP CALL        " +
                r.color("c-green", "800") + "  CLASSIFICA");
-    lines.push("");
     // notifica LP call attiva se partita in corso
     const alert = r.lpAlert(TVState.current);
     if (alert) lines.push(alert);
-    lines.push(r.color("c-white", r.center("digita il numero pagina + INVIO  •  M=audio")));
+    lines.push(r.color("c-white", r.center("PAGINA + INVIO  •  ESC HOME  •  M AUDIO")));
 
-    r.show(100, lines.join("\n"));
+    r.show(100, lines.join("\n"), { title: "MAIN MENU" });
     TVState.current.currentPage = 100;
   }
 

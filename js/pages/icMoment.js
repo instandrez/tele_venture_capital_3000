@@ -75,7 +75,12 @@
           r.color("c-white", r.pad(e.startup.slice(0, 16), 17)) +
           r.color(cls, r.pad(sign + Math.round(e.pct * 100) + "%", 6)) +
           r.color("c-white", e.before.toFixed(2) + "→" + e.after.toFixed(2) + "x"));
-        if (e.triggers && e.triggers.length) {
+        if (e.intel && e.intel.length) {
+          const clue = e.intel[0];
+          lines.push("   " + r.color(clue.read ? "c-green" : "c-red",
+            (clue.read ? "[LETTA " : "[IGNORATA ") + clue.page + "] ") +
+            r.color("c-cyan", clue.headline.slice(0, 24)));
+        } else if (e.triggers && e.triggers.length) {
           lines.push("   " + r.color("c-cyan", "» " + e.triggers[0].slice(0, 34)));
         }
       });

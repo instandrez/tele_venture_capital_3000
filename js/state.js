@@ -5,13 +5,15 @@
 
   function makeNewState() {
     return {
-      version: 2,
+      version: 3,
       year: 1,
       maxYear: 5,
       gameSeed: Math.floor(Math.random() * 1e9),
       gameStarted: false,
       fundSize: 100_000_000,
-      cash: 100_000_000,
+      investableCapital: 90_000_000,
+      managementFeeBudget: 10_000_000,
+      cash: 90_000_000,
       invested: 0,
       realized: 0,
       reputation: 50,
@@ -26,6 +28,7 @@
       portfolio: [],
       seenStartups: [],
       readPages: [],          // pagine news visitate → edge informativo su DD
+      investigationSources: {}, // { startupId: { contacted, page, year } }
       dealDecisions: {},      // { yN: { startupId: "invested"|"passed" } }
       followOnCache: {},      // { yN: [offerte follow-on] }
       usedLPCalls: [],
@@ -40,18 +43,29 @@
 
   /* Porta i save di versioni precedenti al formato corrente. */
   function migrateState(s) {
+    const previousVersion = Number(s.version) || 1;
+    if (previousVersion < 3 && typeof s.cash === "number") {
+      s.cash = Math.max(0, s.cash - 10_000_000);
+    }
     if (!s.gameSeed) s.gameSeed = Math.floor(Math.random() * 1e9);
     if (!s.dealDecisions) s.dealDecisions = {};
     if (!s.followOnCache) s.followOnCache = {};
     if (!s.usedLPCalls) s.usedLPCalls = [];
     if (!s.readPages) s.readPages = [];
+    if (!s.investigationSources) s.investigationSources = {};
     if (!s.history) s.history = [];
     if (typeof s.researchSpent !== "number") s.researchSpent = 0;
+    if (typeof s.investableCapital !== "number") s.investableCapital = 90_000_000;
+    if (typeof s.managementFeeBudget !== "number") s.managementFeeBudget = 10_000_000;
     (s.portfolio || []).forEach(p => {
       if (!p.status) p.status = "active";
       if (typeof p.realizedAmount !== "number") p.realizedAmount = 0;
+      if ((previousVersion < 3 || typeof p.equityPct !== "number") &&
+          p.entryValuation) {
+        p.equityPct = p.investedAmount / (p.entryValuation + p.investedAmount);
+      }
     });
-    s.version = 2;
+    s.version = 3;
     return s;
   }
 

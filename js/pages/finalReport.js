@@ -28,6 +28,9 @@
     lines.push(" " + r.color("c-yellow", "Realizzato: ") + r.color("c-green", r.eur(s.realized)));
     lines.push(" " + r.color("c-yellow", "MOIC: ") + r.color("c-cyan", m.moic.toFixed(2) + "x") +
                "    " + r.color("c-yellow", "DPI: ") + r.color("c-cyan", m.dpi.toFixed(2) + "x"));
+    lines.push(" " + r.color("c-yellow", "Deployment: ") +
+      r.color(m.deploymentRate >= 0.8 ? "c-green" : "c-magenta",
+        Math.round(m.deploymentRate * 100) + "% di 90M"));
     lines.push(r.color("c-blue", " " + "─".repeat(38)));
     lines.push(" " + r.color("c-yellow", "LP SAT  ") +
                r.color("c-white", "Pen ") + s.lpSat.pensione +
@@ -171,6 +174,8 @@
     lines.push(" " + r.color("c-white", "speso in ricerca:  " + r.eur(s.researchSpent || 0)));
     lines.push(" " + r.color("c-white", "exit realizzate:   " + exitCount));
     lines.push(" " + r.color("c-white", "cash mai investito: " + r.eur(s.cash)));
+    lines.push(" " + r.color("c-white", "deployment finale: " +
+      Math.round(TVFundMath.deployment(s).rate * 100) + "%"));
 
     while (lines.length < 21) lines.push("");
     lines.push(r.color("c-white", " 700 REPORT    800 CLASSIFICA    100 HOME"));

@@ -98,10 +98,25 @@
     if (el) el.textContent = buffer;
   }
 
+  function isDirectActionMode() {
+    const screen = document.getElementById("screen");
+    return !!(actionHandler && screen && screen.classList.contains("console-mode"));
+  }
+
+  function runAction(num) {
+    try { actionHandler(num); }
+    catch (err) { console.error("action handler", err); }
+  }
+
   function handleKey(e) {
     const key = e.key;
     if (key >= "0" && key <= "9") {
-      if (buffer.length < 3) {
+      if (isDirectActionMode()) {
+        buffer = "";
+        updateInputDisplay();
+        TVAudio.keyPress();
+        runAction(parseInt(key, 10));
+      } else if (buffer.length < 3) {
         buffer += key;
         TVAudio.keyPress();
         updateInputDisplay();
@@ -115,8 +130,7 @@
         updateInputDisplay();
         // 1 cifra + actionHandler attivo → azione contestuale
         if (len === 1 && actionHandler) {
-          try { actionHandler(target); }
-          catch (err) { console.error("action handler", err); }
+          runAction(target);
         } else {
           router.goto(target);
         }
@@ -150,9 +164,19 @@
     TVState.init();
     TVHeader.start();
     document.addEventListener("keydown", handleKey);
+    const nav = document.getElementById("tv-nav");
+    if (nav) {
+      nav.addEventListener("click", e => {
+        const button = e.target.closest && e.target.closest("[data-page]");
+        if (!button) return;
+        TVAudio.keyPress();
+        router.goto(parseInt(button.dataset.page, 10));
+      });
+    }
     router.goto(100, { skipLoading: true });
   }
 
   global.TVRouter = router;
+  global.TVInput = { handleKey, isDirectActionMode };
   document.addEventListener("DOMContentLoaded", boot);
 })(window);

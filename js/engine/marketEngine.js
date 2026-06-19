@@ -138,7 +138,12 @@
         before: result.before,
         after: result.after,
         pct: result.effect,
-        triggers: result.matchedNews.map(m => m.news.headline)
+        triggers: result.matchedNews.map(m => m.news.headline),
+        intel: result.matchedNews.map(m => ({
+          page: m.news.page,
+          headline: m.news.headline,
+          read: (state.readPages || []).includes(m.news.page)
+        }))
       });
     });
 

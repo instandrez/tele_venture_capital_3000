@@ -38,7 +38,30 @@ load("data/titles.js");
 load("engine/scoring.js");
 load("engine/marketEngine.js");
 load("engine/dealflow.js");
+load("engine/fundMath.js");
+load("engine/intelligence.js");
+load("engine/lpRelations.js");
 load("engine/pitchBattle.js");
+load("ui/render.js");
+
+// DOM minimo per verificare il routing tastiera di main.js.
+let directActionMode = false;
+const inputDisplay = { textContent: "" };
+global.document = {
+  getElementById(id) {
+    if (id === "tv-input") return inputDisplay;
+    if (id === "screen") {
+      return { classList: { contains: cls => cls === "console-mode" && directActionMode } };
+    }
+    return null;
+  },
+  addEventListener() {}
+};
+global.TVAudio = {
+  keyPress() {}, error() {}, stopBattleMusic() {},
+  toggleMute() { return false; }
+};
+load("main.js");
 
 // ---------- micro harness ----------
 let passed = 0, failed = 0;
@@ -57,19 +80,79 @@ function approx(a, b, tol, msg) {
 
 const TVState = global.TVState, TVDealflow = global.TVDealflow,
       TVScoring = global.TVScoring, TVMarket = global.TVMarket,
-      TVStartups = global.TVStartups, TVExits = global.TVExits;
+      TVStartups = global.TVStartups, TVExits = global.TVExits,
+      TVIntel = global.TVIntel, TVFundMath = global.TVFundMath;
 
 // ---------- test ----------
+console.log("\n== Render ==");
+test("center misura il testo visibile, non i tag HTML", () => {
+  const centered = global.TVRender.center('<span class="c-red">CIAO</span>', 10);
+  eq(centered.indexOf("<span"), 3, "padding centro");
+  eq(global.TVRender.visibleLength(centered), 7, "lunghezza visibile con padding");
+});
+test("la griglia Televideo larga espone 56 colonne", () => {
+  eq(global.TVRender.COLS, 56, "colonne");
+  eq(global.TVRender.line("-").length, 56, "riga completa");
+});
+test("navigatore FastText evidenzia l'area principale corretta", () => {
+  eq(global.TVRender.navTargetFor(100), 100, "home");
+  eq(global.TVRender.navTargetFor(161), 110, "news detail");
+  eq(global.TVRender.navTargetFor(190), 190, "taccuino");
+  eq(global.TVRender.navTargetFor(301), 200, "deal battle");
+  eq(global.TVRender.navTargetFor(450), 400, "portfolio/follow-on");
+  eq(global.TVRender.navTargetFor(600), 600, "LP");
+});
+
+console.log("\n== Input ==");
+test("console mode esegue il tasto numerico senza Invio", () => {
+  let action = null;
+  directActionMode = true;
+  global.TVRouter.setActionHandler(num => { action = num; });
+  global.TVInput.handleKey({ key: "7", preventDefault() {} });
+  eq(action, 7, "azione diretta");
+});
+test("hub Televideo continua a richiedere Invio", () => {
+  let action = null;
+  directActionMode = false;
+  global.TVRouter.setActionHandler(num => { action = num; });
+  global.TVInput.handleKey({ key: "4", preventDefault() {} });
+  eq(action, null, "nessuna azione prima di Invio");
+  global.TVInput.handleKey({ key: "Enter", preventDefault() {} });
+  eq(action, 4, "azione dopo Invio");
+});
+
 console.log("\n== Stato iniziale ==");
 test("nuova partita: valori iniziali corretti", () => {
   const s = TVState.newGame();
   eq(s.year, 1, "year");
-  eq(s.cash, 100_000_000, "cash");
+  eq(s.fundSize, 100_000_000, "commitments");
+  eq(s.managementFeeBudget, 10_000_000, "fee budget");
+  eq(s.investableCapital, 90_000_000, "capitale investibile");
+  eq(s.cash, 90_000_000, "cash investibile");
   eq(s.invested, 0, "invested");
   eq(s.realized, 0, "realized");
   eq(s.portfolio.length, 0, "portfolio");
   assert(s.gameSeed > 0, "gameSeed presente");
   assert(s.gameStarted, "gameStarted");
+});
+
+test("un save v2 migra fee e ownership post-money una sola volta", () => {
+  localStorage.setItem("tvc3000.save", JSON.stringify({
+    version: 2,
+    year: 2,
+    cash: 100_000_000,
+    portfolio: [{
+      id: "legacy", investedAmount: 5_000_000,
+      entryValuation: 20_000_000,
+      equityPct: 0.25
+    }]
+  }));
+  assert(TVState.load(), "save caricato");
+  eq(TVState.current.cash, 90_000_000, "fee sottratte");
+  approx(TVState.current.portfolio[0].equityPct, 0.20, 1e-9, "quota migrata");
+  TVState.save();
+  assert(TVState.load(), "save ricaricato");
+  eq(TVState.current.cash, 90_000_000, "fee non sottratte due volte");
 });
 
 console.log("\n== Roll deterministico ==");
@@ -81,6 +164,32 @@ test("stesso key → stesso esito; key diversi → esiti diversi", () => {
   const b = TVState.roll("dd|y|1");
   assert(a1 !== b, "key diversi dovrebbero differire (quasi sempre)");
   assert(a1 >= 0 && a1 < 1, "range [0,1)");
+});
+
+console.log("\n== Relazione LP ==");
+test("la risposta LP restituisce tutte le variazioni applicate", () => {
+  const s = TVState.newGame();
+  const call = global.TVLPCalls.CALLS.find(c => c.id === "pensione-concentration-ai");
+  const report = global.TVLPRelations.applyChoice(s, call, call.choices[1]);
+  eq(s.lpSat.pensione, 32, "soddisfazione pensione");
+  eq(s.lpSat.sovereign, 58, "soddisfazione sovereign");
+  eq(s.reputation, 47, "reputazione");
+  eq(report.metrics.length, 3, "metriche nel report");
+  eq(report.tone, "negative", "tono esito");
+  assert(s.usedLPCalls.includes(call.id), "call marcata come gestita");
+});
+
+test("il write-off promesso all'LP viene mostrato come conseguenza", () => {
+  const s = TVState.newGame();
+  s.portfolio = [{
+    id: "coin", name: "Coin", sectorTag: "CRYPTO_WEB3",
+    investedAmount: 2_000_000, status: "active"
+  }];
+  const call = global.TVLPCalls.CALLS.find(c => c.id === "endowment-esg-fossil");
+  const report = global.TVLPRelations.applyChoice(s, call, call.choices[1]);
+  eq(s.portfolio[0].status, "writeoff", "posizione azzerata");
+  eq(report.notes.length, 1, "conseguenza speciale nel report");
+  assert(report.notes[0].text.includes("2MEUR"), "valore del write-off visibile");
 });
 
 console.log("\n== Dealflow ==");
@@ -119,6 +228,125 @@ test("decisioni: pending → invested/passed, niente ri-delibera implicita", () 
   eq(TVDealflow.pendingDeals(s).length, 1, "resta 1 pending");
 });
 
+console.log("\n== Fund Math ==");
+test("i ticket cambiano con lo stage", () => {
+  eq(TVFundMath.ticketOptions({ stage: "Pre-seed" }).join(","), "2000000,4000000,6000000");
+  eq(TVFundMath.ticketOptions({ stage: "Seed" }).join(","), "3000000,6000000,9000000");
+  eq(TVFundMath.ticketOptions({ stage: "Series A" }).join(","), "5000000,8000000,12000000");
+});
+
+test("ownership calcolata post-money", () => {
+  approx(TVFundMath.ownershipPct(5_000_000, 20_000_000), 0.20, 1e-9);
+});
+
+test("la strategia media puo' distribuire il fondo, la massima deve selezionare", () => {
+  let middle = 0, maximum = 0;
+  TVStartups.STARTUPS.slice(0, 15).forEach(st => {
+    const tickets = TVFundMath.ticketOptions(st);
+    middle += tickets[1];
+    maximum += tickets[2];
+  });
+  assert(middle >= 75_000_000, "ticket medi troppo piccoli");
+  assert(maximum > TVFundMath.INVESTABLE, "il massimo deve superare il fondo");
+});
+
+console.log("\n== Intelligence Network ==");
+test("ogni startup ha almeno 3 piste navigabili fin dall'anno 1", () => {
+  const s = TVState.newGame();
+  s.year = 1;
+  TVStartups.STARTUPS.forEach(st => {
+    assert(TVIntel.relevantNews(s, st).length >= 3,
+      "piste insufficienti: " + st.id);
+  });
+});
+
+test("due pagine lette costruiscono il dossier e scontano la DD", () => {
+  const s = TVState.newGame();
+  const st = TVStartups.STARTUPS[0];
+  const clues = TVIntel.relevantNews(s, st);
+  s.readPages = [clues[0].news.page, clues[1].news.page];
+  const intel = TVIntel.forStartup(s, st);
+  eq(intel.level, 2, "livello dossier");
+  eq(intel.shield, 1, "una copertura");
+  eq(intel.ddCost, 50_000, "DD scontata");
+  assert(intel.negotiationBonus >= 0.10, "bonus negoziazione");
+  assert(intel.lead && intel.lead.move >= 1, "domanda armata");
+});
+
+test("tre pagine lette attivano due coperture battle", () => {
+  const s = TVState.newGame();
+  const st = TVStartups.STARTUPS[0];
+  const clues = TVIntel.relevantNews(s, st);
+  s.readPages = clues.slice(0, 3).map(x => x.news.page);
+  const intel = TVIntel.forStartup(s, st);
+  eq(intel.level, 3, "rete completa");
+  eq(intel.shield, 2, "due coperture");
+  eq(intel.ddCost, 25_000, "DD molto scontata");
+});
+
+test("le macro generiche valgono meno di una prova diretta", () => {
+  const s = TVState.newGame();
+  const st = TVStartups.byId("humanoidops");
+  const clues = TVIntel.relevantNews(s, st);
+  s.readPages = clues.slice(0, 2).map(x => x.news.page);
+  const intel = TVIntel.forStartup(s, st);
+  assert(intel.evidenceScore < 3, "due ritagli deboli non bastano");
+  assert(!intel.lead, "nessuna domanda armata senza corroborazione");
+});
+
+test("una news founder-specific non diventa pista per un altro deal del settore", () => {
+  const s = TVState.newGame();
+  const clues = TVIntel.relevantNews(s, TVStartups.byId("scootflow"));
+  assert(!clues.some(x => x.news.page === 161),
+    "la vicenda YachtBrain non deve accusare ScootFlow");
+});
+
+test("ogni startup puo' aprire una catena con due firme diverse", () => {
+  const s = TVState.newGame();
+  s.year = 5;
+  TVStartups.STARTUPS.forEach(st => {
+    const clues = TVIntel.relevantNews(s, st);
+    const pages = [];
+    const kinds = new Set();
+    let score = 0;
+    clues.forEach(clue => {
+      if (score >= 3 && kinds.size >= 2) return;
+      pages.push(clue.news.page);
+      kinds.add(clue.kind);
+      score += clue.weight;
+    });
+    s.readPages = pages;
+    assert(TVIntel.chainFor(s, st).unlocked, "catena impossibile: " + st.id);
+  });
+});
+
+test("contattare la fonte privata potenzia battle e due diligence", () => {
+  const s = TVState.newGame();
+  const st = TVStartups.STARTUPS[0];
+  const clues = TVIntel.relevantNews(s, st);
+  const first = clues[0];
+  const second = clues.find(x => x.kind !== first.kind);
+  assert(second, "serve una seconda firma");
+  s.readPages = [first.news.page, second.news.page];
+  if (first.weight + second.weight < 3) {
+    const extra = clues.find(x => !s.readPages.includes(x.news.page));
+    s.readPages.push(extra.news.page);
+  }
+  const opened = TVIntel.chainFor(s, st);
+  assert(opened.unlocked, "catena non aperta");
+  TVIntel.contactSource(s, st);
+  const intel = TVIntel.forStartup(s, st);
+  assert(intel.chain.contacted, "fonte non registrata");
+  eq(intel.leadPower, 3, "Dossier Strike potenziato");
+  eq(intel.ddCost, 25_000, "DD ridotta");
+  assert(intel.privateClue === st.hiddenRisk, "rischio privato rivelato");
+});
+
+test("le pagine fonte privata sono univoche", () => {
+  const pages = TVStartups.STARTUPS.map(st => TVIntel.sourcePageFor(st));
+  eq(new Set(pages).size, TVStartups.STARTUPS.length, "pagine fonte");
+});
+
 console.log("\n== Scoring ==");
 test("invested=0 → MOIC e DPI a 0, niente NaN", () => {
   const s = TVState.newGame();
@@ -150,6 +378,18 @@ test("posizioni chiuse escluse dal portfolio value", () => {
   const m = TVScoring.computeMetrics(s);
   eq(m.portfolioValue, 0, "posizione exited non conta nel value");
   approx(m.moic, 1.2, 1e-9, "solo realized");
+});
+
+test("lo scoring premia un deployment disciplinato", () => {
+  const low = TVState.newGame();
+  low.invested = 18_000_000;
+  const high = TVState.newGame();
+  high.invested = 72_000_000;
+  const lowMetrics = TVScoring.computeMetrics(low);
+  const highMetrics = TVScoring.computeMetrics(high);
+  assert(highMetrics.deploymentScore > lowMetrics.deploymentScore,
+    "deployment score non crescente");
+  approx(highMetrics.deploymentRate, 0.8, 1e-9);
 });
 
 console.log("\n== Exit e write-off ==");
@@ -242,6 +482,30 @@ test("la mossa parata non scalfisce e costa credibilita'", () => {
   eq(b.cred, TVPitchBattle.CRED_MAX - 3, "-2 parata -1 contrattacco");
 });
 
+test("il dossier blocca il primo costo di controllo sala", () => {
+  const b = TVPitchBattle.newBattle("ego", { intelShield: 1 });
+  TVPitchBattle.applyMove(b, 1);
+  eq(b.cred, TVPitchBattle.CRED_MAX, "controllo invariato");
+  eq(b.intelShield, 0, "copertura consumata");
+  assert(b.counterBlocked, "contrattacco marcato come bloccato");
+});
+
+test("la domanda armata dal dossier infligge danno extra e blocca la replica", () => {
+  const b = TVPitchBattle.newBattle("ego", { intelMove: 1 });
+  TVPitchBattle.applyMove(b, 1);
+  eq(b.guard, TVPitchBattle.GUARD_MAX - 4, "2 danno neutro + 2 dossier");
+  assert(b.intelTriggered, "colpo dossier attivato");
+  assert(b.counterBlocked, "replica bloccata");
+  assert(!b.intelStrikeAvailable, "bonus consumato");
+});
+
+test("la fonte privata porta il Dossier Strike a 3 danni extra", () => {
+  const b = TVPitchBattle.newBattle("ego", { intelMove: 1, intelPower: 3 });
+  TVPitchBattle.applyMove(b, 1);
+  eq(b.guard, TVPitchBattle.GUARD_MAX - 5, "2 neutro + 3 fonte");
+  assert(b.counterBlocked, "replica bloccata");
+});
+
 test("spammare la parata fa perdere la sala", () => {
   const b = TVPitchBattle.newBattle("hustle");
   const resist = TVPitchBattle.PROFILES.hustle.resist;
@@ -286,6 +550,14 @@ test("spriteRows rende 18 colonne visibili per riga", () => {
     TVSprites.spriteRows(key).forEach((html, i) => {
       eq(strip(html).length, 18, key + " riga html " + i);
     });
+  });
+});
+test("gridHtml rende un pixel DOM per cella sprite", () => {
+  Object.keys(global.TVSprites.SPRITES).forEach(key => {
+    const sprite = global.TVSprites.SPRITES[key];
+    const html = global.TVSprites.gridHtml(key);
+    const pixels = (html.match(/class="px /g) || []).length;
+    eq(pixels, sprite.length * 18, key + " pixel DOM");
   });
 });
 

@@ -17,9 +17,10 @@
       const year = s.year || 1;
       const meta = SECTION_META[sectionRoot];
       const items = TVNews.listSection(sectionRoot, year);
+      const width = r.COLS - 2;
 
       const lines = [];
-      lines.push(r.bg(meta.bg, "  " + r.pad(meta.title + " — ANNO " + year, 38)));
+      lines.push(r.bg(meta.bg, "  " + r.pad(meta.title + " — ANNO " + year, width)));
       lines.push("");
 
       if (items.length === 0) {
@@ -28,18 +29,24 @@
         lines.push(r.center(r.color("c-white", "torna più tardi, GP.")));
       } else {
         items.forEach((n, i) => {
+          const intel = TVIntel.pageStatus(s, n.page);
           const tag = n.tone === "ironic" ? r.color("c-yellow", "[!]") :
                       n.tone === "gossip" ? r.color("c-magenta", "[~]") :
                                             r.color("c-cyan",   "[·]");
           const num = r.color(meta.accent, String(n.page));
-          const title = r.escape(n.headline.length > 32 ? n.headline.slice(0, 32) + "…" : n.headline);
+          const maxTitle = r.COLS - 13;
+          const title = r.escape(n.headline.length > maxTitle
+            ? n.headline.slice(0, maxTitle) + "…" : n.headline);
           if (sectionRoot === 110) {
             // Ultim'Ora: tag lampeggiante "NEW" davanti, titolo fisso e leggibile
             lines.push(" " + num + " " + '<span class="blink c-red">NEW</span> ' + r.color("c-white", title));
           } else {
             lines.push(" " + num + "  " + tag + " " + title);
           }
-          lines.push("");
+          const status = intel.read
+            ? r.color("c-green", "[LETTA]")
+            : r.color("c-white", "[NON LETTA]");
+          lines.push("      " + status);
         });
       }
 
@@ -65,16 +72,35 @@
       }
       const sectionRoot = news.section;
       const meta = SECTION_META[sectionRoot] || { title: "NEWS", bg: "bg-blue", accent: "c-yellow" };
+      const width = r.COLS - 2;
 
       const lines = [];
-      lines.push(r.bg(meta.bg, "  " + r.pad(meta.title + " — ANNO " + news.year, 38)));
+      lines.push(r.bg(meta.bg, "  " + r.pad(meta.title + " — ANNO " + news.year, width)));
       lines.push("");
       lines.push(r.color(meta.accent, " " + news.headline));
-      lines.push(r.color("c-white", " " + "─".repeat(38)));
+      lines.push(r.color("c-white", " " + "─".repeat(width)));
       lines.push("");
       news.body.forEach(line => {
         lines.push(" " + r.color("c-white", line));
       });
+      const intel = TVIntel.pageStatus(TVState.current, pageNum);
+      const fingerprint = TVIntel.newsFingerprint(news);
+      lines.push("");
+      if (fingerprint) {
+        lines.push(" " + r.color("c-yellow", "FIRMA: " + fingerprint.kind) +
+          r.color("c-white", " - " + fingerprint.description));
+      }
+      if (intel.deals.length) {
+        lines.push(" " + r.color("c-green", "RITAGLIO ARCHIVIATO A PAG 190."));
+        lines.push(" " + r.color("c-cyan", "Incrocialo con una fonte di tipo diverso."));
+      } else {
+        lines.push(" " + r.color("c-magenta", "IL TACCUINO RESTA IN SILENZIO."));
+      }
+      const unlocked = TVIntel.unlockedSourcesForPage(TVState.current, pageNum);
+      if (unlocked.length) {
+        lines.push(" " + r.color("c-magenta",
+          "DUE FIRME COMBACIANO. INTERNO " + unlocked[0].chain.page + "."));
+      }
 
       while (lines.length < 19) lines.push("");
       const backTo = sectionRoot;

@@ -1,5 +1,5 @@
-/* Engine scoring: calcola le metriche finali e lo score finale.
-   Score pesato 40/20/20/10/10 come da brief originale. */
+/* Engine scoring: rendimento, relazione LP, reputazione, impatto
+   e disciplina nel deployment del capitale investibile. */
 (function (global) {
 
   function computeMetrics(state) {
@@ -23,13 +23,17 @@
     const lpScore   = Math.min(100, Math.max(0, lpSatAvg));
     const repScore  = Math.min(100, Math.max(0, state.reputation || 0));
     const impScore  = Math.min(100, Math.max(0, state.innovationImpact || 0));
+    const investable = state.investableCapital || 90_000_000;
+    const deploymentRate = investable > 0 ? state.invested / investable : 0;
+    const deploymentScore = Math.min(100, Math.max(0, deploymentRate / 0.80 * 100));
 
     const score = Math.round(
-      0.40 * moicScore +
-      0.20 * dpiScore +
-      0.20 * lpScore +
+      0.35 * moicScore +
+      0.15 * dpiScore +
+      0.15 * lpScore +
       0.10 * repScore +
-      0.10 * impScore
+      0.10 * impScore +
+      0.15 * deploymentScore
     );
 
     return {
@@ -37,6 +41,7 @@
       lpSat: lps, lpSatAvg,
       reputation: state.reputation,
       impact: state.innovationImpact,
+      deploymentRate, deploymentScore,
       score
     };
   }

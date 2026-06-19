@@ -136,5 +136,22 @@
     return (SPRITES[key] || SPRITES.competent).map(rowHtml);
   }
 
-  global.TVSprites = { SPRITES, PAL, rowHtml, spriteRows };
+  /* Versione DOM a pixel reali: non usa glifi, quindi scala in modo
+     perfettamente netto nella nuova console mode. */
+  function gridHtml(key) {
+    const sprite = SPRITES[key] || SPRITES.competent;
+    const pixels = [];
+    sprite.forEach(row => {
+      for (let i = 0; i < row.length; i++) {
+        const ch = row[i];
+        pixels.push(
+          '<i class="px ' + (ch === "." ? "px-clear" : (PAL[ch] || "c-white")) + '"></i>'
+        );
+      }
+    });
+    return '<span class="sprite-grid" aria-hidden="true" style="--sprite-rows:' +
+      sprite.length + '">' + pixels.join("") + "</span>";
+  }
+
+  global.TVSprites = { SPRITES, PAL, rowHtml, spriteRows, gridHtml };
 })(typeof window !== "undefined" ? window : global);

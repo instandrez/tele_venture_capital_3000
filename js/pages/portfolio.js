@@ -13,9 +13,10 @@
     const r = TVRender;
     const s = TVState.current;
     if (!s || !s.gameStarted) { TVRouter.goto(101, { skipLoading: true }); return; }
+    const width = r.COLS - 2;
 
     const lines = [];
-    lines.push(r.bg("bg-cyan", "  " + r.pad("PORTFOLIO — ANNO " + s.year, 38)));
+    lines.push(r.bg("bg-cyan", "  " + r.pad("PORTFOLIO — ANNO " + s.year, width)));
     lines.push("");
 
     const active = s.portfolio.filter(p => !p.status || p.status === "active");
@@ -28,24 +29,24 @@
     } else {
       if (active.length > 0) {
         lines.push(" " + r.color("c-yellow",
-          r.pad("ATTIVE", 18) + r.pad("INV.", 8) + r.pad("VAL.", 8) + "MoM"));
-        lines.push(r.color("c-blue", " " + "─".repeat(38)));
+          r.pad("ATTIVE", 26) + r.pad("INV.", 10) + r.pad("VAL.", 10) + "MoM"));
+        lines.push(r.color("c-blue", " " + "─".repeat(width)));
         active.forEach(p => {
           const curVal = p.investedAmount * p.currentValueMultiplier;
           const mom = p.currentValueMultiplier.toFixed(2) + "x";
           const cls = p.currentValueMultiplier >= 1 ? "c-green" : "c-red";
           lines.push(" " +
-            r.color("c-white", r.pad(p.name.slice(0, 17), 18)) +
-            r.color("c-cyan",  r.pad(r.eur(p.investedAmount), 8)) +
-            r.color(cls,       r.pad(r.eur(curVal), 8)) +
+            r.color("c-white", r.pad(p.name.slice(0, 25), 26)) +
+            r.color("c-cyan",  r.pad(r.eur(p.investedAmount), 10)) +
+            r.color(cls,       r.pad(r.eur(curVal), 10)) +
             r.color(cls,       mom));
         });
       }
       if (closed.length > 0) {
         lines.push("");
         lines.push(" " + r.color("c-yellow",
-          r.pad("CHIUSE", 18) + r.pad("INV.", 8) + r.pad("REAL.", 8) + "ESITO"));
-        lines.push(r.color("c-blue", " " + "─".repeat(38)));
+          r.pad("CHIUSE", 26) + r.pad("INV.", 10) + r.pad("REAL.", 10) + "ESITO"));
+        lines.push(r.color("c-blue", " " + "─".repeat(width)));
         closed.forEach(p => {
           const isWin = (p.realizedAmount || 0) >= p.investedAmount;
           const cls = p.status === "writeoff" ? "c-red" : (isWin ? "c-green" : "c-magenta");
@@ -53,9 +54,9 @@
                         (p.exitKind === "ipo" ? "IPO" :
                          p.exitKind === "acquihire" ? "ACQ-H" : "EXIT");
           lines.push(" " +
-            r.color("c-white", r.pad(p.name.slice(0, 17), 18)) +
-            r.color("c-cyan",  r.pad(r.eur(p.investedAmount), 8)) +
-            r.color(cls,       r.pad(r.eur(p.realizedAmount || 0), 8)) +
+            r.color("c-white", r.pad(p.name.slice(0, 25), 26)) +
+            r.color("c-cyan",  r.pad(r.eur(p.investedAmount), 10)) +
+            r.color(cls,       r.pad(r.eur(p.realizedAmount || 0), 10)) +
             r.color(cls,       esito));
         });
       }
@@ -64,18 +65,23 @@
     const totalCurrentValue = portfolioValue(s);
     const moic = s.invested > 0 ? ((totalCurrentValue + s.realized) / s.invested) : 0;
     const dpi  = s.invested > 0 ? (s.realized / s.invested) : 0;
+    const deployment = TVFundMath.deployment(s);
 
     const alert = r.lpAlert(s);
     if (alert) lines.push(alert);
 
     while (lines.length < 17) lines.push("");
-    lines.push(r.color("c-blue", " " + "─".repeat(38)));
+    lines.push(r.color("c-blue", " " + "─".repeat(width)));
     lines.push(" " +
       r.color("c-yellow", "Val: ") + r.color("c-green", r.eur(totalCurrentValue)) + " " +
       r.color("c-yellow", "Real: ") + r.color("c-green", r.eur(s.realized)) + " " +
       r.color("c-yellow", "MOIC ") + r.color("c-white", moic.toFixed(2)) + " " +
       r.color("c-yellow", "DPI ") + r.color("c-white", dpi.toFixed(2))
     );
+    lines.push(" " + r.color("c-yellow", "Deployment ") +
+      r.color(deployment.rate >= 0.8 ? "c-green" : "c-magenta",
+        Math.round(deployment.rate * 100) + "%") +
+      r.color("c-white", " // target anno " + r.eur(deployment.target)));
     lines.push(r.color("c-white", " 200 DEALFLOW    500 IC MOMENT    100 HOME"));
 
     r.show(pageNum, lines.join("\n"), { title: "PORTFOLIO" });

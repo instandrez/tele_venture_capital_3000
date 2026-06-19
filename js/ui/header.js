@@ -17,7 +17,7 @@
       if (el) el.textContent = "P." + pageNum;
     },
     setTitle(title) {
-      const el = document.querySelector(".hdr-left");
+      const el = document.getElementById("hdr-title");
       if (el) el.textContent = title;
     },
     start() {

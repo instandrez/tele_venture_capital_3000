@@ -20,7 +20,8 @@
     const s = TVState.current;
     if (!s || !s.gameStarted) { TVRouter.goto(101, { skipLoading: true }); return; }
 
-    const id = (s._dealflowMap || {})[pageNum];
+    const fallbackDeal = TVDealflow.currentYearDealflow(s)[pageNum - 301];
+    const id = (s._dealflowMap || {})[pageNum] || (fallbackDeal && fallbackDeal.id);
     const st = id ? TVStartups.byId(id) : null;
     if (!st) {
       TVRouter.goto(200, { skipLoading: true });
@@ -36,6 +37,7 @@
 
     // deal deliberato → scheda di sola consultazione
     const rv = reveals(s, id);
+    const intel = TVIntel.forStartup(s, st);
     const lines = [];
     lines.push(r.bg("bg-yellow", "  " + r.pad(st.name + " — " + st.stage, 38)));
     lines.push(" " + r.color("c-cyan", st.sector) +
@@ -65,9 +67,23 @@
     } else if (rv.pitchLost) {
       revealLines.push(r.color("c-yellow", " ! ") + r.color("c-red", "Pitch: ti hanno buttato fuori."));
     }
+    if (intel.privateClue) {
+      revealLines.push(r.color("c-yellow", " ! ") +
+        r.color("c-magenta", "Fonte: " + intel.privateClue.slice(0, 32)));
+    }
     if (revealLines.length) {
       lines.push("");
       revealLines.forEach(l => lines.push(l));
+    }
+    if (intel.read.length) {
+      lines.push("");
+      lines.push(r.color("c-cyan", " DOSSIER: ") +
+        r.color(intel.level >= 2 ? "c-green" : "c-yellow",
+          intel.label + " - " + intel.evidenceScore.toFixed(1) + "/5"));
+      if (intel.lead) {
+        lines.push(" " + r.color("c-green", "Leva usata: " + intel.lead.label +
+          " (" + intel.lead.reason + ")"));
+      }
     }
 
     lines.push("");
@@ -80,6 +96,7 @@
       const pos = s.portfolio.find(p => p.id === id);
       if (pos) {
         lines.push(" " + r.color("c-white", "ticket " + r.eur(pos.investedAmount) +
+                   "  quota " + (pos.equityPct * 100).toFixed(1) + "%" +
                    "  multiplo " + pos.currentValueMultiplier.toFixed(2) + "x"));
       }
     }

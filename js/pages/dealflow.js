@@ -26,17 +26,20 @@
 
     const picks = TVDealflow.currentYearDealflow(s);
     const pending = TVDealflow.pendingDeals(s);
+    const deployment = TVFundMath.deployment(s);
+    const width = r.COLS - 2;
 
     const lines = [];
-    lines.push(r.bg("bg-green", "  " + r.pad("DEALFLOW — ANNO " + s.year + "/" + s.maxYear, 38)));
+    lines.push(r.bg("bg-green", "  " + r.pad("DEALFLOW — ANNO " + s.year + "/" + s.maxYear, width)));
     lines.push(" " +
       r.color("c-yellow", "Cash:") + " " + r.color("c-green", r.eur(s.cash)) +
       "   " +
       r.color("c-yellow", "Inv:") + "  " + r.color("c-cyan", r.eur(s.invested)) +
       "   " +
-      r.color("c-yellow", "N:") + " " + r.color("c-white", String(s.portfolio.filter(p => !p.status || p.status === "active").length))
+      r.color("c-yellow", "Target:") + " " +
+      r.color(deployment.gap > 0 ? "c-magenta" : "c-green", r.eur(deployment.target))
     );
-    lines.push(r.color("c-blue", " " + "─".repeat(38)));
+    lines.push(r.color("c-blue", " " + "─".repeat(width)));
 
     if (picks.length === 0) {
       lines.push("");
@@ -51,14 +54,22 @@
         s._dealflowMap[pageId] = st.id;
         const decision = TVDealflow.getDecision(s, st.id);
         const teaser = TVPitches.forStartup(st.id);
+        const intel = TVIntel.forStartup(s, st);
+        const intelCls = intel.level >= 2 ? "c-green" : (intel.level ? "c-yellow" : "c-red");
         lines.push(" " + r.color("c-yellow", String(pageId)) + " " +
-                   r.color("c-white", r.pad(st.name, 20)) + statusBadge(r, decision));
+                   r.color("c-white", r.pad(st.name, 27)) + statusBadge(r, decision));
         lines.push("     " + r.color("c-cyan", st.sector) + r.color("c-white", "  " + st.stage) +
                    r.color("c-white", "  val. " + r.eur(st.valuation)));
+        const chainTag = intel.chain.contacted
+          ? "  FONTE OK"
+          : (intel.chain.unlocked ? "  INT." + intel.chain.page : "");
+        lines.push("     " + r.color(intelCls,
+          "TACCUINO [" + "#".repeat(Math.min(5, Math.floor(intel.evidenceScore))) +
+          ".".repeat(5 - Math.min(5, Math.floor(intel.evidenceScore))) + "] " +
+          intel.label + (intel.lead ? "  LEVA " + intel.lead.move : "") + chainTag));
         if (teaser && teaser[0]) {
           lines.push("     " + r.color("c-cyan", "» ") + r.color("c-white", teaser[0]));
         }
-        lines.push("");
       });
     }
 
@@ -74,7 +85,7 @@
 
     while (lines.length < 19) lines.push("");
     lines.push(r.color("c-white", " 9 CHIUDI ANNO     100 HOME"));
-    lines.push(r.color("c-white", " 110 ULTIM'ORA  140 BORSA  160 CRONACA"));
+    lines.push(r.color("c-white", " 190 TACCUINO   110 NEWS   400 PORTFOLIO"));
 
     r.show(pageNum, lines.join("\n"), { title: "DEALFLOW" });
 

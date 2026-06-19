@@ -162,17 +162,26 @@
     }
   };
 
-  function newBattle(profileKey) {
+  function newBattle(profileKey, options) {
+    options = options || {};
     const profile = PROFILES[profileKey] ? profileKey : "competent";
     return {
       profile: profile,
       guard: GUARD_MAX,
       cred: CRED_MAX,
+      credMax: CRED_MAX,
+      intelShield: Math.max(0, options.intelShield || 0),
+      intelMove: options.intelMove || null,
+      intelPower: Math.max(2, options.intelPower || 2),
+      intelStrikeAvailable: !!options.intelMove,
+      intelTriggered: false,
+      counterBlockSource: null,
       turn: 0,
       over: false,
       won: false,
       lastMove: null,
-      lastOutcome: null  // "weak" | "neutral" | "resist"
+      lastOutcome: null,  // "weak" | "neutral" | "resist"
+      counterBlocked: false
     };
   }
 
@@ -181,9 +190,17 @@
     if (b.over) return b;
     const p = PROFILES[b.profile];
     let outcome;
+    b.counterBlocked = false;
+    b.counterBlockSource = null;
+    b.intelTriggered = false;
     if (moveId === p.weak) { b.guard -= 4; outcome = "weak"; }
     else if (moveId === p.resist) { b.cred -= 2; outcome = "resist"; }
     else { b.guard -= 2; outcome = "neutral"; }
+    if (b.intelStrikeAvailable && moveId === b.intelMove) {
+      b.guard -= b.intelPower;
+      b.intelStrikeAvailable = false;
+      b.intelTriggered = true;
+    }
     b.turn += 1;
     b.lastMove = moveId;
     b.lastOutcome = outcome;
@@ -194,8 +211,18 @@
       b.won = true;
       return b;
     }
-    // contrattacco del founder: il tempo della sala non e' tuo
-    b.cred -= 1;
+    // Ogni domanda consuma controllo della sala. Un dossier preparato
+    // assorbe i primi contrattacchi: la navigazione crea tempo reale.
+    if (b.intelTriggered) {
+      b.counterBlocked = true;
+      b.counterBlockSource = "lead";
+    } else if (b.intelShield > 0) {
+      b.intelShield -= 1;
+      b.counterBlocked = true;
+      b.counterBlockSource = "shield";
+    } else {
+      b.cred -= 1;
+    }
     if (b.cred <= 0) {
       b.cred = 0;
       b.over = true;

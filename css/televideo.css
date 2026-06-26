@@ -451,8 +451,31 @@ body::before {
 #tv-input { color: var(--tv-yellow); min-width: 3em; }
 .cursor { color: var(--tv-yellow); animation: blink 1s steps(2, start) infinite; }
 
-#mobile-pad {
-  display: none;
+.tv-hotlink,
+.tv-action {
+  appearance: none;
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  text-shadow: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.tv-hotlink:hover,
+.tv-hotlink:focus-visible,
+.tv-action:hover,
+.tv-action:focus-visible {
+  outline: 0.08em solid currentColor;
+  outline-offset: 0.04em;
+  filter: brightness(1.22);
 }
 
 /* ---------- COLORI TELETEXT ---------- */
@@ -703,6 +726,8 @@ body::before {
 }
 .start-option {
   min-width: 0;
+  appearance: none;
+  font-family: inherit;
   display: grid;
   grid-template-columns: 2em minmax(0, 1fr);
   align-items: center;
@@ -714,6 +739,9 @@ body::before {
   box-shadow: 6px 6px 0 #050713, inset 0 0 0 3px #26366d;
   font-size: clamp(20px, calc(var(--fs) * 1.15), 34px);
   line-height: 1;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
 }
 .start-option b {
   display: grid;
@@ -2208,7 +2236,6 @@ body::before {
 
 @media (max-width: 700px), (max-height: 480px) and (hover: none) and (pointer: coarse) {
   :root {
-    --mobile-pad-h: clamp(154px, 22dvh, 206px);
     --fs: clamp(14px, min(2.6vh, 4vw), 20px);
   }
   html,
@@ -2218,16 +2245,19 @@ body::before {
   body {
     align-items: flex-start;
     overflow: hidden;
-    padding: max(4px, env(safe-area-inset-top)) 4px
-      calc(var(--mobile-pad-h) + env(safe-area-inset-bottom) + 6px);
+    padding:
+      max(4px, env(safe-area-inset-top))
+      max(4px, env(safe-area-inset-right))
+      max(4px, env(safe-area-inset-bottom))
+      max(4px, env(safe-area-inset-left));
   }
   #pixel-city {
     opacity: 0.16;
   }
   #crt {
     width: min(100vw, 760px);
-    height: calc(100vh - var(--mobile-pad-h) - 10px);
-    height: calc(100dvh - var(--mobile-pad-h) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 10px);
+    height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 8px);
+    height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 8px);
     min-height: 0;
     padding-bottom: var(--bezel);
   }
@@ -2244,6 +2274,19 @@ body::before {
   #tv-content {
     width: calc(100% - 1.1em);
     padding: 8px 0.45em;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  #tv-content::-webkit-scrollbar,
+  #console-stage::-webkit-scrollbar {
+    display: none;
+  }
+  #screen.console-mode #console-stage {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
   }
   #tv-footer {
     justify-content: center;
@@ -2256,62 +2299,46 @@ body::before {
     min-width: 2.4em;
     text-align: center;
   }
-  #mobile-pad {
-    position: fixed;
-    z-index: 30;
-    left: max(4px, env(safe-area-inset-left));
-    right: max(4px, env(safe-area-inset-right));
-    bottom: max(4px, env(safe-area-inset-bottom));
-    height: calc(var(--mobile-pad-h) - 8px);
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-template-rows: repeat(5, minmax(0, 1fr));
-    gap: 5px;
-    padding: 6px;
-    border: 2px solid #505a72;
-    background:
-      linear-gradient(145deg, #252934, #0c0e15 72%),
-      #11131a;
-    box-shadow:
-      inset 0 0 0 2px #06070b,
-      0 -10px 26px rgba(0,0,0,0.42);
+  .tv-hotlink,
+  .tv-action {
+    display: inline-block;
+    min-width: 1.12em;
+    margin: 0 0.02em;
+    padding: 0 0.08em;
+    text-align: center;
+    background: rgba(255,255,255,0.08);
+    box-shadow: inset 0 -0.08em 0 rgba(0,0,0,0.35);
   }
-  #mobile-pad button {
-    min-width: 0;
-    border: 2px solid #53669e;
-    border-radius: 0;
-    background: #0a1233;
-    color: var(--tv-white);
-    font-family: inherit;
-    font-size: clamp(18px, 5vw, 24px);
-    line-height: 1;
-    box-shadow:
-      inset 0 2px 0 rgba(255,255,255,0.16),
-      inset 0 -4px 0 rgba(0,0,0,0.42);
-    touch-action: manipulation;
-  }
-  #mobile-pad button:active {
-    transform: translateY(2px);
-    box-shadow: inset 0 2px 0 rgba(0,0,0,0.38);
-  }
-  #mobile-pad button[data-key="Enter"] {
-    color: #050713;
-    background: var(--tv-green);
-    border-color: #b7ffc8;
-  }
-  #mobile-pad button[data-key="Backspace"] {
-    background: var(--tv-orange);
-    color: #050713;
-  }
-  #mobile-pad .mobile-pad-home {
-    grid-column: 1 / -1;
-    color: #050713;
-    background: var(--tv-yellow);
-    letter-spacing: 0.08em;
+  .tv-hotlink {
+    text-decoration: underline;
+    text-decoration-thickness: 0.08em;
+    text-underline-offset: 0.08em;
   }
   .start-option {
     cursor: pointer;
     touch-action: manipulation;
+  }
+  .battle-dialogue {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: clamp(42px, 5.6vh, 58px);
+  }
+  .dialogue-lines {
+    font-size: clamp(17px, 4.7vw, 23px);
+    line-height: 1.08;
+  }
+  .battle-hint {
+    max-height: 3.4em;
+    overflow-y: auto;
+  }
+  .battle-bottom {
+    bottom: 8px;
+    min-height: min(44%, 340px);
+    max-height: 50%;
+  }
+  .battle-commands {
+    overflow-y: auto;
+    align-content: stretch;
   }
 }
 

@@ -133,6 +133,88 @@
     });
   }
 
+  function mobileViewport() {
+    try {
+      return global.matchMedia && global.matchMedia("(max-width: 700px)").matches;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function linkifyControls(root) {
+    if (!root || !document.createTreeWalker || !document.createElement) return;
+    const showText = global.NodeFilter ? global.NodeFilter.SHOW_TEXT : 4;
+    const walker = document.createTreeWalker(root, showText, null);
+    const nodes = [];
+    let node;
+    while ((node = walker.nextNode())) {
+      const parent = node.parentElement;
+      if (!parent) continue;
+      if (parent.closest("button,input,textarea,select,.keycap,[data-action],[data-page]")) continue;
+      if (!/(^|[^\w])\d{1,3}(?=[\s\]\),.]|$)/.test(node.nodeValue)) continue;
+      nodes.push(node);
+    }
+
+    nodes.forEach(textNode => {
+      const text = textNode.nodeValue;
+      const re = /(^|[^\w])(\d{1,3})(?=[\s\]\),.]|$)/g;
+      const frag = document.createDocumentFragment();
+      let last = 0;
+      let match;
+      let changed = false;
+      while ((match = re.exec(text))) {
+        const start = match.index + match[1].length;
+        const token = match[2];
+        const prefix = match[1] || "";
+        if (token.length !== 1 && token.length !== 3) continue;
+        if (token.length === 1 && /[/.]/.test(prefix)) continue;
+        if (start > last) frag.appendChild(document.createTextNode(text.slice(last, start)));
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = token.length === 3 ? "tv-hotlink" : "tv-action";
+        button.textContent = token;
+        if (token.length === 3) button.dataset.page = token;
+        else button.dataset.action = token;
+        frag.appendChild(button);
+
+        last = start + token.length;
+        changed = true;
+      }
+      if (!changed) return;
+      if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+      textNode.parentNode.replaceChild(frag, textNode);
+    });
+  }
+
+  function bindInlineControls(root) {
+    if (!root || !root.querySelectorAll) return;
+    root.querySelectorAll("[data-page]").forEach(button => {
+      if (button.dataset.boundPage) return;
+      button.dataset.boundPage = "1";
+      button.addEventListener("click", e => {
+        const pageNum = parseInt(button.dataset.page, 10);
+        if (isNaN(pageNum)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (global.TVAudio && TVAudio.keyPress) TVAudio.keyPress();
+        if (global.TVRouter) TVRouter.goto(pageNum);
+      });
+    });
+    root.querySelectorAll("[data-action]").forEach(button => {
+      if (button.dataset.boundAction) return;
+      button.dataset.boundAction = "1";
+      button.addEventListener("click", e => {
+        const key = button.dataset.action;
+        if (!/^\d$/.test(key)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (global.TVInput && TVInput.pressKey) TVInput.pressKey(key);
+      });
+    });
+  }
+
+
   // Renderizza una pagina (stringa HTML) nel contenitore.
   // Applica un cap rigoroso a ROWS righe: se la pagina sfora,
   // sostituisce l'ultima riga con un marker visibile per il dev.
@@ -142,7 +224,7 @@
     if (!content) return;
     setMode("teletext", pageNum);
     const rawLines = String(html).split("\n");
-    if (rawLines.length > ROWS) {
+    if (!mobileViewport() && rawLines.length > ROWS) {
       const overflow = rawLines.length - (ROWS - 1);
       const truncated = rawLines.slice(0, ROWS - 1);
       truncated.push('<span class="c-red">▼ +' + overflow + " righe nascoste ▼</span>");
@@ -150,6 +232,8 @@
     } else {
       content.innerHTML = html;
     }
+    linkifyControls(content);
+    bindInlineControls(content);
     content.dataset.page = String(pageNum);
     if (lastPage !== pageNum) {
       content.classList.remove("page-enter");
@@ -170,6 +254,8 @@
     setMode("console", pageNum);
     stage.className = opts.className || "";
     stage.innerHTML = html;
+    linkifyControls(stage);
+    bindInlineControls(stage);
     stage.dataset.page = String(pageNum);
     TVHeader.setPage(pageNum);
     updateNav(pageNum);

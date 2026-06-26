@@ -112,7 +112,7 @@ test("console mode esegue il tasto numerico senza Invio", () => {
   global.TVInput.handleKey({ key: "7", preventDefault() {} });
   eq(action, 7, "azione diretta");
 });
-test("touch keypad riusa lo stesso input della tastiera", () => {
+test("touch/click riusa lo stesso input della tastiera", () => {
   let action = null;
   directActionMode = true;
   global.TVRouter.setActionHandler(num => { action = num; });

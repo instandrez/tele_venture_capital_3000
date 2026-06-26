@@ -108,10 +108,10 @@
       : '<div class="start-notice is-muted">WELCOME TO NEW MILAN</div>';
     return (
       '<div class="start-menu" role="menu">' +
-        '<div class="start-option is-primary" data-action="1"><b>1</b><span>NEW GAME</span></div>' +
-        '<div class="start-option' + continueClass + '" data-action="2"><b>2</b><span>LOAD GAME</span></div>' +
-        '<div class="start-option" data-action="3"><b>3</b><span>TELETEXT INDEX</span></div>' +
-        '<div class="start-option" data-action="9"><b>9</b><span>OPTIONS</span></div>' +
+        '<button type="button" class="start-option is-primary" data-action="1"><b>1</b><span>NEW GAME</span></button>' +
+        '<button type="button" class="start-option' + continueClass + '" data-action="2"><b>2</b><span>LOAD GAME</span></button>' +
+        '<button type="button" class="start-option" data-action="3"><b>3</b><span>TELETEXT INDEX</span></button>' +
+        '<button type="button" class="start-option" data-action="9"><b>9</b><span>OPTIONS</span></button>' +
       '</div>' +
       notice
     );

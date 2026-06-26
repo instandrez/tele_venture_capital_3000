@@ -185,15 +185,18 @@
         router.goto(parseInt(button.dataset.page, 10));
       });
     }
-    const pad = document.getElementById("mobile-pad");
-    if (pad) {
-      pad.addEventListener("click", e => {
-        const button = e.target.closest && e.target.closest("[data-key]");
-        if (!button) return;
-        pressKey(button.dataset.key);
-      });
-    }
     document.addEventListener("click", e => {
+      const pageButton = e.target.closest && e.target.closest("[data-page]");
+      if (pageButton && !pageButton.closest("#tv-nav")) {
+        const pageNum = parseInt(pageButton.dataset.page, 10);
+        if (!isNaN(pageNum)) {
+          e.preventDefault();
+          TVAudio.keyPress();
+          router.goto(pageNum);
+        }
+        return;
+      }
+
       const button = e.target.closest && e.target.closest("[data-action]");
       if (!button) return;
       const num = parseInt(button.dataset.action, 10);

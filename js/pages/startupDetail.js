@@ -15,6 +15,23 @@
     return state.startupReveals[id];
   }
 
+  function wrapText(text, width) {
+    const words = String(text || "").split(/\s+/).filter(Boolean);
+    const out = [];
+    let cur = "";
+    words.forEach(word => {
+      const next = cur ? cur + " " + word : word;
+      if (next.length > width && cur) {
+        out.push(cur);
+        cur = word;
+      } else {
+        cur = next;
+      }
+    });
+    if (cur) out.push(cur);
+    return out.length ? out : [""];
+  }
+
   function render(pageNum) {
     const r = TVRender;
     const s = TVState.current;
@@ -61,6 +78,14 @@
     if (rv.coInvest) {
       revealLines.push(r.color("c-yellow", " ! ") +
         r.color("c-white", "Co-invest: " + TVPitchBattle.coInvestSignal(st)));
+    }
+    if (rv.meetingNotes && rv.meetingNotes.length) {
+      rv.meetingNotes.forEach(note => {
+        wrapText("Meeting: " + note.text, 38).forEach((line, idx) => {
+          revealLines.push(r.color("c-yellow", idx ? "   " : " ! ") +
+            r.color("c-white", line));
+        });
+      });
     }
     if (rv.pitchTruth) {
       revealLines.push(r.color("c-yellow", " ! ") + r.color("c-green", "Pitch: " + rv.pitchTruth));

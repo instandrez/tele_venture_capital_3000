@@ -14,7 +14,7 @@
   global.TVHeader = {
     setPage(pageNum) {
       const el = document.getElementById("hdr-page");
-      if (el) el.textContent = "P." + pageNum;
+      if (el) el.textContent = "P." + String(pageNum).padStart(3, "0");
     },
     setTitle(title) {
       const el = document.getElementById("hdr-title");

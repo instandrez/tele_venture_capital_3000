@@ -54,8 +54,8 @@
 
     TVRouter.setActionHandler(num => {
       if (num === 1) {
-        const fund = prompt("Nome del fondo:") || "Anonymous Capital";
-        const nick = prompt("Nickname GP:") || "GP";
+        const fund = s.fundName || prompt("Nome del fondo:") || "Anonymous Capital";
+        const nick = s.nickname || prompt("Nickname GP:") || "GP";
         saveToLeaderboard({
           fundName: fund.slice(0, 20),
           nickname: nick.slice(0, 14),

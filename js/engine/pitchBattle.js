@@ -180,8 +180,9 @@
       over: false,
       won: false,
       lastMove: null,
-      lastOutcome: null,  // "weak" | "neutral" | "resist"
-      counterBlocked: false
+      lastOutcome: null,  // "weak" | "neutral" | "resist" | "repeat"
+      counterBlocked: false,
+      usedMoves: {}
     };
   }
 
@@ -190,12 +191,21 @@
     if (b.over) return b;
     const p = PROFILES[b.profile];
     let outcome;
+    if (!b.usedMoves) b.usedMoves = {};
     b.counterBlocked = false;
     b.counterBlockSource = null;
     b.intelTriggered = false;
-    if (moveId === p.weak) { b.guard -= 4; outcome = "weak"; }
+
+    if (b.usedMoves[moveId]) {
+      b.lastMove = moveId;
+      b.lastOutcome = "repeat";
+      return b;
+    }
+
+    b.usedMoves[moveId] = true;
+    if (moveId === p.weak) { b.guard -= 5; outcome = "weak"; }
     else if (moveId === p.resist) { b.cred -= 2; outcome = "resist"; }
-    else { b.guard -= 2; outcome = "neutral"; }
+    else { b.guard -= 3; outcome = "neutral"; }
     if (b.intelStrikeAvailable && moveId === b.intelMove) {
       b.guard -= b.intelPower;
       b.intelStrikeAvailable = false;
@@ -211,16 +221,20 @@
       b.won = true;
       return b;
     }
-    // Ogni domanda consuma controllo della sala. Un dossier preparato
-    // assorbe i primi contrattacchi: la navigazione crea tempo reale.
-    if (b.intelTriggered) {
+    // Una domanda forte compra tempo: il founder non riesce a rilanciare.
+    // Le domande neutre consumano controllo sala, salvo dossier preparato.
+    // La parata ha gia' il suo costo pieno (-2), quindi non aggiunge -1.
+    if (outcome === "weak") {
+      b.counterBlocked = true;
+      b.counterBlockSource = "strong";
+    } else if (b.intelTriggered) {
       b.counterBlocked = true;
       b.counterBlockSource = "lead";
     } else if (b.intelShield > 0) {
       b.intelShield -= 1;
       b.counterBlocked = true;
       b.counterBlockSource = "shield";
-    } else {
+    } else if (outcome === "neutral") {
       b.cred -= 1;
     }
     if (b.cred <= 0) {

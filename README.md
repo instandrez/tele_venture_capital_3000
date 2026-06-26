@@ -35,9 +35,10 @@ python -m http.server 5173
 
 | Pagina | Contenuto |
 |---|---|
+| 000 | Start Game / schermata titolo arcade |
 | 100 | Home / indice |
 | 101–109 | Nuovo fondo, riprendi, regole, gestione save |
-| 105 | Sigla d'apertura (parte su nuovo fondo, rivedibile) |
+| 105 | Tutorial / sigla d'apertura (parte su New Game, rivedibile) |
 | 110–119 | Ultim'Ora (+ dettagli anni 2-5 su 211+, 311+, 411+, 511+) |
 | 120–139 | Politica & Regolazione |
 | 140–159 | Borsa & indici settoriali (live, signal inclusi) |
@@ -111,9 +112,11 @@ tests/run.js          test del motore (node, zero dipendenze)
 - **Doppia modalità visiva**: le pagine informative restano un hub
   Televideo ampio e leggibile; sigla e Pitch Battle passano a una
   `console mode` 16:9 che usa quasi tutto il viewport.
-- **Opening cinematic in-engine**: pagina 105 con fondale pixel-art,
-  camera lenta, titoli e avanzamento automatico. Non è un MP4: resta
-  nitida, adattabile e controllabile con `1` / `0`.
+- **Tutorial cinematic in-engine**: pagina 105 con fondale pixel-art,
+  camera lenta, titoli e avanzamento automatico. Introduce news, dealflow,
+  taccuino, pitch battle come leva negoziale, term sheet, portfolio,
+  classifica e LP. Non è un MP4: resta nitida,
+  adattabile e controllabile con `1` / `0`.
 - **Navigatore FastText**: la banda colorata porta a Home, News, Taccuino,
   Dealflow, Portfolio e LP Call. Evidenzia l'area corrente ed è cliccabile;
   la navigazione numerica resta il controllo principale.
@@ -121,14 +124,14 @@ tests/run.js          test del motore (node, zero dipendenze)
 - **PITCH BATTLE**: aprire una startup pendente (301-303) fa partire la
   battaglia a turni col founder — boardroom panoramica stile SNES,
   personaggi DOM pixel-art scalabili, HUD separati, camera arcade,
-  idle bob e dialog box bordata coi numeri di danno. L'HUD distingue
-  **Guardia founder** (a zero rivela la verità) e **Controllo sala**
+  idle bob e dialog box bordata. L'HUD distingue
+  **Resistenza founder** (a zero rivela la verità e porta il leverage al massimo) e **Controllo sala**
   (a zero perdi il deal); ogni domanda costa un punto di controllo, salvo
   le coperture ottenute navigando il Televideo. Gli sprite
   (`js/data/founderSprites.js`) sono il tipo del founder: si imparano
   a riconoscere partita dopo partita. Tutte le azioni vivono nella
   battle: domande (1-4, con debolezza/parata per `founderProfile`),
-  DD, ref call, negoziazione (più la guardia è bassa più funziona),
+  DD, ref call, negoziazione (più leverage hai più funziona),
   co-invest, passa, investi (tre ticket coerenti con lo stage). Controllo sala a zero =
   fuori dal round, deal perso (e il tuo sprite crolla). La debolezza
   si deduce dal pitch qualitativo (`js/data/pitches.js`) o dalla ref

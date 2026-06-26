@@ -82,7 +82,7 @@
       r.color(deployment.rate >= 0.8 ? "c-green" : "c-magenta",
         Math.round(deployment.rate * 100) + "%") +
       r.color("c-white", " // target anno " + r.eur(deployment.target)));
-    lines.push(r.color("c-white", " 200 DEALFLOW    500 IC MOMENT    100 HOME"));
+    lines.push(r.color("c-white", " 200 DEALFLOW    450 FINE ANNO    100 HOME"));
 
     r.show(pageNum, lines.join("\n"), { title: "PORTFOLIO" });
   }

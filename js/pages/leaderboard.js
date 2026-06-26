@@ -19,16 +19,17 @@
       lines.push(r.color("c-magenta", r.center("vinci, salva, torna.")));
     } else {
       lines.push(" " + r.color("c-yellow",
-        r.pad("#", 3) + r.pad("FONDO", 16) + r.pad("MOIC", 7) + "TITOLO"));
+        r.pad("#", 3) + r.pad("GP/FONDO", 18) + r.pad("MOIC", 7) + "SCORE"));
       lines.push(r.color("c-blue", " " + "─".repeat(38)));
       lb.slice(0, 14).forEach((e, i) => {
         const rank = String(i + 1);
         const rankCls = i === 0 ? "c-yellow" : (i < 3 ? "c-green" : "c-white");
+        const label = (e.nickname ? e.nickname + "/" : "") + e.fundName;
         lines.push(" " +
           r.color(rankCls, r.pad(rank, 3)) +
-          r.color("c-white",  r.pad(e.fundName.slice(0, 15), 16)) +
+          r.color("c-white",  r.pad(label.slice(0, 17), 18)) +
           r.color("c-cyan",   r.pad(e.moic.toFixed(2) + "x", 7)) +
-          r.color("c-magenta", e.title.slice(0, 14)));
+          r.color("c-magenta", String(e.score || 0).slice(0, 5)));
       });
     }
 

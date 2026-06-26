@@ -1,5 +1,5 @@
 /* Pagina 450 — Follow-on round.
-   A fine anno (dopo la delibera del dealflow, prima dell'IC) alcune
+   A fine anno (dopo la delibera del dealflow) alcune
    posizioni in crescita rilanciano un round. Il GP sceglie:
 
    1 PRO-RATA    — investe il 50% del ticket originale al prezzo
@@ -49,7 +49,7 @@
 
     const offer = nextPending(s);
     if (!offer) {
-      TVRouter.goto(500, { skipLoading: true });
+      TVYearEnd.routeAfterClose(s);
       return;
     }
     const pos = s.portfolio.find(p => p.id === offer.id);

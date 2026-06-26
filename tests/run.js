@@ -37,6 +37,7 @@ load("data/lpCalls.js");
 load("data/titles.js");
 load("engine/scoring.js");
 load("engine/marketEngine.js");
+load("engine/yearEnd.js");
 load("engine/dealflow.js");
 load("engine/fundMath.js");
 load("engine/intelligence.js");
@@ -110,6 +111,13 @@ test("console mode esegue il tasto numerico senza Invio", () => {
   global.TVRouter.setActionHandler(num => { action = num; });
   global.TVInput.handleKey({ key: "7", preventDefault() {} });
   eq(action, 7, "azione diretta");
+});
+test("touch keypad riusa lo stesso input della tastiera", () => {
+  let action = null;
+  directActionMode = true;
+  global.TVRouter.setActionHandler(num => { action = num; });
+  global.TVInput.pressKey("6");
+  eq(action, 6, "azione touch");
 });
 test("hub Televideo continua a richiedere Invio", () => {
   let action = null;
@@ -437,6 +445,26 @@ test("writedown taglia il multiplo ma non chiude", () => {
   assert(pos.currentValueMultiplier < 0.1, "multiplo schiacciato");
 });
 
+test("chiusura automatica anno applica year-end e torna alla home", () => {
+  const s = TVState.newGame();
+  s.year = 1;
+  const outcome = global.TVYearEnd.closeCurrentYear(s);
+  eq(outcome.final, false, "non finale");
+  eq(outcome.page, 100, "torna home");
+  eq(s.year, 2, "anno avanzato");
+  assert(s.icCache && s.icCache.y1, "year-end cache anno 1");
+});
+
+test("chiusura automatica anno 5 manda al report finale", () => {
+  const s = TVState.newGame();
+  s.year = 5;
+  const outcome = global.TVYearEnd.closeCurrentYear(s);
+  eq(outcome.final, true, "finale");
+  eq(outcome.page, 700, "pagina report");
+  assert(s.gameOver, "game over");
+  assert(s.icCache && s.icCache.y5, "year-end cache anno 5");
+});
+
 console.log("\n== Pitch Live ==");
 const TVPitchBattle = global.TVPitchBattle, TVPitches = global.TVPitches;
 
@@ -463,15 +491,29 @@ test("ogni founderProfile ha un profilo di battaglia completo", () => {
   });
 });
 
-test("giocare la debolezza vince sempre (skill premiata)", () => {
+test("giocare debolezza e cambiare angolo vince (skill premiata)", () => {
   Object.keys(TVPitchBattle.PROFILES).forEach(fp => {
     const b = TVPitchBattle.newBattle(fp);
-    const weak = TVPitchBattle.PROFILES[fp].weak;
-    let guard = 0;
-    while (!b.over && guard++ < 20) TVPitchBattle.applyMove(b, weak);
-    assert(b.over && b.won, "weak spam dovrebbe vincere: " + fp);
+    const p = TVPitchBattle.PROFILES[fp];
+    const moves = [p.weak].concat([1, 2, 3, 4].filter(m => m !== p.weak && m !== p.resist));
+    moves.forEach(m => { if (!b.over) TVPitchBattle.applyMove(b, m); });
+    assert(b.over && b.won, "weak + due domande nuove dovrebbe vincere: " + fp);
     assert(b.turn === 3, fp + ": atteso 3 turni, ottenuto " + b.turn);
+    eq(b.cred, TVPitchBattle.CRED_MAX - 1, fp + ": solo il turno non conclusivo costa sala");
   });
+});
+
+test("ripetere una domanda non produce nuovo danno", () => {
+  const b = TVPitchBattle.newBattle("ego");
+  TVPitchBattle.applyMove(b, TVPitchBattle.PROFILES.ego.weak);
+  const guard = b.guard;
+  const cred = b.cred;
+  const turn = b.turn;
+  TVPitchBattle.applyMove(b, TVPitchBattle.PROFILES.ego.weak);
+  eq(b.guard, guard, "guardia invariata");
+  eq(b.cred, cred, "controllo invariato");
+  eq(b.turn, turn, "turno invariato");
+  eq(b.lastOutcome, "repeat", "repeat tracciato");
 });
 
 test("la mossa parata non scalfisce e costa credibilita'", () => {
@@ -479,7 +521,14 @@ test("la mossa parata non scalfisce e costa credibilita'", () => {
   const resist = TVPitchBattle.PROFILES.ego.resist;
   TVPitchBattle.applyMove(b, resist);
   eq(b.guard, TVPitchBattle.GUARD_MAX, "guardia intatta");
-  eq(b.cred, TVPitchBattle.CRED_MAX - 3, "-2 parata -1 contrattacco");
+  eq(b.cred, TVPitchBattle.CRED_MAX - 2, "-2 parata");
+});
+
+test("la domanda neutra costa un punto controllo sala", () => {
+  const b = TVPitchBattle.newBattle("ego");
+  TVPitchBattle.applyMove(b, 1);
+  eq(b.guard, TVPitchBattle.GUARD_MAX - 3, "guardia scalfita");
+  eq(b.cred, TVPitchBattle.CRED_MAX - 1, "-1 contrattacco");
 });
 
 test("il dossier blocca il primo costo di controllo sala", () => {
@@ -493,7 +542,7 @@ test("il dossier blocca il primo costo di controllo sala", () => {
 test("la domanda armata dal dossier infligge danno extra e blocca la replica", () => {
   const b = TVPitchBattle.newBattle("ego", { intelMove: 1 });
   TVPitchBattle.applyMove(b, 1);
-  eq(b.guard, TVPitchBattle.GUARD_MAX - 4, "2 danno neutro + 2 dossier");
+  eq(b.guard, TVPitchBattle.GUARD_MAX - 5, "3 danno neutro + 2 dossier");
   assert(b.intelTriggered, "colpo dossier attivato");
   assert(b.counterBlocked, "replica bloccata");
   assert(!b.intelStrikeAvailable, "bonus consumato");
@@ -502,16 +551,18 @@ test("la domanda armata dal dossier infligge danno extra e blocca la replica", (
 test("la fonte privata porta il Dossier Strike a 3 danni extra", () => {
   const b = TVPitchBattle.newBattle("ego", { intelMove: 1, intelPower: 3 });
   TVPitchBattle.applyMove(b, 1);
-  eq(b.guard, TVPitchBattle.GUARD_MAX - 5, "2 neutro + 3 fonte");
+  eq(b.guard, TVPitchBattle.GUARD_MAX - 6, "3 neutro + 3 fonte");
   assert(b.counterBlocked, "replica bloccata");
 });
 
-test("spammare la parata fa perdere la sala", () => {
+test("ripetere la parata non costa sala due volte", () => {
   const b = TVPitchBattle.newBattle("hustle");
   const resist = TVPitchBattle.PROFILES.hustle.resist;
-  let guard = 0;
-  while (!b.over && guard++ < 20) TVPitchBattle.applyMove(b, resist);
-  assert(b.over && !b.won, "resist spam deve perdere");
+  TVPitchBattle.applyMove(b, resist);
+  TVPitchBattle.applyMove(b, resist);
+  eq(b.cred, TVPitchBattle.CRED_MAX - 2, "solo primo errore costa");
+  eq(b.turn, 1, "repeat non consuma turno");
+  eq(b.lastOutcome, "repeat", "repeat tracciato");
 });
 
 test("truthFor da' una verita' per ogni startup", () => {

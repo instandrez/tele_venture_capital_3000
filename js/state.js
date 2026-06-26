@@ -33,6 +33,9 @@
       followOnCache: {},      // { yN: [offerte follow-on] }
       usedLPCalls: [],
       history: [],            // log decisioni/exit per il report finale
+      tutorialFlags: {
+        pitchBattle: false
+      },
       currentPage: 100,
       previousPage: null,
       fundName: null,
@@ -54,6 +57,8 @@
     if (!s.readPages) s.readPages = [];
     if (!s.investigationSources) s.investigationSources = {};
     if (!s.history) s.history = [];
+    if (!s.tutorialFlags) s.tutorialFlags = {};
+    if (typeof s.tutorialFlags.pitchBattle !== "boolean") s.tutorialFlags.pitchBattle = false;
     if (typeof s.researchSpent !== "number") s.researchSpent = 0;
     if (typeof s.investableCapital !== "number") s.investableCapital = 90_000_000;
     if (typeof s.managementFeeBudget !== "number") s.managementFeeBudget = 10_000_000;
@@ -76,9 +81,12 @@
       this.current = makeNewState();
     },
 
-    newGame() {
+    newGame(options) {
+      options = options || {};
       this.current = makeNewState();
       this.current.gameStarted = true;
+      if (options.fundName) this.current.fundName = String(options.fundName).slice(0, 24);
+      if (options.nickname) this.current.nickname = String(options.nickname).slice(0, 16);
       this.save();
       return this.current;
     },

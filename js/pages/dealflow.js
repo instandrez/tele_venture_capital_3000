@@ -26,11 +26,23 @@
 
     const picks = TVDealflow.currentYearDealflow(s);
     const pending = TVDealflow.pendingDeals(s);
+    if (pending.length === 0) {
+      TVRouter.flash("ANNO DELIBERATO - CHIUSURA AUTO");
+      TVRouter.goto(450, { skipLoading: true });
+      return;
+    }
     const deployment = TVFundMath.deployment(s);
+    const theme = TVDealflow.yearTheme ? TVDealflow.yearTheme(s.year) : null;
     const width = r.COLS - 2;
 
     const lines = [];
     lines.push(r.bg("bg-green", "  " + r.pad("DEALFLOW — ANNO " + s.year + "/" + s.maxYear, width)));
+    if (theme) {
+      lines.push(" " + r.color("c-cyan", "FOCUS " + theme.title) +
+                 r.color("c-white", " // " + theme.focus));
+      lines.push(" " + r.color("c-yellow", "MEMO: ") +
+                 r.color("c-white", theme.memo));
+    }
     lines.push(" " +
       r.color("c-yellow", "Cash:") + " " + r.color("c-green", r.eur(s.cash)) +
       "   " +
@@ -75,7 +87,7 @@
 
     if (pending.length > 0) {
       lines.push(" " + r.color("c-yellow", pending.length + " deal da deliberare") +
-                 r.color("c-white", " prima di chiudere l'anno"));
+                 r.color("c-white", " prima della chiusura auto"));
     } else {
       lines.push(" " + r.color("c-green", "tutto deliberato — puoi chiudere l'anno"));
     }
@@ -84,7 +96,7 @@
     if (alert) lines.push(alert);
 
     while (lines.length < 19) lines.push("");
-    lines.push(r.color("c-white", " 9 CHIUDI ANNO     100 HOME"));
+    lines.push(r.color("c-white", " 9 PASSA RESTANTI     100 HOME"));
     lines.push(r.color("c-white", " 190 TACCUINO   110 NEWS   400 PORTFOLIO"));
 
     r.show(pageNum, lines.join("\n"), { title: "DEALFLOW" });
@@ -93,31 +105,21 @@
       if (num !== 9) return;
       const stillPending = TVDealflow.pendingDeals(s);
       if (stillPending.length === 0) {
-        // LP al telefono? chiudere l'anno senza rispondere costa caro:
-        // chiedi conferma esplicita (ignorare resta una scelta legittima)
-        let lpPending = [];
-        try { lpPending = TVLPCalls.pickCallsForYear(s); } catch (e) {}
-        if (lpPending.length > 0 && !confirmCloseArmed) {
-          confirmCloseArmed = true;
-          TVAudio.error();
-          TVRouter.flash("LP IN LINEA (600) - 9 PER IGNORARLI");
-          return;
-        }
-        // la chiusura passa per il follow-on (450): se non ci sono
-        // offerte, la pagina reindirizza da sola all'IC (500)
-        TVRouter.goto(450);
+        // La chiusura passa dal follow-on (450): se non ci sono offerte,
+        // il modulo chiude l'anno automaticamente.
+        TVRouter.goto(450, { skipLoading: true });
         return;
       }
       if (!confirmCloseArmed) {
         confirmCloseArmed = true;
         TVAudio.error();
-        TVRouter.flash(stillPending.length + " DEAL PENDENTI - 9 PER CONFERMARE");
+        TVRouter.flash(stillPending.length + " DEAL PENDENTI - 9 PASSA TUTTI");
         return;
       }
       // conferma: i deal rimasti vengono passati d'ufficio
       stillPending.forEach(st => TVDealflow.setDecision(s, st.id, "passed"));
       TVState.save();
-      TVRouter.goto(450);
+      TVRouter.goto(450, { skipLoading: true });
     });
   }
 

@@ -1,6 +1,6 @@
 /* Eventi di liquidità scriptati, allineati al calendario news.
    Se il giocatore ha in portfolio la startup nell'anno indicato,
-   l'evento si applica a fine anno (IC Moment).
+   l'evento si applica a fine anno durante la chiusura automatica.
 
    MODELLO: proceeds = investedAmount × currentValueMultiplier × premium
    Il multiplo accumulato (news, baseline, negoziazione) resta quindi

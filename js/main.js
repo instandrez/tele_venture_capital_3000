@@ -108,6 +108,18 @@
     catch (err) { console.error("action handler", err); }
   }
 
+  function pressKey(key) {
+    handleKey({ key: key, preventDefault() {} });
+  }
+
+  function runTouchAction(num) {
+    if (!actionHandler) return;
+    buffer = "";
+    updateInputDisplay();
+    TVAudio.keyPress();
+    runAction(num);
+  }
+
   function handleKey(e) {
     const key = e.key;
     if (key >= "0" && key <= "9") {
@@ -173,10 +185,26 @@
         router.goto(parseInt(button.dataset.page, 10));
       });
     }
-    router.goto(100, { skipLoading: true });
+    const pad = document.getElementById("mobile-pad");
+    if (pad) {
+      pad.addEventListener("click", e => {
+        const button = e.target.closest && e.target.closest("[data-key]");
+        if (!button) return;
+        pressKey(button.dataset.key);
+      });
+    }
+    document.addEventListener("click", e => {
+      const button = e.target.closest && e.target.closest("[data-action]");
+      if (!button) return;
+      const num = parseInt(button.dataset.action, 10);
+      if (isNaN(num)) return;
+      e.preventDefault();
+      runTouchAction(num);
+    });
+    router.goto(0, { skipLoading: true });
   }
 
   global.TVRouter = router;
-  global.TVInput = { handleKey, isDirectActionMode };
+  global.TVInput = { handleKey, pressKey, isDirectActionMode };
   document.addEventListener("DOMContentLoaded", boot);
 })(window);

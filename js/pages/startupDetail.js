@@ -81,9 +81,15 @@
     }
     if (rv.meetingNotes && rv.meetingNotes.length) {
       rv.meetingNotes.forEach(note => {
-        wrapText("Meeting: " + note.text, 38).forEach((line, idx) => {
-          revealLines.push(r.color("c-yellow", idx ? "   " : " ! ") +
-            r.color("c-white", line));
+        revealLines.push(r.color("c-yellow", " ! ") +
+          r.color("c-white", "Meeting note " + note.move + ":"));
+        String(note.text || "").split(/\n+/).filter(Boolean).forEach(part => {
+          const cls = /^(DATA|CLUE|READ|RISK|FATE|TEAM|MARKET|PRICE|TELL|EXECUTION):/.test(part)
+            ? "c-cyan"
+            : "c-white";
+          wrapText(part, 36).slice(0, 2).forEach(line => {
+            revealLines.push(r.color("c-yellow", "   ") + r.color(cls, line));
+          });
         });
       });
     }

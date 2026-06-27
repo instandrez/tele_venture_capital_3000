@@ -214,48 +214,165 @@
   }
 
   // ---------- Pitch Battle ----------
-  const BATTLE_LEAD = [
-    440, 0, 523, 0, 659, 0, 523, 494,
-    392, 0, 440, 0, 523, 0, 440, 392,
-    523, 0, 659, 0, 784, 659, 587, 523,
-    494, 0, 587, 0, 659, 587, 523, 494
-  ];
-  const BATTLE_BASS = [
-    110, 0, 0, 165, 110, 0, 0, 165,
-     87, 0, 0, 131,  87, 0, 0, 131,
-    131, 0, 0, 196, 131, 0, 0, 196,
-     82, 0, 0, 123,  82, 0, 0, 123
-  ];
-  const BATTLE_STEP = 60 / 132 / 4;
+  const BATTLE_THEMES = {
+    default: {
+      bpm: 132, leadWave: "square", leadVol: 0.052, bassVol: 0.12,
+      lead: [
+        440, 0, 523, 0, 659, 0, 523, 494,
+        392, 0, 440, 0, 523, 0, 440, 392,
+        523, 0, 659, 0, 784, 659, 587, 523,
+        494, 0, 587, 0, 659, 587, 523, 494
+      ],
+      bass: [
+        110, 0, 0, 165, 110, 0, 0, 165,
+         87, 0, 0, 131,  87, 0, 0, 131,
+        131, 0, 0, 196, 131, 0, 0, 196,
+         82, 0, 0, 123,  82, 0, 0, 123
+      ]
+    },
+    ego: {
+      bpm: 146, leadWave: "square", leadVol: 0.048, bassVol: 0.11,
+      lead: [
+        880, 0, 784, 0, 880, 988, 1047, 0,
+        784, 0, 659, 0, 784, 880, 988, 0,
+        1047, 0, 988, 880, 784, 0, 659, 0,
+        587, 659, 784, 0, 880, 0, 784, 0
+      ],
+      bass: [
+        110, 0, 165, 0, 110, 0, 196, 0,
+        98, 0, 147, 0, 98, 0, 175, 0,
+        131, 0, 196, 0, 131, 0, 247, 0,
+        123, 0, 185, 0, 123, 0, 220, 0
+      ],
+      noiseFreq: 6200
+    },
+    hustle: {
+      bpm: 158, leadWave: "square", leadVol: 0.044, bassVol: 0.12, hatEvery: 1,
+      lead: [
+        392, 0, 392, 587, 0, 523, 392, 0,
+        440, 0, 440, 659, 0, 587, 440, 0,
+        523, 0, 523, 784, 659, 587, 523, 0,
+        494, 0, 587, 659, 587, 523, 494, 0
+      ],
+      bass: [
+        98, 0, 98, 0, 147, 0, 98, 0,
+        110, 0, 110, 0, 165, 0, 110, 0,
+        131, 0, 131, 0, 196, 0, 131, 0,
+        123, 0, 123, 0, 185, 0, 123, 0
+      ],
+      noiseFreq: 7200
+    },
+    red_flag: {
+      bpm: 116, leadWave: "sawtooth", leadVol: 0.034, bassVol: 0.13,
+      lead: [
+        330, 0, 311, 0, 294, 0, 277, 0,
+        262, 0, 247, 0, 233, 0, 220, 0,
+        247, 0, 262, 0, 294, 0, 311, 0,
+        294, 277, 262, 0, 247, 0, 220, 0
+      ],
+      bass: [
+        82, 0, 0, 82, 87, 0, 0, 87,
+        73, 0, 0, 73, 82, 0, 0, 82,
+        98, 0, 0, 98, 87, 0, 0, 87,
+        82, 0, 0, 73, 69, 0, 0, 69
+      ],
+      kickPitch: 0.82, noiseFreq: 840, snareFreq: 720
+    },
+    competent: {
+      bpm: 136, leadWave: "triangle", leadVol: 0.052, bassVol: 0.105,
+      lead: [
+        523, 659, 784, 1047, 784, 659, 523, 0,
+        494, 622, 740, 988, 740, 622, 494, 0,
+        440, 554, 659, 880, 659, 554, 440, 0,
+        392, 494, 587, 784, 587, 494, 392, 0
+      ],
+      bass: [
+        131, 0, 0, 196, 131, 0, 0, 196,
+        123, 0, 0, 185, 123, 0, 0, 185,
+        110, 0, 0, 165, 110, 0, 0, 165,
+        98, 0, 0, 147, 98, 0, 0, 147
+      ],
+      noiseFreq: 4200
+    },
+    grit: {
+      bpm: 124, leadWave: "square", leadVol: 0.043, bassVol: 0.14,
+      lead: [
+        294, 0, 392, 0, 440, 0, 392, 0,
+        262, 0, 349, 0, 392, 0, 349, 0,
+        330, 0, 440, 0, 494, 0, 440, 0,
+        247, 0, 330, 0, 392, 349, 330, 0
+      ],
+      bass: [
+        73, 0, 110, 0, 73, 0, 110, 0,
+        65, 0, 98, 0, 65, 0, 98, 0,
+        82, 0, 123, 0, 82, 0, 123, 0,
+        62, 0, 92, 0, 62, 0, 92, 0
+      ],
+      kickPitch: 0.9, noiseFreq: 3200
+    },
+    first_time: {
+      bpm: 142, leadWave: "square", leadVol: 0.046, bassVol: 0.105,
+      lead: [
+        659, 0, 784, 0, 659, 523, 587, 0,
+        698, 0, 880, 0, 698, 587, 659, 0,
+        784, 0, 988, 0, 880, 784, 698, 0,
+        659, 0, 587, 0, 523, 0, 587, 0
+      ],
+      bass: [
+        131, 0, 0, 165, 131, 0, 0, 165,
+        147, 0, 0, 185, 147, 0, 0, 185,
+        165, 0, 0, 196, 165, 0, 0, 196,
+        131, 0, 0, 165, 131, 0, 0, 165
+      ],
+      noiseFreq: 5600
+    }
+  };
+  let battleThemeKey = "default";
+
+  function battleTheme() {
+    return BATTLE_THEMES[battleThemeKey] || BATTLE_THEMES.default;
+  }
+
+  function battleStepDur(theme) {
+    return 60 / (theme.bpm || 132) / 4;
+  }
 
   function scheduleBattleStep(step, at) {
-    const i = step % BATTLE_LEAD.length;
-    const lead = BATTLE_LEAD[i];
-    const bass = BATTLE_BASS[i];
+    const theme = battleTheme();
+    const stepDur = battleStepDur(theme);
+    const len = Math.max(theme.lead.length, theme.bass.length);
+    const i = step % len;
+    const lead = theme.lead[i % theme.lead.length];
+    const bass = theme.bass[i % theme.bass.length];
+    const noiseFreq = theme.noiseFreq || 5200;
+    const snareFreq = theme.snareFreq || 1050;
+    const hatEvery = theme.hatEvery || 2;
 
     if (lead) {
-      note(lead, BATTLE_STEP * 0.78, {
-        at: at, wave: "square", volume: 0.052, bus: "music", release: 0.025
+      note(lead, stepDur * 0.78, {
+        at: at, wave: theme.leadWave || "square",
+        volume: theme.leadVol || 0.052, bus: "music", release: 0.025
       });
     }
     if (bass) {
-      note(bass, BATTLE_STEP * 1.7, {
-        at: at, wave: "triangle", volume: 0.12, bus: "music", release: 0.04
+      note(bass, stepDur * 1.7, {
+        at: at, wave: "triangle", volume: theme.bassVol || 0.12,
+        bus: "music", release: 0.04
       });
     }
 
     if (i % 8 === 0) {
-      note(74, 0.07, {
+      note(74 * (theme.kickPitch || 1), 0.07, {
         at: at, wave: "sine", volume: 0.13, bus: "music", slide: 42
       });
     }
     if (i % 8 === 4) {
       noise(0.075, {
-        at: at, frequency: 1050, volume: 0.055, bus: "music", filterType: "bandpass"
+        at: at, frequency: snareFreq, volume: 0.055, bus: "music", filterType: "bandpass"
       });
-    } else if (i % 2 === 0) {
+    } else if (i % hatEvery === 0) {
       noise(0.022, {
-        at: at, frequency: 5200, volume: 0.015, bus: "music"
+        at: at, frequency: noiseFreq, volume: 0.015, bus: "music"
       });
     }
   }
@@ -265,7 +382,7 @@
     while (nextBattleAt < ctx.currentTime + 0.14) {
       scheduleBattleStep(battleStep, nextBattleAt);
       battleStep += 1;
-      nextBattleAt += BATTLE_STEP;
+      nextBattleAt += battleStepDur(battleTheme());
     }
   }
 
@@ -283,8 +400,12 @@
     battleTimer = null;
   }
 
-  function startBattleMusic() {
+  function startBattleMusic(themeKey) {
+    const nextTheme = BATTLE_THEMES[themeKey] ? themeKey : "default";
+    const changed = nextTheme !== battleThemeKey;
+    battleThemeKey = nextTheme;
     battleWanted = true;
+    if (changed && battleTimer) haltBattleScheduler();
     beginBattleScheduler();
   }
 

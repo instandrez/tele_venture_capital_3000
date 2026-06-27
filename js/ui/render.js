@@ -234,7 +234,8 @@
     }
     linkifyControls(content);
     bindInlineControls(content);
-    content.dataset.page = String(pageNum);
+    delete content.dataset.page;
+    content.dataset.currentPage = String(pageNum);
     if (lastPage !== pageNum) {
       content.classList.remove("page-enter");
       void content.offsetWidth;
@@ -256,7 +257,8 @@
     stage.innerHTML = html;
     linkifyControls(stage);
     bindInlineControls(stage);
-    stage.dataset.page = String(pageNum);
+    delete stage.dataset.page;
+    stage.dataset.currentPage = String(pageNum);
     TVHeader.setPage(pageNum);
     updateNav(pageNum);
     TVHeader.setTitle(opts.title || "VC3000");

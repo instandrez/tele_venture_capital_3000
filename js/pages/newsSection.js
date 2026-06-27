@@ -33,6 +33,12 @@
     });
   }
 
+  function newsRow(page, line, extraClass) {
+    return '<button type="button" class="news-link-row' +
+      (extraClass ? " " + extraClass : "") +
+      '" data-page="' + page + '">' + line + '</button>';
+  }
+
   function renderList(sectionRoot) {
     return function render(pageNum) {
       const r = TVRender;
@@ -159,12 +165,17 @@
           const num = r.color(meta.accent, String(n.page));
           const titleLines = wrapText(n.headline, r.COLS - 15).slice(0, 2);
           if (sectionRoot === 110) {
-            lines.push(" " + num + " " + '<span class="blink c-red">NEW</span> ' +
-                       r.color("c-white", titleLines[0]));
+            lines.push(newsRow(n.page, " " + num + " " +
+              '<span class="blink c-red">NEW</span> ' +
+              r.color("c-white", titleLines[0])));
           } else {
-            lines.push(" " + num + "  " + tag + " " + r.color("c-white", titleLines[0]));
+            lines.push(newsRow(n.page, " " + num + "  " + tag + " " +
+              r.color("c-white", titleLines[0])));
           }
-          if (titleLines[1]) lines.push("          " + r.color("c-white", titleLines[1]));
+          if (titleLines[1]) {
+            lines.push(newsRow(n.page, "          " + r.color("c-white", titleLines[1]),
+              "news-link-row-cont"));
+          }
           lines.push("      " + (intel.read
             ? r.color("c-green", "[LETTA]")
             : r.color("c-white", "[NON LETTA]")));

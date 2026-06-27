@@ -49,9 +49,13 @@
       });
     }
     if (!battle.usedMoves) battle.usedMoves = {};
+    const stage = battleStage(st);
+    const musicTheme = battleMusicTheme(st, battle.profile);
 
     B = {
       st: st, pageNum: pageNum, battle: battle, rv: rv, intel: intel,
+      stage: stage,
+      musicTheme: musicTheme,
       phase: battle.over && battle.won ? "broken" : "menu",
       log: [],
       dispGuard: battle.guard,
@@ -81,7 +85,7 @@
     }, 680);
     B.bobTimer = t;
 
-    TVAudio.startBattleMusic();
+    TVAudio.startBattleMusic(B.musicTheme);
     arm();
 
     if (resumed) {
@@ -156,56 +160,151 @@
     return "burn per cliente molto pesante";
   }
 
+  function unitShortLabel(value) {
+    if (value >= 0.35) return "UE solidi";
+    if (value >= 0.05) return "UE quasi pari";
+    if (value >= -0.35) return "CAC non ripaga";
+    return "burn cliente pesante";
+  }
+
   function valuationMultiple(st) {
     const traction = Math.max(1, st.traction || 0);
     return st.valuation / traction;
   }
 
-  function meetingNoteForMove(st, moveId, outcome) {
-    const val = TVRender.eur(st.valuation);
-    if (moveId === 1) {
-      const traction = scoreLabel(st.traction || 0, 6, 2);
-      const unit = unitLabel(st.unitEconomics || 0);
-      if (outcome === "resist") {
-        return "Numeri provati a memoria: traction " + traction +
-          ", ma il founder evita coorti e payback.";
+  const DEAL_SCENES = {
+    neurodrive: "demo in garage OEM: auto ferma, slide velocissima",
+    foundergpt: "waitlist viva, roadmap riscritta dopo ogni trend",
+    ragtag: "data room ordinata, procurement TLC gia' in copia",
+    agiordie: "lavagna piena di formule, pipeline clienti vuota",
+    neuronote: "studi legali pagano davvero, non solo pilot gratis",
+    promptlayer: "dev community rumorosa, open source alle calcagna",
+    agentforge: "demo perfetta in video, produzione ancora fantasma",
+    saltcore: "plant pilota acceso, supply chain fragile sullo sfondo",
+    carbonhug: "impact deck bellissimo, misurazione ancora elastica",
+    deepforge: "capex da industria pesante, brevetto difficile da copiare",
+    bluehydro: "offtake firmati, ma costo idrogeno ancora testardo",
+    greenrinse: "PDF verde venduto come software, corporate entusiaste",
+    humanoidops: "robot che saluta, BOM che urla vendetta",
+    strongarm: "robot noioso, clienti veri, ordini che non fanno rumore",
+    humanlessops: "due plant usano il prodotto, sales cycle lungo",
+    yachtbrain: "barca demo lucida, cap table con assenze strane",
+    evcharge24: "colonnine installate, margine stretto come parcheggio",
+    scootflow: "brand urbano forte, assessori gia' nervosi",
+    starvista: "satellite piccolo, contratto pubblico molto grande",
+    dovesofwar: "drone pragmatico, tender pubblici nel mirino",
+    fortresslab: "ARR vero e clienti paranoici: ottimo mix cyber",
+    ghostlog: "repo vivo, mercato SIEM affollato come metro",
+    invoicequick: "software brutto, profittevole, clienti appiccicosi",
+    notarygpt: "notai curiosi, lobby pronta a frenare",
+    legalcopilot: "founder acerbo, crescita organica sorprendente",
+    smartpolicy: "pilot banca vivo, distribuzione ancora collo di bottiglia",
+    madbank: "utenti tanti, monetizzazione ancora promessa",
+    crookedtoken: "wallet activity sospetta, rebrand AI troppo comodo",
+    spinall: "marketplace locale forte, governance fragile",
+    stealthmode: "NDA ovunque, nessuno nomina il prodotto due volte",
+    exgoogler: "team stellare, customer discovery sotto zero",
+    pivotking: "slide numero quattro, pivot numero tre"
+  };
+
+  function rootSector(st) {
+    return String((st && st.sectorTag) || "UNKNOWN").split("_")[0];
+  }
+
+  function scriptedFate(st) {
+    const exits = global.TVExits && TVExits.EXIT_EVENTS;
+    return exits && exits.find(e => e.startupId === st.id);
+  }
+
+  function fateLine(st) {
+    const ev = scriptedFate(st);
+    if (!ev) {
+      if (st.id === "saltcore") {
+        return "FATE: markup probabile ma DPI lontano; carta ricca, exit lenta.";
       }
-      return "Numeri: traction " + traction + ", " + unit +
-        ". Valuation in ingresso " + val + ".";
+      return "FATE: nessuna exit facile in calendario; deve crescere sul serio.";
+    }
+    if (ev.kind === "exit" || ev.kind === "ipo") {
+      return "FATE: finestra positiva anno " + ev.year + " - " + ev.note + ".";
+    }
+    if (ev.kind === "acquihire") {
+      return "FATE: salva il team, non il prodotto - " + ev.note + ".";
+    }
+    if (ev.kind === "writedown") {
+      return "FATE: valuation trap - " + ev.note + ".";
+    }
+    return "FATE: downside reale anno " + ev.year + " - " + ev.note + ".";
+  }
+
+  function investorRead(st, outcome) {
+    const score =
+      (st.team || 0) * 0.23 +
+      (st.traction || 0) * 0.25 +
+      (st.strategicFit || 0) * 0.14 +
+      ((st.unitEconomics || 0) + 1) * 2.1 -
+      (st.hype || 0) * 0.07 -
+      (st.hypeDecay || 0) * 1.4;
+    const prefix = outcome === "resist" ? "READ: risposta bella, prova debole. " : "READ: ";
+    if (score >= 6.6) return prefix + "sostanza sopra teatro, prezzo da negoziare.";
+    if (score >= 4.8) return prefix + "opzione vera, ma serve sconto o prova esterna.";
+    return prefix + "rischio narrativo alto: paghi molto futuro non verificato.";
+  }
+
+  function marketRead(st) {
+    const reg = (st.regulatoryExposure || 0) < -0.35
+      ? "regolazione contro"
+      : ((st.regulatoryExposure || 0) > 0.35 ? "regolazione a favore" : "regolazione neutra");
+    const heat = (st.hype || 0) >= 8 || (st.hypeDecay || 0) >= 0.6
+      ? "mercato caldo ma fragile"
+      : "mercato meno rumoroso";
+    return "MARKET: " + rootSector(st) + ", " + heat + ", " + reg + ".";
+  }
+
+  function priceRead(st) {
+    const traction = Math.max(1, st.traction || 0);
+    const valPerTraction = Math.round((st.valuation || 0) / traction);
+    const heat = valPerTraction > 9_000_000 || (st.hype || 0) >= 8
+      ? "prezzo da narrative round"
+      : "prezzo non folle se i dati tengono";
+    return "PRICE: " + TVRender.eur(st.valuation) + ", " + heat + ".";
+  }
+
+  function meetingNoteForMove(st, moveId, outcome) {
+    const scene = DEAL_SCENES[st.id] || (st.name + ": segnali da interpretare.");
+    if (moveId === 1) {
+      return [
+        "SCENA: " + scene + ".",
+        "DATA: traction " + (st.traction || 0) + "/10, " + unitShortLabel(st.unitEconomics || 0) + ".",
+        "CLUE: " + st.hiddenUpside + ".",
+        investorRead(st, outcome)
+      ].join("\n");
     }
     if (moveId === 2) {
-      const crowded = (st.hype || 0) >= 8 || (st.hypeDecay || 0) >= 0.6;
-      const reg = (st.regulatoryExposure || 0) < -0.3
-        ? "vento regolatorio contrario"
-        : ((st.regulatoryExposure || 0) > 0.3
-          ? "regolazione potenzialmente favorevole"
-          : "regolazione neutra");
-      if (outcome === "resist") {
-        return "Competitor: risponde con category design, non con moat. " +
-          (crowded ? "Mercato affollato/hype." : reg + ".");
-      }
-      return "Competitor: " + (crowded
-        ? "mercato rumoroso, serve moat reale"
-        : "spazio meno affollato") + "; " + reg + ".";
+      return [
+        "SCENA: " + scene + ".",
+        marketRead(st),
+        "RISK: " + st.hiddenRisk + ".",
+        fateLine(st)
+      ].join("\n");
     }
     if (moveId === 3) {
-      const team = scoreLabel(st.team || 0, 8, 4);
-      const fit = scoreLabel(st.strategicFit || 0, 7, 3);
-      if (outcome === "resist") {
-        return "Team: risposta difensiva. Team " + team +
-          ", founder risk da verificare con reference.";
-      }
-      return "Team: qualita' " + team + ", strategic fit " + fit +
-        ". Qui conta execution risk.";
+      return [
+        "SCENA: " + scene + ".",
+        "TEAM: " + scoreLabel(st.team || 0, 8, 4) +
+          ", founder " + TVPitchBattle.founderLabel(st.founderProfile) + ".",
+        "EXECUTION: fit " + (st.strategicFit || 0) + "/10, " + st.hiddenRisk + ".",
+        investorRead(st, outcome)
+      ].join("\n");
     }
     if (moveId === 4) {
-      const premium = valuationMultiple(st) > 8_000_000 || (st.hype || 0) >= 8;
-      if (outcome === "resist") {
-        return "Silenzio: non si scompone. Segnale di controllo, ma chiede ancora " + val + ".";
-      }
-      return "Founder tell: " + (premium
-        ? "molta narrativa nel prezzo, chiedi sconto"
-        : "prezzo meno gonfio dal racconto") + "; upside da verificare con DD.";
+      return [
+        "SCENA: " + scene + ".",
+        priceRead(st),
+        "TELL: " + (outcome === "resist"
+          ? "regge il vuoto; forse controlla davvero il round."
+          : "nel silenzio lascia cadere il dettaglio che conta."),
+        fateLine(st)
+      ].join("\n");
     }
     return "";
   }
@@ -220,8 +319,15 @@
   }
 
   function noteLines(text) {
-    const out = [c("c-yellow", "MEETING NOTE")];
-    wrap(text, 38).slice(0, 3).forEach(line => out.push(c("c-white", line)));
+    const out = [c("c-yellow", "MEETING NOTE // " + B.st.name)];
+    String(text || "").split(/\n+/).filter(Boolean).forEach(part => {
+      const cls = /^(DATA|CLUE|READ|RISK|FATE|TEAM|MARKET|PRICE|TELL|EXECUTION):/.test(part)
+        ? "c-cyan"
+        : "c-white";
+      wrap(part, 42).forEach((line, idx) => {
+        out.push(c(idx ? "c-white" : cls, line));
+      });
+    });
     return out;
   }
 
@@ -245,6 +351,45 @@
 
   function currentDealValuation() {
     return dealValuationForGuard(B.battle.guard);
+  }
+
+  function battleMusicTheme(st, profile) {
+    return {
+      ego: "ego",
+      hustle: "hustle",
+      red_flag: "red_flag",
+      competent: "competent",
+      grit: "grit",
+      first_time: "first_time"
+    }[profile || st.founderProfile] || "default";
+  }
+
+  function battleStage(st) {
+    const tag = String(st.sectorTag || "UNKNOWN");
+    const root = tag.split("_")[0];
+    if (st.founderProfile === "red_flag" || root === "UNKNOWN") {
+      return { key: "backroom", label: "BACKROOM DD", accent: "#ff4030" };
+    }
+    if (root === "FINTECH" || root === "CRYPTO") {
+      return { key: "trading", label: "MARKET FLOOR", accent: "#ffe200" };
+    }
+    if (root === "CLIMATE" || root === "BATTERY") {
+      return { key: "factory", label: "INDUSTRIAL PLANT", accent: "#33ff66" };
+    }
+    if (root === "ROBOTICS" || root === "MOBILITY" || root === "SPACE") {
+      return { key: "hangar", label: "ORBIT HANGAR", accent: "#18e0ff" };
+    }
+    if (root === "AI" || root === "CYBER" || root === "LEGALTECH" || root === "SAAS") {
+      return { key: "datacenter", label: "DATA ROOM", accent: "#18e0ff" };
+    }
+    return { key: "arcade", label: "NEON ARCADE", accent: "#ff3df0" };
+  }
+
+  function stageSetdressHtml() {
+    return '<div class="battle-setdress" aria-hidden="true">' +
+      '<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>' +
+      '<span></span><span></span><span></span><span></span>' +
+      '</div>';
   }
 
   function fighterHtml(role) {
@@ -381,7 +526,9 @@
   function battleSceneHtml() {
     const r = TVRender;
     const s = TVState.current;
-    const logZone = B.log.filter(line => line !== "").slice(-4);
+    const isMeetingNote = B.log.some(line => String(line).includes("MEETING NOTE"));
+    const allLogLines = B.log.filter(line => line !== "");
+    const logZone = isMeetingNote ? allLogLines : allLogLines.slice(-4);
     const dialogue = logZone.length
       ? logZone.join("<br>")
       : c("c-yellow", "Il founder ti osserva. Tocca a te.");
@@ -389,18 +536,20 @@
       (B.phase === "broken" ? "PRESSIONE MASSIMA" : "PITCH BATTLE");
 
     return (
-      '<section class="console-scene battle-scene">' +
-        '<div class="battle-bg"></div><div class="battle-flash"></div>' +
+      '<section class="console-scene battle-scene battle-stage-' + B.stage.key +
+        '" style="--battle-accent:' + B.stage.accent + '">' +
+        '<div class="battle-bg"></div>' + stageSetdressHtml() + '<div class="battle-flash"></div>' +
         '<header class="battle-topbar">' +
           '<span class="battle-round">ANNO ' + s.year + " // ROUND " + (B.battle.turn + 1) + '</span>' +
-          '<span class="stage-name">' + phase + '</span>' +
+          '<span class="stage-name"><b>' + phase + '</b><small>' +
+            TVRender.escape(B.stage.label) + '</small></span>' +
           '<span class="battle-cash">FONDO ' + r.eur(s.cash) + '</span>' +
         '</header>' +
         intelStatusHtml() +
         fighterHtml("player") +
         fighterHtml("founder") +
         '<div class="battle-bottom">' +
-          '<section class="battle-dialogue">' +
+          '<section class="battle-dialogue' + (isMeetingNote ? " is-note" : "") + '">' +
             '<div class="dialogue-speaker">' + TVRender.escape(B.st.name) + '</div>' +
             '<div class="dialogue-lines">' + dialogue + '</div>' +
             '<div class="battle-hint">' + hintHtml() + '</div>' +
@@ -629,7 +778,7 @@
     const reaction = wrap(p.react[moveId] || "", 36).map(l => c("c-white", l));
     steps.push({ push: reaction, waitForInput: true });
     if (noteText) {
-      steps.push({ push: [""].concat(noteLines(noteText)),
+      steps.push({ log: noteLines(noteText),
                    waitForInput: true, sound: () => TVAudio.success() });
     }
 

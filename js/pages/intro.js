@@ -138,11 +138,15 @@
       : '<span class="c-magenta">NO SAVE DATA</span>';
     return (
       '<section class="console-scene start-scene">' +
+        '<div class="start-cabinet-frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>' +
         '<div class="start-grid"></div>' +
+        '<div class="start-retro-sun" aria-hidden="true"></div>' +
         '<div class="start-skyline" aria-hidden="true">' +
           '<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>' +
         '</div>' +
         '<div class="start-monorail" aria-hidden="true"><span></span></div>' +
+        '<div class="start-gp-sprite" aria-hidden="true"><i></i><b></b><span></span></div>' +
+        '<div class="start-coin-door" aria-hidden="true"><i></i><i></i><span></span></div>' +
         '<div class="start-logo" aria-label="Tele Venture Capital 3000">' +
           '<div class="start-kicker">TELEVIDEO ARCADE SYSTEM</div>' +
           '<h1><span>TELE</span><span>VENTURE</span><span>CAPITAL</span><em>3000</em></h1>' +

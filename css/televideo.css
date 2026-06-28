@@ -2728,25 +2728,150 @@ body::before {
   .intro-fund-seal strong { font-size: 31px; }
   .intro-fund-seal span,
   .intro-fund-seal em { font-size: 18px; }
-  .battle-topbar { grid-template-columns: 1fr 1fr; }
+  .battle-topbar {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    height: auto;
+    min-height: 42px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.45em;
+    padding: 5px 8px;
+    border-width: 2px;
+    box-shadow: 4px 4px 0 #050713, inset 0 0 0 2px #1c2855;
+    font-size: clamp(12px, 3.45vw, 16px);
+    line-height: 0.95;
+  }
   .battle-topbar .stage-name { display: none; }
+  .battle-topbar .battle-round,
+  .battle-topbar .battle-cash {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: clip;
+  }
+  .battle-topbar .battle-cash { justify-self: end; }
   .battle-intel { display: none; }
   .fighter {
-    bottom: 43%;
-    width: 45vw;
+    top: 62px;
+    bottom: auto;
+    width: calc(50% - 14px);
     min-width: 0;
   }
-  .fighter-art { width: 150px; height: 130px; }
-  .fighter-hud { font-size: 16px; border-width: 2px; }
+  .fighter-player { left: 8px; }
+  .fighter-founder { right: 8px; }
+  .fighter-art {
+    width: min(100px, 25vw);
+    height: min(86px, 21vw);
+    margin-top: 5px;
+    filter: drop-shadow(5px 7px 0 rgba(1,2,8,0.5));
+  }
+  .fighter-art .sprite-grid {
+    width: min(74px, 19vw);
+  }
+  .fighter-hud {
+    width: 100%;
+    padding: 6px 6px 7px;
+    border-width: 2px;
+    box-shadow: 4px 4px 0 #061030, inset 0 0 0 2px #28366d;
+    font-size: clamp(11px, 2.95vw, 14px);
+    line-height: 0.95;
+  }
+  .fighter-hud .hud-name {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.25em;
+  }
+  .fighter-hud .hud-name span:first-child,
+  .fighter-hud .hud-sub {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: clip;
+  }
+  .fighter-hud .hud-meter {
+    gap: 0;
+    font-size: 0.7em;
+  }
+  .fighter-hud .hud-meter span:last-child {
+    display: none;
+  }
+  .hp-track {
+    height: 8px;
+    margin-top: 4px;
+    padding: 2px;
+  }
   .battle-bottom {
-    min-height: 39%;
+    top: clamp(248px, 34vh, 300px);
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+    min-height: 0;
+    max-height: none;
     grid-template-columns: 1fr;
-    grid-template-rows: 0.8fr 1fr;
+    grid-template-rows: minmax(0, 1fr) minmax(156px, auto);
+    gap: 8px;
   }
   .battle-dialogue,
   .battle-commands { border-width: 2px; box-shadow: 4px 4px 0 #050713; }
-  .battle-commands { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .battle-command { font-size: 13px; }
+  .battle-dialogue {
+    padding: 34px 10px 12px;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .battle-dialogue.is-note {
+    padding: 34px 10px 12px;
+  }
+  .dialogue-speaker {
+    left: 0.55em;
+    max-width: calc(100% - 1.1em);
+    font-size: 15px;
+    line-height: 1;
+    white-space: normal;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+  .dialogue-lines,
+  .battle-dialogue.is-note .dialogue-lines {
+    font-size: clamp(13px, 3.45vw, 16px);
+    line-height: 1.1;
+  }
+  .battle-hint {
+    position: static;
+    margin-top: 7px;
+    padding-top: 6px;
+    border-top: 1px dashed #4b5680;
+    font-size: clamp(12px, 3.15vw, 14px);
+    line-height: 1.08;
+    max-height: 3.35em;
+    overflow-y: auto;
+  }
+  .battle-commands {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-content: stretch;
+    gap: 6px;
+    padding: 6px;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .battle-command {
+    min-height: clamp(34px, 5.7vh, 42px);
+    padding: 4px 5px;
+    gap: 4px;
+    font-size: clamp(10px, 2.8vw, 12px);
+    line-height: 1.02;
+    white-space: normal;
+  }
+  .battle-command .keycap {
+    width: 1.35em;
+    height: 1.35em;
+    box-shadow: 2px 2px 0 #0a1646;
+  }
+  .battle-command span:not(.keycap) {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
   .chip { gap: 0.1em; padding: 0 0.08em; }
   .chip span { display: none; }
 }
@@ -2838,10 +2963,10 @@ body::before {
   .battle-dialogue {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: clamp(42px, 5.6vh, 58px);
+    padding-bottom: 12px;
   }
   .dialogue-lines {
-    font-size: clamp(17px, 4.7vw, 23px);
+    font-size: clamp(14px, 3.65vw, 17px);
     line-height: 1.08;
   }
   .battle-hint {
@@ -2849,9 +2974,10 @@ body::before {
     overflow-y: auto;
   }
   .battle-bottom {
+    top: clamp(248px, 34vh, 300px);
     bottom: 8px;
-    min-height: min(44%, 340px);
-    max-height: 50%;
+    min-height: 0;
+    max-height: none;
   }
   .battle-commands {
     overflow-y: auto;

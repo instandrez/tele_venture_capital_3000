@@ -1,26 +1,38 @@
 /* PITCH LIVE — battaglia a turni col founder, stile anni '90.
 
    MECCANICA (Markstrat dell'anima + Pokemon del portafoglio):
-   - Il founder ha una GUARDIA (10). Tu hai una CREDIBILITA' (6).
+   - Il founder ha una GUARDIA (12). Tu hai una CREDIBILITA' (6).
    - 4 mosse fisse. Ogni founderProfile ha una DEBOLEZZA (la mossa
-     che lo fa crollare, -4 guardia) e una PARATA (la mossa che ti
-     si ritorce contro, -2 credibilità). Le altre valgono -2 guardia.
-   - Ogni turno il founder "contrattacca" (flavor) e ti lima
-     1 credibilità: il tempo gioca per lui, come in ogni pitch vero.
+     che lo fa crollare, -6 guardia) e una PARATA (la mossa che ti
+     si ritorce contro, -2 credibilità). Le altre valgono -3 guardia.
+   - Ogni turno non bloccato il founder CONTRATTACCA e ti lima la
+     credibilità: -1 nei primi due turni, -2 nei turni 3-4, -3 dal
+     quinto. Il tempo gioca per lui, come in ogni pitch vero.
+     Anche la PARATA subisce il contrattacco: sbagliare domanda nel
+     turno sbagliato può costare la sala.
+   - La domanda forte (debolezza) e il Dossier Strike bloccano il
+     contrattacco; gli scudi del taccuino ne assorbono uno a testa.
    - Guardia a 0 → il founder si scopre e ti dice una VERITA'
      (unit economics reali, che nessuna DD ti dà).
-   - Credibilità a 0 → hai perso la sala. -2 reputazione.
+   - Credibilità a 0 → hai perso la sala. Deal perso, -2 reputazione.
 
    La debolezza si DEDUCE leggendo il pitch della startup
    (js/data/pitches.js) o pagando la ref call. Chi conosce i founder
    archetipo del VC vince al terzo turno; chi tira a caso muore
-   di buzzword.
+   di buzzword — stavolta davvero.
 
    Modulo puro: niente DOM, testabile in node. */
 (function (global) {
 
-  const GUARD_MAX = 10;
+  const GUARD_MAX = 12;
   const CRED_MAX = 6;
+
+  /* Il contrattacco cresce col turno: la sala si spazientisce. */
+  function counterCostFor(turn) {
+    if (turn <= 2) return 1;
+    if (turn <= 4) return 2;
+    return 3;
+  }
 
   const MOVES = [
     { id: 1, label: "I NUMERI, PREGO" },
@@ -182,6 +194,7 @@
       lastMove: null,
       lastOutcome: null,  // "weak" | "neutral" | "resist" | "repeat"
       counterBlocked: false,
+      lastCounterCost: 0,
       usedMoves: {}
     };
   }
@@ -203,7 +216,7 @@
     }
 
     b.usedMoves[moveId] = true;
-    if (moveId === p.weak) { b.guard -= 5; outcome = "weak"; }
+    if (moveId === p.weak) { b.guard -= 6; outcome = "weak"; }
     else if (moveId === p.resist) { b.cred -= 2; outcome = "resist"; }
     else { b.guard -= 3; outcome = "neutral"; }
     if (b.intelStrikeAvailable && moveId === b.intelMove) {
@@ -214,6 +227,7 @@
     b.turn += 1;
     b.lastMove = moveId;
     b.lastOutcome = outcome;
+    b.lastCounterCost = 0;
 
     if (b.guard <= 0) {
       b.guard = 0;
@@ -222,8 +236,8 @@
       return b;
     }
     // Una domanda forte compra tempo: il founder non riesce a rilanciare.
-    // Le domande neutre consumano controllo sala, salvo dossier preparato.
-    // La parata ha gia' il suo costo pieno (-2), quindi non aggiunge -1.
+    // Tutte le altre (parata inclusa) subiscono il contrattacco del
+    // turno, salvo dossier preparato o scudi del taccuino.
     if (outcome === "weak") {
       b.counterBlocked = true;
       b.counterBlockSource = "strong";
@@ -234,8 +248,10 @@
       b.intelShield -= 1;
       b.counterBlocked = true;
       b.counterBlockSource = "shield";
-    } else if (outcome === "neutral") {
-      b.cred -= 1;
+    } else {
+      const cost = counterCostFor(b.turn);
+      b.cred -= cost;
+      b.lastCounterCost = cost;
     }
     if (b.cred <= 0) {
       b.cred = 0;
@@ -280,6 +296,6 @@
 
   global.TVPitchBattle = {
     GUARD_MAX, CRED_MAX, MOVES, PROFILES,
-    newBattle, applyMove, truthFor, founderLabel, coInvestSignal
+    newBattle, applyMove, counterCostFor, truthFor, founderLabel, coInvestSignal
   };
 })(typeof window !== "undefined" ? window : global);

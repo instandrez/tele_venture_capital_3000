@@ -199,6 +199,48 @@
         { label: "Faremo una nota strategica per il prossimo IC",
           effects: { lpSat: { family: +4 } } }
       ]
+    },
+    {
+      id: "family-quando-distribuite",
+      lp: "family",
+      trigger: s => s.year >= 2 && (s.realized || 0) === 0,
+      headline: "MA QUANDO DISTRIBUITE?",
+      question: [
+        "\"Senza offesa, eh. Ma mio cognato coi",
+        "capannoni fa il 7% l'anno. Cedolare.\"",
+        "",
+        "\"Voi invece... questo J-curve.",
+        "Quando arriva la curva che sale?\""
+      ],
+      choices: [
+        { label: "Il J-curve, glielo rispiego con calma",
+          effects: { lpSat: { family: +8 }, reputation: +1 } },
+        { label: "Stiamo forzando una exit per voi",
+          effects: { lpSat: { family: +10, endowment: -4 }, reputation: -2 } },
+        { label: "\"Il venture non è un capannone\"",
+          effects: { lpSat: { family: -12, sovereign: +4 }, reputation: +1 } }
+      ]
+    },
+    {
+      id: "pensione-giustificate-le-spese",
+      lp: "pensione",
+      trigger: s => (s.researchSpent || 0) > 400_000,
+      headline: "GIUSTIFICATE LE SPESE",
+      question: [
+        "\"Il rendiconto segnala spese rilevanti",
+        "in due diligence, referenze e dossier.\"",
+        "",
+        "\"Il nostro attuario chiede: sono costi",
+        "o sono investimenti?\""
+      ],
+      choices: [
+        { label: "La DD evita i write-off: ecco i numeri",
+          effects: { lpSat: { pensione: +8 }, reputation: +1 } },
+        { label: "È il costo dell'edge informativo",
+          effects: { lpSat: { pensione: -6, endowment: +4 } } },
+        { label: "Taglieremo il budget ricerca",
+          effects: { lpSat: { pensione: +6 }, reputation: -1, innovationImpact: -2 } }
+      ]
     }
   ];
 

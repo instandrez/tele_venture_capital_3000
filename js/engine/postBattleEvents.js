@@ -267,25 +267,15 @@
     return { choice: choice, report: applyChoice(state, event, choice) };
   }
 
+  /* L'evento post-battle si risolve subito con la scelta automatica
+     (guidata dalla preparazione: DD/ref call/taccuino scelgono meglio).
+     Gli effetti su cash/reputation/LP sono applicati DAVVERO; il
+     multiplo resta un catalyst per il prossimo portfolio update. */
   function recordAfterBattle(state, startup, ctx) {
     const event = eventFor(state, startup, ctx);
     if (!event || !event.choices || !event.choices.length) return null;
-    const choice = event.choices[event.autoChoiceIndex || 0] || event.choices[0];
-    const e = choice.effects || {};
-    const catalyst = e.multiplierPct
-      ? queueCatalyst(state, event, choice, e.multiplierPct)
-      : null;
-    if (!state.history) state.history = [];
-    state.history.push({
-      year: state.year,
-      type: "ops_event_queued",
-      startup: event.startupName,
-      event: event.headline,
-      choice: choice.label,
-      catalyst: !!catalyst
-    });
-    TVState.save();
-    return { event: event, choice: choice, catalyst: catalyst };
+    const applied = applyAuto(state, event);
+    return { event: event, choice: applied.choice, report: applied.report };
   }
 
   global.TVPostBattleEvents = {

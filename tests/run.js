@@ -459,10 +459,11 @@ test("contattare la fonte privata potenzia battle e due diligence", () => {
 
 test("la soffiata della fonte guida il mark nella stessa direzione", () => {
   const s = TVState.newGame();
-  s.year = 1;
   const st = TVStartups.byId("agiordie");
   const forecast = TVIntel.sourceForecast(st);
   eq(forecast.tone, "negative", "AGIorDie deve essere segnale negativo");
+  // la previsione scriptata materializza nell'anno dell'evento
+  s.year = forecast.materializeYear || 1;
   s.investigationSources[st.id] = { contacted: true, page: TVIntel.sourcePageFor(st), year: 1, forecast };
   s.portfolio = [{
     id: st.id, name: st.name, sectorTag: st.sectorTag,
@@ -668,7 +669,7 @@ test("dopo una battle passata puo' arrivare un ping su una portco esistente", ()
   eq(event.startupId, "agiordie", "target portco");
 });
 
-test("recordAfterBattle accoda eventi operativi senza toccare metriche immediate", () => {
+test("recordAfterBattle applica gli effetti veri ma lascia il multiplo al catalyst", () => {
   const s = TVState.newGame();
   s.portfolio = [{
     id: "agiordie", name: "AGIorDie", sectorTag: "AI_FOUNDATION",
@@ -677,20 +678,26 @@ test("recordAfterBattle accoda eventi operativi senza toccare metriche immediate
   }];
   const beforeRep = s.reputation;
   const beforeMult = s.portfolio[0].currentValueMultiplier;
-  const event = TVPostBattleEvents.recordAfterBattle(s, {
+  const ops = TVPostBattleEvents.recordAfterBattle(s, {
     id: "cold-new", name: "ColdNew", sectorTag: "SAAS_VERTICAL",
     stage: "Seed", founderProfile: "first_time", unitEconomics: 0.1,
     hype: 2
   }, { decision: "passed", intel: { level: 2 } });
-  assert(event && event.catalyst, "catalyst operativo non accodato");
-  eq(s.reputation, beforeRep, "reputation cambiata subito");
-  eq(s.portfolio[0].currentValueMultiplier, beforeMult, "multiplo cambiato subito");
+  assert(ops && ops.event && ops.choice, "evento operativo mancante");
+  assert(ops.report && ops.report.metrics.length >= 1, "report senza metriche");
+  // il PORTFOLIO PING preparato (intel>=2) sceglie "Signal captured": +1 rep
+  assert(s.reputation > beforeRep, "gli effetti della scelta non sono applicati");
+  eq(s.portfolio[0].currentValueMultiplier, beforeMult,
+    "il multiplo non deve cambiare subito (catalyst)");
+  assert((s.portfolioCatalysts || []).length === 1, "catalyst non accodato");
+  const last = s.history[s.history.length - 1];
+  eq(last.type, "post_battle_event", "history coerente con gli effetti");
 });
 
 console.log("\n== Exit e write-off ==");
 test("exit scriptata genera realized e chiude la posizione", () => {
   const s = TVState.newGame();
-  s.year = 4;
+  s.year = 2;
   s.invested = 5_000_000;
   s.portfolio = [{ id: "fortresslab", name: "FortressLab",
     sectorTag: "CYBER_ENTERPRISE", investedAmount: 5_000_000,
@@ -707,7 +714,7 @@ test("exit scriptata genera realized e chiude la posizione", () => {
 
 test("write-off azzera e non genera proceeds", () => {
   const s = TVState.newGame();
-  s.year = 5;
+  s.year = 3;
   s.invested = 3_000_000;
   s.portfolio = [{ id: "agiordie", name: "AGIorDie",
     sectorTag: "AI_FOUNDATION", investedAmount: 3_000_000,
@@ -721,7 +728,7 @@ test("write-off azzera e non genera proceeds", () => {
 
 test("writedown taglia il multiplo ma non chiude", () => {
   const s = TVState.newGame();
-  s.year = 5;
+  s.year = 3;
   s.invested = 5_000_000;
   s.portfolio = [{ id: "stealthmode", name: "StealthMode",
     sectorTag: "UNKNOWN", investedAmount: 5_000_000,
@@ -804,12 +811,13 @@ test("ripetere una domanda non produce nuovo danno", () => {
   eq(b.lastOutcome, "repeat", "repeat tracciato");
 });
 
-test("la mossa parata non scalfisce e costa credibilita'", () => {
+test("la mossa parata non scalfisce, costa -2 e subisce il contrattacco", () => {
   const b = TVPitchBattle.newBattle("ego");
   const resist = TVPitchBattle.PROFILES.ego.resist;
   TVPitchBattle.applyMove(b, resist);
   eq(b.guard, TVPitchBattle.GUARD_MAX, "guardia intatta");
-  eq(b.cred, TVPitchBattle.CRED_MAX - 2, "-2 parata");
+  eq(b.cred, TVPitchBattle.CRED_MAX - 3, "-2 parata e -1 contrattacco");
+  eq(b.lastCounterCost, 1, "contrattacco tracciato");
 });
 
 test("la domanda neutra costa un punto controllo sala", () => {
@@ -848,9 +856,41 @@ test("ripetere la parata non costa sala due volte", () => {
   const resist = TVPitchBattle.PROFILES.hustle.resist;
   TVPitchBattle.applyMove(b, resist);
   TVPitchBattle.applyMove(b, resist);
-  eq(b.cred, TVPitchBattle.CRED_MAX - 2, "solo primo errore costa");
+  eq(b.cred, TVPitchBattle.CRED_MAX - 3, "solo primo errore costa");
   eq(b.turn, 1, "repeat non consuma turno");
   eq(b.lastOutcome, "repeat", "repeat tracciato");
+});
+
+test("il contrattacco cresce col passare dei turni", () => {
+  eq(TVPitchBattle.counterCostFor(1), 1, "turno 1");
+  eq(TVPitchBattle.counterCostFor(2), 1, "turno 2");
+  eq(TVPitchBattle.counterCostFor(3), 2, "turno 3");
+  eq(TVPitchBattle.counterCostFor(4), 2, "turno 4");
+  eq(TVPitchBattle.counterCostFor(5), 3, "turno 5+");
+});
+
+test("tirare a caso puo' far perdere la sala (parata al primo turno)", () => {
+  const b = TVPitchBattle.newBattle("ego");
+  const p = TVPitchBattle.PROFILES.ego;
+  const neutrals = [1, 2, 3, 4].filter(m => m !== p.weak && m !== p.resist);
+  TVPitchBattle.applyMove(b, p.resist);      // -2 parata -1 contrattacco
+  TVPitchBattle.applyMove(b, neutrals[0]);   // -1 contrattacco
+  TVPitchBattle.applyMove(b, neutrals[1]);   // -2 contrattacco (turno 3)
+  assert(b.over && !b.won, "sala persa prima di trovare la debolezza");
+  eq(b.cred, 0, "controllo sala a zero");
+  assert(b.guard > 0, "il founder e' ancora in piedi");
+});
+
+test("gli scudi del taccuino salvano chi ha letto il Televideo", () => {
+  const b = TVPitchBattle.newBattle("ego", { intelShield: 2 });
+  const p = TVPitchBattle.PROFILES.ego;
+  const neutrals = [1, 2, 3, 4].filter(m => m !== p.weak && m !== p.resist);
+  TVPitchBattle.applyMove(b, p.resist);      // scudo assorbe il contrattacco
+  TVPitchBattle.applyMove(b, neutrals[0]);   // scudo assorbe il contrattacco
+  TVPitchBattle.applyMove(b, neutrals[1]);   // -2 contrattacco (turno 3)
+  assert(!b.over, "con gli scudi la sala regge");
+  TVPitchBattle.applyMove(b, p.weak);        // 6 danni: crolla
+  assert(b.over && b.won, "stesso ordine cieco, ma preparato: vittoria");
 });
 
 test("truthFor da' una verita' per ogni startup", () => {
@@ -917,6 +957,24 @@ test("i settori dei signal esistono negli indici", () => {
   global.TVNews.NEWS.forEach(n => {
     if (n.signal) assert(valid.has(n.signal.sector),
       "settore signal sconosciuto: " + n.signal.sector + " (" + n.id + ")");
+  });
+});
+
+test("tutti gli exit event sono raggiungibili nel fondo a 3 anni", () => {
+  TVExits.EXIT_EVENTS.forEach(e => {
+    assert(e.year >= 2 && e.year <= 3,
+      "exit fuori orizzonte (y" + e.year + "): " + e.startupId);
+  });
+  const positive = TVExits.EXIT_EVENTS.filter(e =>
+    e.kind === "exit" || e.kind === "ipo");
+  assert(positive.length >= 4,
+    "servono exit positive giocabili: trovate " + positive.length);
+});
+
+test("ogni signal pubblicato entro l'anno 3 materializza entro l'anno 3", () => {
+  global.TVNews.NEWS.filter(n => n.year <= 3 && n.signal).forEach(n => {
+    assert(n.signal.materializeYear <= 3,
+      "signal orfano (materializza y" + n.signal.materializeYear + "): " + n.id);
   });
 });
 

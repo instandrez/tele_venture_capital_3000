@@ -1,7 +1,7 @@
 # Tele Venture Capital 3000
 
 Browser game ironico-didattico in stile Televideo RAI anni '90: gestisci un
-fondo VC da 100M€ per 5 anni, con 90M€ investibili dopo le fee, navigando
+fondo VC da 100M€ per 3 anni, con 90M€ investibili dopo le fee, navigando
 **solo per numeri di pagina**, come nel
 teletext originale. Niente mouse: digiti un numero, premi INVIO.
 
@@ -39,18 +39,20 @@ python -m http.server 5173
 | 100 | Home / indice |
 | 101–109 | Nuovo fondo, riprendi, regole, gestione save |
 | 105 | Tutorial / sigla d'apertura (parte su New Game, rivedibile) |
-| 110–119 | Ultim'Ora (+ dettagli anni 2-5 su 211+, 311+, 411+, 511+) |
+| 110–119 | Ultim'Ora (+ dettagli anni 2-3 su 211+, 311+) |
 | 120–139 | Politica & Regolazione |
 | 140–159 | Borsa & indici settoriali (live, signal inclusi) |
 | 160–179 | Cronaca Startup |
 | 180–189 | Corporate Watch |
 | 190 | Taccuino del GP: casi, ritagli trovati e ipotesi |
-| 200 | Dealflow dell'anno (3 startup, stato delibera) |
-| 301–303 | PITCH BATTLE (deal pendente) / scheda consultazione (deliberato) |
+| 200 | Dealflow dell'anno (5 startup, stato delibera) |
+| 301–305 | PITCH BATTLE (deal pendente) / scheda consultazione (deliberato) |
 | 400 | Portfolio (attive + chiuse) |
-| 450 | Follow-on round (pro-rata / raddoppio / diluizione) |
-| 500 | IC Moment / chiusura anno (effetti news + exit) |
+| 450 | Follow-on round + chiusura anno (pro-rata / raddoppio / diluizione) |
+| 460 | Portfolio Update di fine anno (effetti news + exit) |
+| 500 | redirect legacy alla chiusura anno |
 | 600 | LP Call (4 archetipi di LP) |
+| 620 | Portfolio Call (crisi/opportunità di una partecipata) |
 | 700 / 701 | Report finale / post-mortem |
 | 800 | Classifica locale |
 | 900 | Crediti & easter egg |
@@ -83,6 +85,9 @@ tests/run.js          test del motore (node, zero dipendenze)
   `scope` (es. la regolazione AI colpisce `AI_FOUNDATION`, non `AI_INFRA`).
 - Gli eventi di liquidità sono scriptati in `exitEvents.js` e allineati alle
   news di Cronaca: chi legge sa in anticipo chi esce bene e chi muore.
+  La timeline è compressa sul fondo a 3 anni: l'anno 2 porta il primo
+  assaggio di liquidità, l'anno 3 è la stagione del raccolto (exit, IPO
+  e write-off arrivano tutti prima del report finale).
 - **Taccuino investigativo**: pagina 190 non indica più sezioni o news da
   leggere. Pone una domanda ambigua per ogni deal e registra soltanto i
   ritagli già scoperti. Ogni ritaglio ha una firma investigativa
@@ -126,8 +131,10 @@ tests/run.js          test del motore (node, zero dipendenze)
   personaggi DOM pixel-art scalabili, HUD separati, camera arcade,
   idle bob e dialog box bordata. L'HUD distingue
   **Resistenza founder** (a zero rivela la verità e porta il leverage al massimo) e **Controllo sala**
-  (a zero perdi il deal); ogni domanda costa un punto di controllo, salvo
-  le coperture ottenute navigando il Televideo. Gli sprite
+  (a zero perdi il deal — succede davvero). Il contrattacco del founder
+  cresce col passare dei turni (-1, poi -2, poi -3) e colpisce anche
+  sulla parata: chi tira a caso rischia la sala, chi ha letto il
+  Televideo entra con scudi e domanda armata e chiude in tre turni. Gli sprite
   (`js/data/founderSprites.js`) sono il tipo del founder: si imparano
   a riconoscere partita dopo partita. Tutte le azioni vivono nella
   battle: domande (1-4, con debolezza/parata per `founderProfile`),
@@ -162,9 +169,10 @@ max ~36 caratteri per riga. Se ha un `signal`, verifica che `sector` esista in
 node tests/run.js
 ```
 
-48 test su render, input, stato iniziale, migrazioni, relazioni LP, fund math,
-dealflow, Intelligence Network,
-decisioni, scoring, exit/write-off, pitch battle, sprite e integrità dei dati.
+75 test su render, input, stato iniziale, migrazioni, relazioni LP, fund math,
+dealflow, Intelligence Network, deal access, eventi post-battle,
+decisioni, scoring, exit/write-off, pitch battle, sprite e integrità dei dati
+(inclusi: exit raggiungibili nei 3 anni e signal senza orfani).
 Vanno eseguiti prima di ogni
 commit che tocca il motore.
 

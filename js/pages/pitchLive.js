@@ -612,7 +612,7 @@
     const valuation = currentDealValuation();
     return '<div class="battle-intel ' + cls + '">' +
       '<span>PROVE ' + "#".repeat(filled) + ".".repeat(5 - filled) + '</span>' +
-      '<span>PRESSIONE ' + pressure + "/10" + '</span>' +
+      '<span>PRESSIONE ' + pressure + "/" + TVPitchBattle.GUARD_MAX + '</span>' +
       '<span>ASK VAL ' + TVRender.eur(valuation) + '</span>' +
     '</div>';
   }
@@ -935,15 +935,19 @@
       steps.push({ push: ["", c("c-green", blockTitle),
                           c("c-cyan", blockDetail)],
                    waitForInput: true, shield: true, sound: () => TVAudio.success() });
-    } else if (b.lastOutcome === "resist") {
-      steps.push({ push: ["", c("c-magenta", "FOUNDER ribalta " + p.attack + "."),
-                          c("c-yellow", "COSTO ERRORE: -2 CONTROLLO SALA"),
-                          c("c-white", p.attackLine)],
-                   waitForInput: true, sound: () => TVAudio.error() });
     } else {
-      steps.push({ push: ["", c("c-magenta", "FOUNDER usa " + p.attack + "!"),
-                          c("c-yellow", "COSTO DEL TURNO: -1 CONTROLLO SALA"),
-                          c("c-white", p.attackLine)],
+      // il contrattacco cresce col turno: -1, poi -2, poi -3
+      const counterCost = b.lastCounterCost || 1;
+      const mood = counterCost >= 3 ? "La sala ormai pende dalle sue labbra."
+        : (counterCost >= 2 ? "La sala comincia a spazientirsi." : null);
+      const counterLines = ["",
+        c("c-magenta", b.lastOutcome === "resist"
+          ? "FOUNDER ribalta " + p.attack + "."
+          : "FOUNDER usa " + p.attack + "!"),
+        c("c-yellow", "CONTRATTACCO: -" + counterCost + " CONTROLLO SALA"),
+        c("c-white", p.attackLine)];
+      if (mood) counterLines.push(c("c-red", mood));
+      steps.push({ push: counterLines,
                    waitForInput: true, sound: () => TVAudio.error() });
       const counterFrom = b.lastOutcome === "resist" ? Math.max(0, credBefore - 2) : undefined;
       steps.push.apply(steps, drainSteps("dispCred", b.cred, counterFrom));
@@ -979,7 +983,8 @@
     }
 
     steps.push({ push: ["",
-                        c("c-cyan", "STATO: PRESSIONE " + pressureAfter + "/10 | ASK VAL " +
+                        c("c-cyan", "STATO: PRESSIONE " + pressureAfter + "/" +
+                          TVPitchBattle.GUARD_MAX + " | ASK VAL " +
                           TVRender.eur(valuationAfter)),
                         c("c-cyan", "SALA " + b.cred + "/" +
                           (b.credMax || TVPitchBattle.CRED_MAX)),
@@ -1066,7 +1071,7 @@
     const steps = [
       { log: [c("c-white", "Butti li':"),
               c("c-cyan", "Pressione negoziale: " +
-                pressurePoints(b.guard) + "/10"),
+                pressurePoints(b.guard) + "/" + TVPitchBattle.GUARD_MAX),
               c("c-cyan", "ASK VAL attuale: " + TVRender.eur(currentVal)),
               c("c-yellow", "Chance stimata: " + chance + "%")], ms: 900 },
       { push: [c("c-yellow", "\"Quella valuation... e' un'opinione.\"")], ms: 1100,
@@ -1244,8 +1249,9 @@
 
   function startPostBattleEvent(decision) {
     const s = TVState.current;
+    let ops = null;
     if (global.TVPostBattleEvents && TVPostBattleEvents.recordAfterBattle) {
-      TVPostBattleEvents.recordAfterBattle(s, B.st, {
+      ops = TVPostBattleEvents.recordAfterBattle(s, B.st, {
           decision: decision,
           rv: B.rv,
           intel: B.intel,
@@ -1287,6 +1293,20 @@
       lines.push("");
       lines.push(c("c-green", "VERITA':"));
       wrap(B.rv.pitchTruth, 42).forEach(line => lines.push(c("c-white", line)));
+    }
+    // l'evento operativo post-battle: cosa e' successo davvero al fondo
+    if (ops && ops.event) {
+      lines.push("");
+      lines.push(c("c-yellow", "DAL CAMPO // " + ops.event.headline));
+      wrap(ops.event.startupName + ": " + (ops.choice.detail || ops.choice.label), 42)
+        .forEach(line => lines.push(c("c-white", line)));
+      ((ops.report && ops.report.metrics) || []).forEach(m => {
+        lines.push(c("c-cyan", m.label + ": " + m.before + " -> " + m.after +
+          " (" + m.delta + ")"));
+      });
+      ((ops.report && ops.report.notes) || []).forEach(n => {
+        wrap(n.text, 42).forEach(line => lines.push(c("c-magenta", line)));
+      });
     }
     lines.push("", c("c-white", "PREMI 1: TORNA AL DEALFLOW E RILEGGI LE NEWS."));
     seq([{ log: lines, waitForInput: true, sound: () => TVAudio.pageChange() }], () => arm());

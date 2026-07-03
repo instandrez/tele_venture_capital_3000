@@ -622,6 +622,39 @@
       signal: { sector: "AI", delta: +5, materializeYear: 1,
                 type: "corporate_opp", scope: "telco_ai_api" }
     },
+    {
+      id: "y1-pol-06", year: 1, section: 120, page: 128, tone: "ironic",
+      headline: "FONDO SOVRANO SCALEUP: ECCO IL MILIARDO",
+      body: [
+        "Annunciato il veicolo pubblico da 1 mld",
+        "per le scaleup nazionali.",
+        "",
+        "Deployment previsto: \"entro il decennio\".",
+        "Il comitato investimenti si insedia",
+        "dopo la nomina del comitato che nomina",
+        "il comitato.",
+        "",
+        "Il software nostrano ringrazia. In anticipo."
+      ],
+      signal: { sector: "SAAS", delta: +4, materializeYear: 2, type: "macro" }
+    },
+    {
+      id: "y1-cro-09", year: 1, section: 160, page: 169, tone: "gossip",
+      headline: "ANGEL DI PROVINCIA: 50K PER IL 30%",
+      body: [
+        "Un noto imprenditore locale offre 50k",
+        "a una pre-seed AI. In cambio chiede:",
+        "",
+        "- il 30% della societa'",
+        "- la sede nel suo capannone",
+        "- il nipote come CTO",
+        "",
+        "Il founder \"ci sta pensando\".",
+        "Il mercato del capitale early stage",
+        "gode di ottima salute."
+      ],
+      signal: null
+    },
 
     // =====================================================
     // ANNO 2 — si materializzano i signal dell'anno 1
@@ -1031,6 +1064,39 @@
       signal: { sector: "SPACE", delta: +10, materializeYear: 2,
                 type: "corporate_opp", scope: "epropulsion" }
     },
+    {
+      id: "y2-uo-08", year: 2, section: 110, page: 218, tone: "ironic",
+      headline: "FONDAZIONI: \"IL VENTURE? MEGLIO I BTP\"",
+      body: [
+        "Convegno annuale degli investitori",
+        "istituzionali. Dal palco:",
+        "",
+        "\"Il venture capital e' affascinante,",
+        "ma il BTP non ti manda mai un pitch",
+        "deck alle 23:40.\"",
+        "",
+        "Applauso lungo. Troppo lungo.",
+        "I GP in sala ordinano un altro caffe'."
+      ],
+      signal: null
+    },
+    {
+      id: "y2-pol-06", year: 2, section: 120, page: 226, tone: "serious",
+      headline: "GOLDEN POWER SULL'ACQUISIZIONE ROBOTICA",
+      body: [
+        "Il governo esercita il golden power e",
+        "blocca la vendita di una scaleup robotica",
+        "a un compratore extra-UE.",
+        "",
+        "\"Asset strategico nazionale.\"",
+        "",
+        "Effetto collaterale: ogni buyer estero",
+        "ora sconta il rischio veto sul prezzo.",
+        "Le exit robotiche si raffreddano."
+      ],
+      signal: { sector: "ROBOTICS", delta: -6, materializeYear: 2,
+                type: "regulation", scope: "robotics_export" }
+    },
 
     // =====================================================
     // ANNO 3 — capitali ruotano, primi big winner / loser
@@ -1279,6 +1345,38 @@
       ],
       signal: { sector: "BATTERY", delta: -4, materializeYear: 3, type: "macro" }
     },
+    {
+      id: "y3-uo-06", year: 3, section: 110, page: 316, tone: "gossip",
+      headline: "\"CI COMPRANO TUTTI\": POLEMICA SULLE EXIT",
+      body: [
+        "Editoriale al vetriolo: le migliori",
+        "startup nazionali vendute a corporate",
+        "estere \"per un piatto di lenticchie\".",
+        "",
+        "Un parlamentare propone una commissione",
+        "d'inchiesta sul venture capital.",
+        "",
+        "I founder esaminati chiedono se la",
+        "commissione paghi in equity."
+      ],
+      signal: null
+    },
+    {
+      id: "y3-cor-04", year: 3, section: 180, page: 384, tone: "serious",
+      headline: "CAMPIONE NAZIONALE CERCASI: CORDATA PUBBLICA",
+      body: [
+        "Nasce la cordata pubblico-privata per",
+        "il \"campione nazionale\" delle batterie.",
+        "",
+        "Dentro: due banche, un'utility, tre",
+        "ministeri e un fondo sovrano del Golfo",
+        "\"a titolo osservativo\".",
+        "",
+        "La gigafactory si fara'. La governance",
+        "e' gia' al terzo comitato."
+      ],
+      signal: null
+    },
 
     // =====================================================
     // ANNO 4 — winners scappano, losers si scoprono
@@ -1428,7 +1526,7 @@
                 scope: "infra" }
     },
     {
-      id: "y4-cro-02", year: 4, section: 160, page: 462, tone: "gossip",
+      id: "y3-cro-05", year: 3, section: 160, page: 365, tone: "gossip",
       headline: "EXGOOGLER.AI VENDUTA, NESSUNO LA USAVA",
       body: [
         "ExGoogler.ai è stata acquisita da un",
@@ -1439,22 +1537,22 @@
         "Il team verrà disperso in 3 BU diverse.",
         "Si chiama acqui-hire. È nobile."
       ],
-      signal: { sector: "AI", delta: -2, materializeYear: 4, type: "trend" }
+      signal: { sector: "AI", delta: -2, materializeYear: 3, type: "trend" }
     },
     {
-      id: "y4-cro-03", year: 4, section: 160, page: 463, tone: "serious",
+      id: "y2-cro-07", year: 2, section: 160, page: 267, tone: "serious",
       headline: "STARVISTA: IPO PROGRAMMATA",
       body: [
         "StarVista ha mandatato banker per IPO",
         "su listino growth.",
         "",
         "Valutazione target: 850M-1.1 mld.",
-        "Tempistica: H2 ANNO 5."
+        "Tempistica: H2 ANNO 3."
       ],
-      signal: { sector: "SPACE", delta: +12, materializeYear: 4, type: "trend" }
+      signal: { sector: "SPACE", delta: +12, materializeYear: 2, type: "trend" }
     },
     {
-      id: "y4-cro-04", year: 4, section: 160, page: 464, tone: "ironic",
+      id: "y3-cro-06", year: 3, section: 160, page: 366, tone: "ironic",
       headline: "PIVOTKING ANNUNCIA QUARTO PIVOT",
       body: [
         "PivotKing ha annunciato il quarto pivot.",
@@ -1469,7 +1567,7 @@
     },
 
     {
-      id: "y4-cor-01", year: 4, section: 180, page: 481, tone: "serious",
+      id: "y3-cor-03", year: 3, section: 180, page: 383, tone: "serious",
       headline: "ITALMOTOR ACQUISISCE STARTUP SDV",
       body: [
         "ItalMotor ha acquisito una scaleup SDV",
@@ -1479,7 +1577,7 @@
         "Settore SDV ora consolidato attorno a 2",
         "incumbent grandi."
       ],
-      signal: { sector: "MOBILITY", delta: +14, materializeYear: 4,
+      signal: { sector: "MOBILITY", delta: +14, materializeYear: 3,
                 type: "corporate_opp", scope: "sdv_partnership" }
     },
 
@@ -1488,7 +1586,7 @@
     // =====================================================
 
     {
-      id: "y5-uo-01", year: 5, section: 110, page: 511, tone: "serious",
+      id: "y3-uo-05", year: 3, section: 110, page: 315, tone: "serious",
       headline: "IPO STARVISTA SUL LISTINO",
       body: [
         "StarVista debutta in IPO a 920M.",
@@ -1496,7 +1594,7 @@
         "",
         "Effetto a cascata sull'intero space dual-use."
       ],
-      signal: { sector: "SPACE", delta: +14, materializeYear: 5, type: "trend" }
+      signal: { sector: "SPACE", delta: +14, materializeYear: 3, type: "trend" }
     },
     {
       id: "y5-uo-02", year: 5, section: 110, page: 512, tone: "serious",
@@ -1588,7 +1686,7 @@
     },
 
     {
-      id: "y5-cro-01", year: 5, section: 160, page: 561, tone: "serious",
+      id: "y3-cro-07", year: 3, section: 160, page: 367, tone: "serious",
       headline: "NEURONOTE ACQUISITA DA INCUMBENT",
       body: [
         "NeuroNote è stata acquisita da un",
@@ -1598,10 +1696,10 @@
         "Tutti gli investitori realizzano DPI",
         "significativo."
       ],
-      signal: { sector: "LEGALTECH", delta: +10, materializeYear: 5, type: "trend" }
+      signal: { sector: "LEGALTECH", delta: +10, materializeYear: 3, type: "trend" }
     },
     {
-      id: "y5-cro-02", year: 5, section: 160, page: 562, tone: "gossip",
+      id: "y3-cro-08", year: 3, section: 160, page: 368, tone: "gossip",
       headline: "AGIORDIE CHIUDE: \"AVEVAMO RAGIONE\"",
       body: [
         "AGIorDie ha cessato le attività.",
@@ -1613,10 +1711,10 @@
         "",
         "Investitori: write-off totale."
       ],
-      signal: { sector: "AI", delta: -4, materializeYear: 5, type: "trend" }
+      signal: { sector: "AI", delta: -4, materializeYear: 3, type: "trend" }
     },
     {
-      id: "y5-cro-03", year: 5, section: 160, page: 563, tone: "serious",
+      id: "y3-cro-09", year: 3, section: 160, page: 369, tone: "serious",
       headline: "SALTCORE: ANNUNCIATA GIGAFACTORY",
       body: [
         "SaltCore Energy ha annunciato la gigafactory",
@@ -1625,13 +1723,13 @@
         "Valuation salita a 480M.",
         "Settore battery industrial: vetta del ciclo."
       ],
-      signal: { sector: "BATTERY", delta: +14, materializeYear: 5, type: "trend" }
+      signal: { sector: "BATTERY", delta: +14, materializeYear: 3, type: "trend" }
     },
     {
-      id: "y5-cro-04", year: 5, section: 160, page: 564, tone: "ironic",
+      id: "y3-cro-10", year: 3, section: 160, page: 370, tone: "ironic",
       headline: "STEALTHMODE FINALMENTE RIVELA",
       body: [
-        "Dopo 4 anni, StealthMode ha rivelato cosa",
+        "Dopo 3 anni, StealthMode ha rivelato cosa",
         "fa: una piattaforma SaaS per condividere",
         "calendari.",
         "",

@@ -30,17 +30,26 @@
   function closeCurrentYear(state) {
     const closingYear = state.year;
     const result = applyYearEnd(state);
-    if (closingYear >= (state.maxYear || 5)) {
+    const final = closingYear >= (state.maxYear || 3);
+    state.lastYearOutcome = {
+      closedYear: closingYear,
+      final: final,
+      nextYear: final ? null : closingYear + 1,
+      result: result
+    };
+
+    if (final) {
       state.gameOver = true;
       TVState.save();
-      return { final: true, page: 700, closedYear: closingYear, result: result };
+      return { final: true, page: 460, closedYear: closingYear, result: result };
     }
 
     state.year = closingYear + 1;
+    state.lastYearOutcome.nextYear = state.year;
     TVState.save();
     return {
       final: false,
-      page: 100,
+      page: 460,
       closedYear: closingYear,
       nextYear: state.year,
       result: result
@@ -52,8 +61,8 @@
     if (global.TVRouter) {
       if (global.TVAudio && TVAudio.success) TVAudio.success();
       TVRouter.flash(outcome.final
-        ? "FONDO CHIUSO - REPORT FINALE"
-        : "ANNO " + outcome.closedYear + " CHIUSO - HOME");
+        ? "FONDO CHIUSO - PORTFOLIO UPDATE"
+        : "ANNO " + outcome.closedYear + " CHIUSO - PORTFOLIO UPDATE");
       TVRouter.goto(outcome.page, { skipLoading: true });
     }
     return outcome;

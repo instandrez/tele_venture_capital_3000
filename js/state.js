@@ -5,9 +5,9 @@
 
   function makeNewState() {
     return {
-      version: 3,
+      version: 5,
       year: 1,
-      maxYear: 5,
+      maxYear: 3,
       gameSeed: Math.floor(Math.random() * 1e9),
       gameStarted: false,
       fundSize: 100_000_000,
@@ -26,11 +26,15 @@
       },
       researchSpent: 0,       // totale speso in DD / ref call / co-invest
       portfolio: [],
+      portfolioCatalysts: [], // eventi post-battle che impattano ai portfolio update
       seenStartups: [],
       readPages: [],          // pagine news visitate → edge informativo su DD
       investigationSources: {}, // { startupId: { contacted, page, year } }
       dealDecisions: {},      // { yN: { startupId: "invested"|"passed" } }
       followOnCache: {},      // { yN: [offerte follow-on] }
+      portfolioIncidentCache: {}, // { yN: chiamata portfolio company }
+      usedPortfolioIncidents: [],
+      lastYearOutcome: null,
       usedLPCalls: [],
       history: [],            // log decisioni/exit per il report finale
       tutorialFlags: {
@@ -53,6 +57,10 @@
     if (!s.gameSeed) s.gameSeed = Math.floor(Math.random() * 1e9);
     if (!s.dealDecisions) s.dealDecisions = {};
     if (!s.followOnCache) s.followOnCache = {};
+    if (!s.portfolioIncidentCache) s.portfolioIncidentCache = {};
+    if (!s.portfolioCatalysts) s.portfolioCatalysts = [];
+    if (!s.usedPortfolioIncidents) s.usedPortfolioIncidents = [];
+    if (typeof s.lastYearOutcome === "undefined") s.lastYearOutcome = null;
     if (!s.usedLPCalls) s.usedLPCalls = [];
     if (!s.readPages) s.readPages = [];
     if (!s.investigationSources) s.investigationSources = {};
@@ -69,8 +77,19 @@
           p.entryValuation) {
         p.equityPct = p.investedAmount / (p.entryValuation + p.investedAmount);
       }
+      if (typeof p.equityPct === "number" && p.equityPct > 0.5) p.equityPct = 0.5;
+      if (previousVersion < 5 && (!p.status || p.status === "active") &&
+          p.entryYear === s.year && typeof p.currentValueMultiplier === "number") {
+        const hasExplicitMark = (s.history || []).some(h =>
+          h && h.year === p.entryYear && h.startup === p.name &&
+          ["portfolio_call", "followon", "exit", "ipo", "writeoff", "writedown"].includes(h.type)
+        );
+        if (!hasExplicitMark) p.currentValueMultiplier = 1;
+      }
     });
-    s.version = 3;
+    s.maxYear = 3;
+    if (!s.gameOver && s.year > s.maxYear) s.year = s.maxYear;
+    s.version = 5;
     return s;
   }
 

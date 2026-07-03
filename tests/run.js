@@ -4,7 +4,7 @@
 
    Copre i criteri MVP di VERIFICHE_CODEX.md:
    - nuova partita e valori iniziali
-   - dealflow: 3 startup distinte, riproducibile a parità di seed,
+   - dealflow: 5 startup distinte, riproducibile a parità di seed,
      diverso tra seed diversi
    - decisioni annuali (pending/invested/passed)
    - MOIC e DPI senza NaN (anche con invested = 0)
@@ -42,15 +42,22 @@ load("engine/dealflow.js");
 load("engine/fundMath.js");
 load("engine/intelligence.js");
 load("engine/lpRelations.js");
+load("engine/dealAccess.js");
+load("engine/portfolioIncidents.js");
+load("engine/postBattleEvents.js");
 load("engine/pitchBattle.js");
 load("ui/render.js");
 
 // DOM minimo per verificare il routing tastiera di main.js.
 let directActionMode = false;
 const inputDisplay = { textContent: "" };
+const teletextContent = { dataset: {} };
+const consoleStage = { dataset: {} };
 global.document = {
   getElementById(id) {
     if (id === "tv-input") return inputDisplay;
+    if (id === "tv-content") return teletextContent;
+    if (id === "console-stage") return consoleStage;
     if (id === "screen") {
       return { classList: { contains: cls => cls === "console-mode" && directActionMode } };
     }
@@ -82,7 +89,9 @@ function approx(a, b, tol, msg) {
 const TVState = global.TVState, TVDealflow = global.TVDealflow,
       TVScoring = global.TVScoring, TVMarket = global.TVMarket,
       TVStartups = global.TVStartups, TVExits = global.TVExits,
-      TVIntel = global.TVIntel, TVFundMath = global.TVFundMath;
+      TVIntel = global.TVIntel, TVFundMath = global.TVFundMath,
+      TVDealAccess = global.TVDealAccess,
+      TVPostBattleEvents = global.TVPostBattleEvents;
 
 // ---------- test ----------
 console.log("\n== Render ==");
@@ -119,9 +128,27 @@ test("touch/click riusa lo stesso input della tastiera", () => {
   global.TVInput.pressKey("6");
   eq(action, 6, "azione touch");
 });
+test("click inline esegue azione contestuale anche fuori console mode", () => {
+  let action = null;
+  directActionMode = false;
+  delete teletextContent.dataset.directAction;
+  global.TVRouter.setActionHandler(num => { action = num; });
+  global.TVInput.pressAction("1");
+  eq(action, 1, "azione inline");
+});
+test("pagina televideo directAction esegue il numero senza Invio", () => {
+  let action = null;
+  directActionMode = false;
+  teletextContent.dataset.directAction = "1";
+  global.TVRouter.setActionHandler(num => { action = num; });
+  global.TVInput.handleKey({ key: "1", preventDefault() {} });
+  eq(action, 1, "azione directAction");
+  delete teletextContent.dataset.directAction;
+});
 test("hub Televideo continua a richiedere Invio", () => {
   let action = null;
   directActionMode = false;
+  delete teletextContent.dataset.directAction;
   global.TVRouter.setActionHandler(num => { action = num; });
   global.TVInput.handleKey({ key: "4", preventDefault() {} });
   eq(action, null, "nessuna azione prima di Invio");
@@ -133,6 +160,7 @@ console.log("\n== Stato iniziale ==");
 test("nuova partita: valori iniziali corretti", () => {
   const s = TVState.newGame();
   eq(s.year, 1, "year");
+  eq(s.maxYear, 3, "maxYear");
   eq(s.fundSize, 100_000_000, "commitments");
   eq(s.managementFeeBudget, 10_000_000, "fee budget");
   eq(s.investableCapital, 90_000_000, "capitale investibile");
@@ -161,6 +189,22 @@ test("un save v2 migra fee e ownership post-money una sola volta", () => {
   TVState.save();
   assert(TVState.load(), "save ricaricato");
   eq(TVState.current.cash, 90_000_000, "fee non sottratte due volte");
+});
+
+test("un save v4 resetta il mark iniziale se non c'e' stato evento esplicito", () => {
+  localStorage.setItem("tvc3000.save", JSON.stringify({
+    version: 4,
+    year: 1,
+    cash: 87_000_000,
+    history: [{ year: 1, type: "invest", startup: "AGIorDie" }],
+    portfolio: [{
+      id: "agiordie", name: "AGIorDie", sectorTag: "AI_FOUNDATION",
+      investedAmount: 3_000_000, entryValuation: 25_000_000,
+      currentValueMultiplier: 1.2, entryYear: 1, status: "active"
+    }]
+  }));
+  assert(TVState.load(), "save v4 caricato");
+  eq(TVState.current.portfolio[0].currentValueMultiplier, 1, "mark iniziale normalizzato");
 });
 
 console.log("\n== Roll deterministico ==");
@@ -201,12 +245,12 @@ test("il write-off promesso all'LP viene mostrato come conseguenza", () => {
 });
 
 console.log("\n== Dealflow ==");
-test("3 startup distinte per anno", () => {
+test("5 startup distinte per anno", () => {
   const s = TVState.newGame();
   const picks = TVDealflow.currentYearDealflow(s);
-  eq(picks.length, 3, "numero deal");
+  eq(picks.length, 5, "numero deal");
   const ids = new Set(picks.map(p => p.id));
-  eq(ids.size, 3, "id univoci");
+  eq(ids.size, 5, "id univoci");
 });
 
 test("dealflow riproducibile a parità di partita", () => {
@@ -228,12 +272,12 @@ test("seed diversi → percorsi diversi (su 5 tentativi)", () => {
 test("decisioni: pending → invested/passed, niente ri-delibera implicita", () => {
   const s = TVState.newGame();
   const picks = TVDealflow.currentYearDealflow(s);
-  eq(TVDealflow.pendingDeals(s).length, 3, "tutti pending all'inizio");
+  eq(TVDealflow.pendingDeals(s).length, 5, "tutti pending all'inizio");
   TVDealflow.setDecision(s, picks[0].id, "invested");
   TVDealflow.setDecision(s, picks[1].id, "passed");
   eq(TVDealflow.getDecision(s, picks[0].id), "invested");
   eq(TVDealflow.getDecision(s, picks[1].id), "passed");
-  eq(TVDealflow.pendingDeals(s).length, 1, "resta 1 pending");
+  eq(TVDealflow.pendingDeals(s).length, 3, "restano 3 pending");
 });
 
 console.log("\n== Fund Math ==");
@@ -245,6 +289,23 @@ test("i ticket cambiano con lo stage", () => {
 
 test("ownership calcolata post-money", () => {
   approx(TVFundMath.ownershipPct(5_000_000, 20_000_000), 0.20, 1e-9);
+});
+
+test("ownership e term sheet non superano mai il 50%", () => {
+  eq(TVFundMath.MAX_OWNERSHIP, 0.5, "cap ownership");
+  approx(TVFundMath.ownershipPct(10_000_000, 1_000_000), 0.5, 1e-9);
+  const options = TVFundMath.termSheetOptions({ stage: "Series A" }, 4_000_000);
+  options.forEach(o => assert(o.ownership <= 0.5, "ownership sopra cap"));
+  assert(options.some(o => o.capped), "almeno un ticket deve essere cappato");
+});
+
+test("il ticket custom rispetta cash disponibile e cap ownership", () => {
+  const st = { stage: "Pre-seed" };
+  const amount = TVFundMath.customTicketAmount(st, 4_000_000, 3_500_000, 20_000_000);
+  assert(amount <= 3_500_000, "ticket sopra cash");
+  assert(TVFundMath.ownershipPct(amount, 4_000_000) <= 0.5, "ownership sopra 50%");
+  const low = TVFundMath.customTicketAmount(st, 20_000_000, 90_000_000, 100_000);
+  assert(low >= 1_000_000, "ticket sotto minimo operativo");
 });
 
 test("la strategia media puo' distribuire il fondo, la massima deve selezionare", () => {
@@ -309,23 +370,69 @@ test("una news founder-specific non diventa pista per un altro deal del settore"
     "la vicenda YachtBrain non deve accusare ScootFlow");
 });
 
-test("ogni startup puo' aprire una catena con due firme diverse", () => {
+test("le liste news mostrano solo ritagli collegati al dealflow corrente", () => {
   const s = TVState.newGame();
-  s.year = 5;
-  TVStartups.STARTUPS.forEach(st => {
-    const clues = TVIntel.relevantNews(s, st);
-    const pages = [];
-    const kinds = new Set();
-    let score = 0;
-    clues.forEach(clue => {
-      if (score >= 3 && kinds.size >= 2) return;
-      pages.push(clue.news.page);
-      kinds.add(clue.kind);
-      score += clue.weight;
-    });
-    s.readPages = pages;
-    assert(TVIntel.chainFor(s, st).unlocked, "catena impossibile: " + st.id);
+  TVDealflow.currentYearDealflow(s);
+  const items = TVIntel.newsForCurrentDealflow(s, 110);
+  assert(items.length > 0, "nessuna news filtrata");
+  items.forEach(n => {
+    assert(TVIntel.linkedDeals(s, n.page).length > 0,
+      "news non collegata al dealflow: " + n.page);
+    eq(n.year, s.year, "news di anno diverso: " + n.page);
   });
+});
+
+test("le news anno 2 non riusano ritagli di anni precedenti o futuri", () => {
+  const s = TVState.newGame();
+  s.year = 2;
+  TVDealflow.currentYearDealflow(s);
+  [110, 120, 140, 160, 180].forEach(section => {
+    TVIntel.newsForCurrentDealflow(s, section).forEach(n =>
+      eq(n.year, 2, "pagina fuori anno: " + n.page)
+    );
+  });
+});
+
+test("ogni sezione news dell'anno corrente mostra almeno un contenuto", () => {
+  for (let year = 1; year <= 3; year++) {
+    const s = TVState.newGame();
+    s.year = year;
+    TVDealflow.currentYearDealflow(s);
+    [110, 120, 140, 160, 180].forEach(section => {
+      const items = TVIntel.newsForCurrentDealflow(s, section);
+      assert(items.length > 0, "sezione vuota anno " + year + ": " + section);
+      items.forEach(n => eq(n.year, year, "news fuori anno: " + n.page));
+    });
+  }
+});
+
+test("quando una fonte si apre usa solo ritagli dello stesso anno", () => {
+  let opened = 0;
+  for (let year = 1; year <= 3; year++) {
+    const s = TVState.newGame();
+    s.year = year;
+    TVDealflow.currentYearDealflow(s).forEach(st => {
+      const clues = TVIntel.relevantNews(s, st);
+      const pages = [];
+      const kinds = new Set();
+      let score = 0;
+      clues.forEach(clue => {
+        if (score >= 3 && kinds.size >= 2) return;
+        pages.push(clue.news.page);
+        kinds.add(clue.kind);
+        score += clue.weight;
+      });
+      if (score < 3 || kinds.size < 2) return;
+      s.readPages = pages;
+      assert(TVIntel.chainFor(s, st).unlocked, "fonte non aperta: " + st.id);
+      pages.forEach(page => {
+        const news = global.TVNews.NEWS.find(n => n.page === page);
+        eq(news.year, year, "fonte con ritaglio fuori anno: " + page);
+      });
+      opened++;
+    });
+  }
+  assert(opened >= 3, "nessuna fonte privata testata nei 3 anni");
 });
 
 test("contattare la fonte privata potenzia battle e due diligence", () => {
@@ -334,20 +441,36 @@ test("contattare la fonte privata potenzia battle e due diligence", () => {
   const clues = TVIntel.relevantNews(s, st);
   const first = clues[0];
   const second = clues.find(x => x.kind !== first.kind);
-  assert(second, "serve una seconda firma");
+  assert(second, "serve un secondo ritaglio indipendente");
   s.readPages = [first.news.page, second.news.page];
   if (first.weight + second.weight < 3) {
     const extra = clues.find(x => !s.readPages.includes(x.news.page));
     s.readPages.push(extra.news.page);
   }
   const opened = TVIntel.chainFor(s, st);
-  assert(opened.unlocked, "catena non aperta");
+  assert(opened.unlocked, "fonte non aperta");
   TVIntel.contactSource(s, st);
   const intel = TVIntel.forStartup(s, st);
   assert(intel.chain.contacted, "fonte non registrata");
   eq(intel.leadPower, 3, "Dossier Strike potenziato");
   eq(intel.ddCost, 25_000, "DD ridotta");
   assert(intel.privateClue === st.hiddenRisk, "rischio privato rivelato");
+});
+
+test("la soffiata della fonte guida il mark nella stessa direzione", () => {
+  const s = TVState.newGame();
+  s.year = 1;
+  const st = TVStartups.byId("agiordie");
+  const forecast = TVIntel.sourceForecast(st);
+  eq(forecast.tone, "negative", "AGIorDie deve essere segnale negativo");
+  s.investigationSources[st.id] = { contacted: true, page: TVIntel.sourcePageFor(st), year: 1, forecast };
+  s.portfolio = [{
+    id: st.id, name: st.name, sectorTag: st.sectorTag,
+    investedAmount: 3_000_000, currentValueMultiplier: 1,
+    entryYear: 1, status: "active", realizedAmount: 0
+  }];
+  TVMarket.runYearEnd(s);
+  assert(s.portfolio[0].currentValueMultiplier < 1, "mark non coerente con fonte negativa");
 });
 
 test("le pagine fonte privata sono univoche", () => {
@@ -400,6 +523,170 @@ test("lo scoring premia un deployment disciplinato", () => {
   approx(highMetrics.deploymentRate, 0.8, 1e-9);
 });
 
+console.log("\n== Portfolio company call ==");
+test("una crisi portfolio si genera dopo il dealflow e modifica la posizione", () => {
+  const s = TVState.newGame();
+  const picks = TVDealflow.currentYearDealflow(s);
+  picks.forEach(st => TVDealflow.setDecision(s, st.id, "passed"));
+  s.portfolio = [{
+    id: "agiordie", name: "AGIorDie", sectorTag: "AI_FOUNDATION",
+    investedAmount: 3_000_000, currentValueMultiplier: 1.0,
+    entryYear: 1, status: "active", realizedAmount: 0
+  }];
+  s.invested = 3_000_000;
+  const incident = global.TVPortfolioIncidents.activeIncident(s);
+  assert(incident, "incident non generato");
+  const before = s.portfolio[0].currentValueMultiplier;
+  const report = global.TVPortfolioIncidents.applyChoice(s, incident, incident.choices[0]);
+  assert(report.metrics.length >= 2, "metriche mancanti");
+  assert(s.portfolio[0].currentValueMultiplier !== before, "multiplo invariato");
+  eq(global.TVPortfolioIncidents.activeIncident(s), null, "incident risolto");
+});
+
+test("una portfolio call puo' squillare anche prima di chiudere tutti i deal", () => {
+  const s = TVState.newGame();
+  TVDealflow.currentYearDealflow(s);
+  s.portfolio = [{
+    id: "agiordie", name: "AGIorDie", sectorTag: "AI_FOUNDATION",
+    investedAmount: 3_000_000, currentValueMultiplier: 1.0,
+    entryYear: 1, status: "active", realizedAmount: 0
+  }];
+  assert(TVDealflow.pendingDeals(s).length > 0, "serve dealflow ancora aperto");
+  const incident = global.TVPortfolioIncidents.activeIncident(s);
+  assert(incident, "portfolio call non generata durante l'anno");
+});
+
+test("fund the pilot scala cash e mostra un delta sotto il milione", () => {
+  const s = TVState.newGame();
+  const st = TVStartups.byId("neuronote");
+  s.portfolio = [{
+    id: st.id, name: st.name, sectorTag: st.sectorTag,
+    investedAmount: 3_000_000, currentValueMultiplier: 1,
+    entryYear: 1, status: "active", realizedAmount: 0
+  }];
+  const incident = global.TVPortfolioIncidents.buildIncident(s, s.portfolio[0]);
+  eq(incident.headline, "GROWTH BREAKPOINT", "serve incidente growth");
+  const beforeCash = s.cash;
+  const report = global.TVPortfolioIncidents.applyChoice(s, incident, incident.choices[0]);
+  assert(s.cash < beforeCash, "cash non scalato");
+  assert(report.metrics.some(m => m.label === "Cash" && /k|M/.test(String(m.delta))),
+    "delta cash non leggibile");
+  assert(!report.metrics.some(m => m.label === "Cash" && m.delta === "0M"),
+    "delta cash arrotondato a zero");
+});
+
+console.log("\n== Deal Access & Post Battle ==");
+test("i round caldi richiedono piu' leverage e possono respingere un TS debole", () => {
+  const s = TVState.newGame();
+  const hot = {
+    id: "hot-test", name: "HotTest", stage: "Series A",
+    hype: 9, traction: 7, valuation: 80_000_000,
+    founderProfile: "ego", corporateFitTag: "corp"
+  };
+  const cold = {
+    id: "cold-test", name: "ColdTest", stage: "Pre-seed",
+    hype: 1, traction: 1, valuation: 6_000_000,
+    founderProfile: "first_time"
+  };
+  assert(TVDealAccess.requiredLeverage(hot) > TVDealAccess.requiredLeverage(cold),
+    "il round caldo deve chiedere piu' leverage");
+  const weak = TVDealAccess.termSheetVerdict(s, hot, { valuation: 80_000_000 });
+  assert(!weak.accepted || weak.leverage < weak.required,
+    "un TS debole non deve sembrare leverage sufficiente");
+  const strong = TVDealAccess.termSheetVerdict(s, hot, {
+    rv: { pitchWon: true, dd: true, refCall: true, coInvest: true, negotiatedValuation: 70_000_000 },
+    intel: { level: 3, chain: { contacted: true } },
+    battle: { won: true },
+    valuation: 70_000_000
+  });
+  assert(strong.accepted, "leverage alto deve chiudere il round");
+});
+
+test("un evento post-battle non marca subito il multiplo ma crea un catalyst", () => {
+  const s = TVState.newGame();
+  s.year = 1;
+  s.portfolio = [{
+    id: "agiordie", name: "AGIorDie", sectorTag: "AI_FOUNDATION",
+    investedAmount: 3_000_000, currentValueMultiplier: 1.0,
+    entryYear: 1, status: "active", realizedAmount: 0
+  }];
+  const event = {
+    id: "pb-test",
+    startupId: "agiordie", startupName: "AGIorDie", headline: "FOUNDER DRAMA",
+    choices: [{ label: "Operating partner", detail: "supporto",
+      effects: { cash: -120_000, multiplierPct: 0.08, reputation: 1 } }]
+  };
+  const beforeCash = s.cash;
+  const beforeMult = s.portfolio[0].currentValueMultiplier;
+  const report = TVPostBattleEvents.applyChoice(s, event, event.choices[0]);
+  assert(report.metrics.length >= 2, "metriche mancanti");
+  assert(s.cash < beforeCash, "cash non scalato");
+  eq(s.portfolio[0].currentValueMultiplier, beforeMult, "multiplo cambiato subito");
+  assert(s.portfolioCatalysts && s.portfolioCatalysts.length === 1, "catalyst non registrato");
+  TVMarket.runYearEnd(s);
+  assert(s.portfolioCatalysts[0].applied, "catalyst non applicato a year-end");
+  assert(s.portfolio[0].currentValueMultiplier !== beforeMult, "portfolio update non ha marcato");
+});
+
+test("dopo ogni battle c'e' un evento automatico, senza scelta manuale", () => {
+  const s = TVState.newGame();
+  const st = {
+    id: "auto-event", name: "AutoEvent", sectorTag: "SAAS_VERTICAL",
+    stage: "Seed", founderProfile: "competent", unitEconomics: 0.1,
+    hype: 4
+  };
+  ["invested", "passed", "lost"].forEach(decision => {
+    const event = TVPostBattleEvents.eventFor(s, st, {
+      decision: decision,
+      rv: { dd: true },
+      intel: { level: 2 }
+    });
+    assert(event, "evento mancante: " + decision);
+    assert(typeof event.autoChoiceIndex === "number", "autoChoiceIndex mancante");
+    const applied = TVPostBattleEvents.applyAuto(s, event);
+    assert(applied.choice, "scelta automatica mancante: " + decision);
+  });
+});
+
+test("dopo una battle passata puo' arrivare un ping su una portco esistente", () => {
+  const s = TVState.newGame();
+  s.portfolio = [{
+    id: "agiordie", name: "AGIorDie", sectorTag: "AI_FOUNDATION",
+    investedAmount: 3_000_000, currentValueMultiplier: 1.0,
+    entryYear: 1, status: "active", realizedAmount: 0
+  }];
+  const st = {
+    id: "cold-new", name: "ColdNew", sectorTag: "SAAS_VERTICAL",
+    stage: "Seed", founderProfile: "first_time", unitEconomics: 0.1,
+    hype: 2
+  };
+  const event = TVPostBattleEvents.eventFor(s, st, {
+    decision: "passed",
+    intel: { level: 2 }
+  });
+  eq(event.headline, "PORTFOLIO PING", "evento portfolio atteso");
+  eq(event.startupId, "agiordie", "target portco");
+});
+
+test("recordAfterBattle accoda eventi operativi senza toccare metriche immediate", () => {
+  const s = TVState.newGame();
+  s.portfolio = [{
+    id: "agiordie", name: "AGIorDie", sectorTag: "AI_FOUNDATION",
+    investedAmount: 3_000_000, currentValueMultiplier: 1.0,
+    entryYear: 1, status: "active", realizedAmount: 0
+  }];
+  const beforeRep = s.reputation;
+  const beforeMult = s.portfolio[0].currentValueMultiplier;
+  const event = TVPostBattleEvents.recordAfterBattle(s, {
+    id: "cold-new", name: "ColdNew", sectorTag: "SAAS_VERTICAL",
+    stage: "Seed", founderProfile: "first_time", unitEconomics: 0.1,
+    hype: 2
+  }, { decision: "passed", intel: { level: 2 } });
+  assert(event && event.catalyst, "catalyst operativo non accodato");
+  eq(s.reputation, beforeRep, "reputation cambiata subito");
+  eq(s.portfolio[0].currentValueMultiplier, beforeMult, "multiplo cambiato subito");
+});
+
 console.log("\n== Exit e write-off ==");
 test("exit scriptata genera realized e chiude la posizione", () => {
   const s = TVState.newGame();
@@ -445,24 +732,25 @@ test("writedown taglia il multiplo ma non chiude", () => {
   assert(pos.currentValueMultiplier < 0.1, "multiplo schiacciato");
 });
 
-test("chiusura automatica anno applica year-end e torna alla home", () => {
+test("chiusura automatica anno applica year-end e apre recap portfolio", () => {
   const s = TVState.newGame();
   s.year = 1;
   const outcome = global.TVYearEnd.closeCurrentYear(s);
   eq(outcome.final, false, "non finale");
-  eq(outcome.page, 100, "torna home");
+  eq(outcome.page, 460, "pagina recap");
   eq(s.year, 2, "anno avanzato");
+  eq(s.lastYearOutcome.closedYear, 1, "ultimo anno chiuso");
   assert(s.icCache && s.icCache.y1, "year-end cache anno 1");
 });
 
-test("chiusura automatica anno 5 manda al report finale", () => {
+test("chiusura automatica anno 3 manda al recap finale", () => {
   const s = TVState.newGame();
-  s.year = 5;
+  s.year = 3;
   const outcome = global.TVYearEnd.closeCurrentYear(s);
   eq(outcome.final, true, "finale");
-  eq(outcome.page, 700, "pagina report");
+  eq(outcome.page, 460, "pagina recap finale");
   assert(s.gameOver, "game over");
-  assert(s.icCache && s.icCache.y5, "year-end cache anno 5");
+  assert(s.icCache && s.icCache.y3, "year-end cache anno 3");
 });
 
 console.log("\n== Pitch Live ==");

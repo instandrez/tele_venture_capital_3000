@@ -1,11 +1,9 @@
-/* Pagina 200 — Dealflow.
-   Mostra le 3 startup dell'anno con lo stato della decisione:
-   pending (da deliberare), invested, passed.
-   L'anno si chiude solo quando tutto è deliberato, oppure con
-   doppia conferma (le startup rimaste vengono passate d'ufficio). */
+/* Pagina 200 - Dealflow.
+   Mostra le startup dell'anno con lo stato della decisione:
+   pending (da deliberare), invested, passed. */
 (function (global) {
 
-  let confirmCloseArmed = false; // transiente, si resetta a ogni render
+  let confirmCloseArmed = false;
 
   function statusBadge(r, decision) {
     switch (decision) {
@@ -13,6 +11,17 @@
       case "passed":   return r.color("c-magenta", "[PASSATO]");
       default:          return r.color("c-yellow", "[DA DECIDERE]");
     }
+  }
+
+  function routeAfterDealflow(s) {
+    const incident = global.TVPortfolioIncidents &&
+      TVPortfolioIncidents.activeIncident(s);
+    if (incident) {
+      TVRouter.flash("PORTFOLIO COMPANY IN LINEA");
+      TVRouter.goto(620, { skipLoading: true });
+      return;
+    }
+    TVRouter.goto(450, { skipLoading: true });
   }
 
   function render(pageNum) {
@@ -27,16 +36,17 @@
     const picks = TVDealflow.currentYearDealflow(s);
     const pending = TVDealflow.pendingDeals(s);
     if (pending.length === 0) {
-      TVRouter.flash("ANNO DELIBERATO - CHIUSURA AUTO");
-      TVRouter.goto(450, { skipLoading: true });
+      TVRouter.flash("ANNO DELIBERATO");
+      routeAfterDealflow(s);
       return;
     }
+
     const deployment = TVFundMath.deployment(s);
     const theme = TVDealflow.yearTheme ? TVDealflow.yearTheme(s.year) : null;
     const width = r.COLS - 2;
-
     const lines = [];
-    lines.push(r.bg("bg-green", "  " + r.pad("DEALFLOW — ANNO " + s.year + "/" + s.maxYear, width)));
+
+    lines.push(r.bg("bg-green", "  " + r.pad("DEALFLOW - ANNO " + s.year + "/" + s.maxYear, width)));
     if (theme) {
       lines.push(" " + r.color("c-cyan", "FOCUS " + theme.title) +
                  r.color("c-white", " // " + theme.focus));
@@ -51,49 +61,42 @@
       r.color("c-yellow", "Target:") + " " +
       r.color(deployment.gap > 0 ? "c-magenta" : "c-green", r.eur(deployment.target))
     );
-    lines.push(r.color("c-blue", " " + "─".repeat(width)));
+    lines.push(r.color("c-blue", " " + "-".repeat(width)));
 
     if (picks.length === 0) {
       lines.push("");
       lines.push(" " + r.color("c-magenta", "nessun deal disponibile quest'anno."));
       lines.push(" " + r.color("c-white", "premi 9 per chiudere l'anno."));
     } else {
-      // mapping stabile per indice: 301, 302, 303 (anche per i deliberati,
-      // così la scheda resta consultabile in sola lettura)
       s._dealflowMap = {};
       picks.forEach((st, i) => {
         const pageId = 301 + i;
         s._dealflowMap[pageId] = st.id;
         const decision = TVDealflow.getDecision(s, st.id);
-        const teaser = TVPitches.forStartup(st.id);
         const intel = TVIntel.forStartup(s, st);
         const intelCls = intel.level >= 2 ? "c-green" : (intel.level ? "c-yellow" : "c-red");
-        lines.push(" " + r.color("c-yellow", String(pageId)) + " " +
-                   r.color("c-white", r.pad(st.name, 27)) + statusBadge(r, decision));
-        lines.push("     " + r.color("c-cyan", st.sector) + r.color("c-white", "  " + st.stage) +
-                   r.color("c-white", "  val. " + r.eur(st.valuation)));
         const chainTag = intel.chain.contacted
-          ? "  FONTE OK"
-          : (intel.chain.unlocked ? "  INT." + intel.chain.page : "");
-        lines.push("     " + r.color(intelCls,
-          "TACCUINO [" + "#".repeat(Math.min(5, Math.floor(intel.evidenceScore))) +
-          ".".repeat(5 - Math.min(5, Math.floor(intel.evidenceScore))) + "] " +
-          intel.label + (intel.lead ? "  LEVA " + intel.lead.move : "") + chainTag));
-        if (teaser && teaser[0]) {
-          lines.push("     " + r.color("c-cyan", "» ") + r.color("c-white", teaser[0]));
-        }
+          ? " FONTE OK"
+          : (intel.chain.unlocked ? " INT." + intel.chain.page : "");
+        lines.push(" " + r.color("c-yellow", String(pageId)) + " " +
+          r.color("c-white", r.pad(st.name, 19)) +
+          statusBadge(r, decision) + " " +
+          r.color("c-cyan", st.stage));
+        lines.push("     " + r.color("c-cyan", st.sector.slice(0, 20)) +
+          r.color("c-white", "  val. " + r.eur(st.valuation) + "  ") +
+          r.color(intelCls,
+            "TACCUINO " + intel.label +
+            (intel.lead ? " LEVA " + intel.lead.move : "") + chainTag));
       });
     }
 
-    if (pending.length > 0) {
-      lines.push(" " + r.color("c-yellow", pending.length + " deal da deliberare") +
-                 r.color("c-white", " prima della chiusura auto"));
-    } else {
-      lines.push(" " + r.color("c-green", "tutto deliberato — puoi chiudere l'anno"));
-    }
+    lines.push(" " + r.color("c-yellow", pending.length + " deal da deliberare") +
+               r.color("c-white", " prima della chiusura auto"));
 
     const alert = r.lpAlert(s);
     if (alert) lines.push(alert);
+    const portfolioAlert = r.portfolioAlert && r.portfolioAlert(s);
+    if (portfolioAlert) lines.push(portfolioAlert);
 
     while (lines.length < 19) lines.push("");
     lines.push(r.color("c-white", " 9 PASSA RESTANTI     100 HOME"));
@@ -105,9 +108,7 @@
       if (num !== 9) return;
       const stillPending = TVDealflow.pendingDeals(s);
       if (stillPending.length === 0) {
-        // La chiusura passa dal follow-on (450): se non ci sono offerte,
-        // il modulo chiude l'anno automaticamente.
-        TVRouter.goto(450, { skipLoading: true });
+        routeAfterDealflow(s);
         return;
       }
       if (!confirmCloseArmed) {
@@ -116,10 +117,9 @@
         TVRouter.flash(stillPending.length + " DEAL PENDENTI - 9 PASSA TUTTI");
         return;
       }
-      // conferma: i deal rimasti vengono passati d'ufficio
       stillPending.forEach(st => TVDealflow.setDecision(s, st.id, "passed"));
       TVState.save();
-      TVRouter.goto(450, { skipLoading: true });
+      routeAfterDealflow(s);
     });
   }
 

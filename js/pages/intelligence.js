@@ -33,6 +33,7 @@
     lines.push(" " + r.color("c-white", "COME FUNZIONA: leggi il Televideo. Le pagine utili"));
     lines.push(" " + r.color("c-white", "diventano RITAGLI qui dentro, ma non dicono per quale caso."));
     lines.push(" " + r.color("c-yellow", "Le fonti dirette (*) valgono 2, il contesto vale meno."));
+    lines.push(" " + r.color("c-white", "Due ritagli indipendenti possono aprire una fonte riservata."));
     lines.push(" " + r.color("c-green", "3 punti = TEORIA") +
       r.color("c-white", " (domanda armata + DD scontata)"));
     lines.push(r.color("c-blue", " " + "-".repeat(r.COLS - 2)));
@@ -50,8 +51,8 @@
         lines.push("   " + r.color("c-green", "FONTE " + intel.chain.page +
           " VERIFICATA: " + intel.privateClue.slice(0, 29)));
       } else if (intel.chain.unlocked) {
-        lines.push("   " + r.color("c-magenta", "CATENA APERTA: INTERNO " +
-          intel.chain.page + " - NAVIGA E ASCOLTA"));
+        lines.push("   " + r.color("c-magenta", "FONTE RISERVATA " +
+          intel.chain.page + " - CHIAMA E VERIFICA"));
       } else {
         lines.push("   " + (intel.lead
           ? r.color("c-green", "LEVA " + intel.lead.move + " " + intel.lead.label +

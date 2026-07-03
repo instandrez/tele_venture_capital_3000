@@ -46,6 +46,13 @@
       TVRouter.goto(200, { skipLoading: true });
       return;
     }
+    const incident = global.TVPortfolioIncidents &&
+      TVPortfolioIncidents.activeIncident(s);
+    if (incident) {
+      TVRouter.flash("PORTFOLIO COMPANY IN LINEA");
+      TVRouter.goto(620, { skipLoading: true });
+      return;
+    }
 
     const offer = nextPending(s);
     if (!offer) {

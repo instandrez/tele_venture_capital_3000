@@ -59,7 +59,9 @@
 
     lines.push("");
     lines.push(" " + r.color("c-yellow", "news settore:"));
-    const newsInSection = TVNews.listSection(140, year);
+    const newsInSection = TVIntel.newsForCurrentDealflow
+      ? TVIntel.newsForCurrentDealflow(s, 140)
+      : TVNews.listSection(140, year);
     newsInSection.slice(0, 2).forEach(n => {
       const intel = TVIntel.pageStatus(s, n.page);
       const titleLines = wrapText(n.headline, 41).slice(0, 2);
@@ -103,7 +105,7 @@
     const unlocked = TVIntel.unlockedSourcesForPage(TVState.current, pageNum);
     if (unlocked.length) {
       lines.push(" " + r.color("c-magenta",
-        "DUE FIRME COMBACIANO. INTERNO " + unlocked[0].chain.page + "."));
+        "FONTE RISERVATA SBLOCCATA: " + unlocked[0].chain.page + "."));
     }
     while (lines.length < 19) lines.push("");
     lines.push(r.color("c-white", " 140 INDICI    100 HOME"));
@@ -138,7 +140,7 @@
     const unlocked = TVIntel.unlockedSourcesForPage(TVState.current, pageNum);
     if (unlocked.length) {
       lines.push(" " + r.color("c-magenta",
-        "DUE FIRME COMBACIANO. INTERNO " + unlocked[0].chain.page + "."));
+        "FONTE RISERVATA SBLOCCATA: " + unlocked[0].chain.page + "."));
     }
     while (lines.length < 19) lines.push("");
     lines.push(r.color("c-white", " 140 INDICI    100 HOME"));

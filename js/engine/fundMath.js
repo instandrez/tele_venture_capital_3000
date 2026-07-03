@@ -5,6 +5,8 @@
   const COMMITMENTS = 100_000_000;
   const MANAGEMENT_FEES = 10_000_000;
   const INVESTABLE = COMMITMENTS - MANAGEMENT_FEES;
+  const MAX_OWNERSHIP = 0.50;
+  const TICKET_STEP = 1_000_000;
 
   function ticketOptions(startup) {
     const stage = String((startup && startup.stage) || "").toLowerCase();
@@ -16,12 +18,55 @@
 
   function ownershipPct(amount, preMoneyValuation) {
     const postMoney = Math.max(1, preMoneyValuation || 0) + amount;
-    return amount / postMoney;
+    return Math.min(MAX_OWNERSHIP, amount / postMoney);
+  }
+
+  function maxTicketForOwnership(preMoneyValuation, cap) {
+    cap = Math.max(0.01, Math.min(0.95, cap || MAX_OWNERSHIP));
+    const pre = Math.max(1, preMoneyValuation || 0);
+    return Math.floor(pre * cap / (1 - cap));
+  }
+
+  function capTicketAmount(amount, preMoneyValuation) {
+    return Math.max(1, Math.min(amount, maxTicketForOwnership(preMoneyValuation, MAX_OWNERSHIP)));
+  }
+
+  function customTicketBounds(startup, preMoneyValuation, cash) {
+    const stage = String((startup && startup.stage) || "").toLowerCase();
+    const preferredMin = stage.includes("series") ? 2_000_000 : 1_000_000;
+    const maxByOwnership = maxTicketForOwnership(preMoneyValuation, MAX_OWNERSHIP);
+    const maxByCash = typeof cash === "number" ? Math.max(0, cash) : maxByOwnership;
+    const max = Math.max(1, Math.min(maxByOwnership, maxByCash));
+    const min = Math.max(1, Math.min(preferredMin, max));
+    return { min, max, step: TICKET_STEP };
+  }
+
+  function roundTicketAmount(amount, step) {
+    step = step || TICKET_STEP;
+    return Math.max(1, Math.round((amount || 0) / step) * step);
+  }
+
+  function customTicketAmount(startup, preMoneyValuation, cash, amount) {
+    const bounds = customTicketBounds(startup, preMoneyValuation, cash);
+    const rounded = roundTicketAmount(amount, bounds.step);
+    return Math.max(bounds.min, Math.min(bounds.max, rounded));
+  }
+
+  function termSheetOptions(startup, preMoneyValuation) {
+    return ticketOptions(startup).map(amount => {
+      const cappedAmount = capTicketAmount(amount, preMoneyValuation);
+      return {
+        amount: cappedAmount,
+        requestedAmount: amount,
+        capped: cappedAmount < amount,
+        ownership: ownershipPct(cappedAmount, preMoneyValuation)
+      };
+    });
   }
 
   function targetForYear(state) {
     const investable = state.investableCapital || INVESTABLE;
-    const maxYear = state.maxYear || 5;
+    const maxYear = state.maxYear || 3;
     return Math.round(investable * Math.min(maxYear, state.year || 1) / maxYear);
   }
 
@@ -42,7 +87,14 @@
     COMMITMENTS,
     MANAGEMENT_FEES,
     INVESTABLE,
+    MAX_OWNERSHIP,
+    TICKET_STEP,
     ticketOptions,
+    termSheetOptions,
+    capTicketAmount,
+    maxTicketForOwnership,
+    customTicketBounds,
+    customTicketAmount,
     ownershipPct,
     targetForYear,
     deployment

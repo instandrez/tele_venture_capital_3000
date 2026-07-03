@@ -100,7 +100,15 @@
 
   function isDirectActionMode() {
     const screen = document.getElementById("screen");
-    return !!(actionHandler && screen && screen.classList.contains("console-mode"));
+    const content = document.getElementById("tv-content");
+    const stage = document.getElementById("console-stage");
+    const directTeletext = !!(content && content.dataset.directAction === "1");
+    const directScene = !!(stage && stage.dataset.directAction === "1");
+    return !!(actionHandler && (
+      (screen && screen.classList.contains("console-mode")) ||
+      directTeletext ||
+      directScene
+    ));
   }
 
   function runAction(num) {
@@ -118,6 +126,10 @@
     updateInputDisplay();
     TVAudio.keyPress();
     runAction(num);
+  }
+
+  function pressAction(num) {
+    runTouchAction(parseInt(num, 10));
   }
 
   function handleKey(e) {
@@ -208,6 +220,6 @@
   }
 
   global.TVRouter = router;
-  global.TVInput = { handleKey, pressKey, isDirectActionMode };
+  global.TVInput = { handleKey, pressKey, pressAction, isDirectActionMode };
   document.addEventListener("DOMContentLoaded", boot);
 })(window);

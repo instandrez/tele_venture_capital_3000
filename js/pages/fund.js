@@ -19,7 +19,7 @@
     lines.push(r.color("c-cyan", "  · slide trimestrali"));
     lines.push(r.color("c-cyan", "    con frecce verso l'alto"));
     lines.push("");
-    lines.push(" Hai " + r.color("c-yellow", "5 anni") + " per dimostrare di non essere");
+    lines.push(" Hai " + r.color("c-yellow", "3 anni") + " per dimostrare di non essere");
     lines.push(" l'ennesimo VC che parla di " + r.color("c-magenta", "tesi") + ".");
     lines.push("");
     lines.push(r.bg("bg-yellow", " 1 AVVIA FONDO    9 INDIETRO            "));
@@ -64,7 +64,7 @@
     lines.push(r.bg("bg-cyan", "  " + r.pad("REGOLE", 38)));
     lines.push("");
     lines.push(r.color("c-yellow", " OBIETTIVO"));
-    lines.push(" Gestire un fondo VC da 100M€ per 5 anni.");
+    lines.push(" Gestire un fondo VC da 100M€ per 3 anni.");
     lines.push(" Alla fine: punteggio e classifica.");
     lines.push("");
     lines.push(r.color("c-yellow", " COMANDI"));
@@ -75,9 +75,9 @@
     lines.push(" Alcune pagine diventano ritagli.");
     lines.push(" Il taccuino conserva le coincidenze,");
     lines.push(" ma non spiega dove cercare o perche'.");
-    lines.push(" Prove diverse aprono una catena.");
-    lines.push(" Quando compare INTERNO 9xx, naviga:");
-    lines.push(" una fonte privata puo' chiudere il caso.");
+    lines.push(" Due ritagli indipendenti aprono");
+    lines.push(" una FONTE RISERVATA 9xx.");
+    lines.push(" Ascoltarla migliora DD e battle.");
     lines.push("");
     lines.push(r.color("c-yellow", " GLI LP TI CHIAMANO"));
     lines.push(" Quando il portfolio li innervosisce");
@@ -85,6 +85,11 @@
     lines.push(" \"((( LP IN LINEA )))\" lampeggia.");
     lines.push(" Rispondi a pag 600 prima di chiudere");
     lines.push(" l'anno: ignorarli ha un costo.");
+    lines.push("");
+    lines.push(r.color("c-yellow", " PORTFOLIO COMPANY CALL"));
+    lines.push(" Le partecipate possono chiamarti con");
+    lines.push(" crisi operative: bridge, tagli, pivot.");
+    lines.push(" Quelle scelte pesano su multipli e score.");
     lines.push("");
     lines.push(r.color("c-yellow", " PITCH BATTLE"));
     lines.push(" Guardia founder a 0: si scopre.");

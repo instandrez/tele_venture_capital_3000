@@ -4,13 +4,13 @@
     const r = TVRender;
     const s = TVState.current;
     // Controlla anche il save su disco, non solo lo stato in memoria
-    let savedYear = null, savedMax = 5;
+    let savedYear = null, savedMax = 3;
     if (TVState.hasSave()) {
       try {
         const raw = JSON.parse(localStorage.getItem("tvc3000.save"));
         if (raw && raw.gameStarted && !raw.gameOver) {
-          savedYear = raw.year;
-          savedMax = raw.maxYear || 5;
+          savedMax = Math.min(raw.maxYear || 3, 3);
+          savedYear = Math.min(raw.year || 1, savedMax);
         }
       } catch (e) {}
     }
@@ -63,6 +63,8 @@
     // notifica LP call attiva se partita in corso
     const alert = r.lpAlert(TVState.current);
     if (alert) lines.push(alert);
+    const portfolioAlert = r.portfolioAlert && r.portfolioAlert(TVState.current);
+    if (portfolioAlert) lines.push(portfolioAlert);
     lines.push(r.color("c-white", r.center("PAGINA + INVIO  •  ESC HOME  •  M AUDIO")));
 
     r.show(100, lines.join("\n"), { title: activeGame ? "FONDO ATTIVO" : "MAIN MENU" });

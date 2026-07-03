@@ -86,6 +86,17 @@
     } catch (e) { return null; }
   }
 
+  function portfolioAlert(state) {
+    try {
+      if (!state || !state.gameStarted || state.gameOver) return null;
+      if (!global.TVPortfolioIncidents) return null;
+      const incident = global.TVPortfolioIncidents.activeIncident(state);
+      if (!incident) return null;
+      return ' <span class="blink c-yellow">((( PORTFOLIO CALL )))</span> ' +
+             color("c-cyan", "rispondi a pag 620");
+    } catch (e) { return null; }
+  }
+
   function sectionFor(pageNum) {
     if (pageNum < 110) return "system";
     if (pageNum < 200) return "news";
@@ -209,7 +220,8 @@
         if (!/^\d$/.test(key)) return;
         e.preventDefault();
         e.stopPropagation();
-        if (global.TVInput && TVInput.pressKey) TVInput.pressKey(key);
+        if (global.TVInput && TVInput.pressAction) TVInput.pressAction(key);
+        else if (global.TVInput && TVInput.pressKey) TVInput.pressKey(key);
       });
     });
   }
@@ -235,6 +247,8 @@
     linkifyControls(content);
     bindInlineControls(content);
     delete content.dataset.page;
+    if (opts.directAction) content.dataset.directAction = "1";
+    else delete content.dataset.directAction;
     content.dataset.currentPage = String(pageNum);
     if (lastPage !== pageNum) {
       content.classList.remove("page-enter");
@@ -258,6 +272,8 @@
     linkifyControls(stage);
     bindInlineControls(stage);
     delete stage.dataset.page;
+    if (opts.directAction) stage.dataset.directAction = "1";
+    else delete stage.dataset.directAction;
     stage.dataset.currentPage = String(pageNum);
     TVHeader.setPage(pageNum);
     updateNav(pageNum);
@@ -266,7 +282,7 @@
 
   global.TVRender = {
     COLS, ROWS, escape, visibleLength, center, pad, padLeft, line, row,
-    color, bg, blink, eur, lpAlert, show, showScene, setMode,
+    color, bg, blink, eur, lpAlert, portfolioAlert, show, showScene, setMode,
     navTargetFor, updateNav
   };
 })(window);

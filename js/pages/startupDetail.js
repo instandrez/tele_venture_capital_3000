@@ -84,7 +84,7 @@
         revealLines.push(r.color("c-yellow", " ! ") +
           r.color("c-white", "Meeting note " + note.move + ":"));
         String(note.text || "").split(/\n+/).filter(Boolean).forEach(part => {
-          const cls = /^(DATA|CLUE|READ|RISK|FATE|TEAM|MARKET|PRICE|TELL|EXECUTION):/.test(part)
+          const cls = /^(BUSINESS|TRACTION|UNIT ECONOMICS|UPSIDE|VC READ|MARKET|COMPETITION|RED FLAG|OUTCOME|TEAM|EXECUTION|GOVERNANCE|VALUATION|TECHNOLOGY|FOUNDER SIGNAL):/.test(part)
             ? "c-cyan"
             : "c-white";
           wrapText(part, 36).slice(0, 2).forEach(line => {
@@ -140,7 +140,5 @@
   }
 
   const P = global.TVPages = global.TVPages || {};
-  P[301] = { render };
-  P[302] = { render };
-  P[303] = { render };
+  for (let page = 301; page <= 309; page++) P[page] = { render };
 })(window);

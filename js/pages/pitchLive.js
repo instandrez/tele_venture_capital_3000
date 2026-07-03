@@ -172,7 +172,7 @@
     return st.valuation / traction;
   }
 
-  const DEAL_SCENES = {
+  const DEAL_CONTEXT = {
     neurodrive: "demo in garage OEM: auto ferma, slide velocissima",
     foundergpt: "waitlist viva, roadmap riscritta dopo ogni trend",
     ragtag: "data room ordinata, procurement TLC gia' in copia",
@@ -218,22 +218,32 @@
 
   function fateLine(st) {
     const ev = scriptedFate(st);
+    const horizon = (TVState.current && TVState.current.maxYear) || 3;
     if (!ev) {
       if (st.id === "saltcore") {
-        return "FATE: markup probabile ma DPI lontano; carta ricca, exit lenta.";
+        return "OUTCOME: markup probabile ma DPI lontano; carta ricca, exit lenta.";
       }
-      return "FATE: nessuna exit facile in calendario; deve crescere sul serio.";
+      return "OUTCOME: nessuna exit facile in calendario; deve crescere sul serio.";
+    }
+    if (ev.year > horizon) {
+      if (ev.kind === "exit" || ev.kind === "ipo") {
+        return "OUTCOME: upside oltre i 3 anni; non aspettarti DPI rapido.";
+      }
+      if (ev.kind === "writeoff" || ev.kind === "writedown") {
+        return "OUTCOME: rischio lungo in coda; serve prezzo basso e disciplina.";
+      }
+      return "OUTCOME: liquidita' fuori orizzonte; conta il mark, non il cash.";
     }
     if (ev.kind === "exit" || ev.kind === "ipo") {
-      return "FATE: finestra positiva anno " + ev.year + " - " + ev.note + ".";
+      return "OUTCOME: finestra positiva anno " + ev.year + " - " + ev.note + ".";
     }
     if (ev.kind === "acquihire") {
-      return "FATE: salva il team, non il prodotto - " + ev.note + ".";
+      return "OUTCOME: salva il team, non il prodotto - " + ev.note + ".";
     }
     if (ev.kind === "writedown") {
-      return "FATE: valuation trap - " + ev.note + ".";
+      return "OUTCOME: valuation trap - " + ev.note + ".";
     }
-    return "FATE: downside reale anno " + ev.year + " - " + ev.note + ".";
+    return "OUTCOME: downside reale anno " + ev.year + " - " + ev.note + ".";
   }
 
   function investorRead(st, outcome) {
@@ -244,7 +254,7 @@
       ((st.unitEconomics || 0) + 1) * 2.1 -
       (st.hype || 0) * 0.07 -
       (st.hypeDecay || 0) * 1.4;
-    const prefix = outcome === "resist" ? "READ: risposta bella, prova debole. " : "READ: ";
+    const prefix = outcome === "resist" ? "VC READ: risposta bella, prova debole. " : "VC READ: ";
     if (score >= 6.6) return prefix + "sostanza sopra teatro, prezzo da negoziare.";
     if (score >= 4.8) return prefix + "opzione vera, ma serve sconto o prova esterna.";
     return prefix + "rischio narrativo alto: paghi molto futuro non verificato.";
@@ -260,47 +270,71 @@
     return "MARKET: " + rootSector(st) + ", " + heat + ", " + reg + ".";
   }
 
+  function competitionRead(st) {
+    const root = rootSector(st);
+    if (root === "AI") return "COMPETITION: open source e incumbent possono comprimere il moat.";
+    if (root === "CLIMATE" || root === "BATTERY") return "COMPETITION: execution industriale batte narrativa e grant.";
+    if (root === "ROBOTICS") return "COMPETITION: chi consegna in plant vince sul demo da fiera.";
+    if (root === "FINTECH" || root === "CRYPTO") return "COMPETITION: trust, compliance e distribuzione valgono piu' del token.";
+    if (root === "LEGALTECH") return "COMPETITION: canale professionale lento, ma sticky se entra nel workflow.";
+    if (root === "CYBER") return "COMPETITION: buyer paranoico, ma paga se riduci incident response.";
+    return "COMPETITION: differenziazione da provare con clienti paganti.";
+  }
+
+  function technologyRead(st) {
+    const fit = st.strategicFit || 0;
+    if (fit >= 8) return "TECHNOLOGY: asset strategico credibile, serve verifica IP/integrazione.";
+    if ((st.traction || 0) >= 6) return "TECHNOLOGY: prodotto abbastanza maturo da reggere clienti veri.";
+    if ((st.hype || 0) >= 8 && (st.traction || 0) <= 2) {
+      return "TECHNOLOGY: demo forte, produzione ancora da dimostrare.";
+    }
+    return "TECHNOLOGY: vantaggio possibile, ma non ancora evidente nel dato.";
+  }
+
   function priceRead(st) {
     const traction = Math.max(1, st.traction || 0);
     const valPerTraction = Math.round((st.valuation || 0) / traction);
     const heat = valPerTraction > 9_000_000 || (st.hype || 0) >= 8
       ? "prezzo da narrative round"
       : "prezzo non folle se i dati tengono";
-    return "PRICE: " + TVRender.eur(st.valuation) + ", " + heat + ".";
+    return "VALUATION: ask " + TVRender.eur(st.valuation) + ", " + heat + ".";
   }
 
   function meetingNoteForMove(st, moveId, outcome) {
-    const scene = DEAL_SCENES[st.id] || (st.name + ": segnali da interpretare.");
+    const business = DEAL_CONTEXT[st.id] || (st.name + ": segnali da interpretare.");
     if (moveId === 1) {
       return [
-        "SCENA: " + scene + ".",
-        "DATA: traction " + (st.traction || 0) + "/10, " + unitShortLabel(st.unitEconomics || 0) + ".",
-        "CLUE: " + st.hiddenUpside + ".",
+        "BUSINESS: " + business + ".",
+        "TRACTION: " + (st.traction || 0) + "/10, " + unitShortLabel(st.unitEconomics || 0) + ".",
+        "UPSIDE: " + st.hiddenUpside + ".",
         investorRead(st, outcome)
       ].join("\n");
     }
     if (moveId === 2) {
       return [
-        "SCENA: " + scene + ".",
+        "BUSINESS: " + business + ".",
         marketRead(st),
-        "RISK: " + st.hiddenRisk + ".",
+        competitionRead(st),
+        "RED FLAG: " + st.hiddenRisk + ".",
         fateLine(st)
       ].join("\n");
     }
     if (moveId === 3) {
       return [
-        "SCENA: " + scene + ".",
+        "BUSINESS: " + business + ".",
         "TEAM: " + scoreLabel(st.team || 0, 8, 4) +
           ", founder " + TVPitchBattle.founderLabel(st.founderProfile) + ".",
-        "EXECUTION: fit " + (st.strategicFit || 0) + "/10, " + st.hiddenRisk + ".",
+        "EXECUTION: strategic fit " + (st.strategicFit || 0) + "/10.",
+        "GOVERNANCE: " + st.hiddenRisk + ".",
         investorRead(st, outcome)
       ].join("\n");
     }
     if (moveId === 4) {
       return [
-        "SCENA: " + scene + ".",
+        "BUSINESS: " + business + ".",
         priceRead(st),
-        "TELL: " + (outcome === "resist"
+        technologyRead(st),
+        "FOUNDER SIGNAL: " + (outcome === "resist"
           ? "regge il vuoto; forse controlla davvero il round."
           : "nel silenzio lascia cadere il dettaglio che conta."),
         fateLine(st)
@@ -321,11 +355,8 @@
   function noteLines(text) {
     const out = [c("c-yellow", "MEETING NOTE // " + B.st.name)];
     String(text || "").split(/\n+/).filter(Boolean).forEach(part => {
-      const cls = /^(DATA|CLUE|READ|RISK|FATE|TEAM|MARKET|PRICE|TELL|EXECUTION):/.test(part)
-        ? "c-cyan"
-        : "c-white";
       wrap(part, 42).forEach((line, idx) => {
-        out.push(c(idx ? "c-white" : cls, line));
+        out.push(c("c-white", idx ? "  " + line : line));
       });
     });
     return out;
@@ -351,6 +382,51 @@
 
   function currentDealValuation() {
     return dealValuationForGuard(B.battle.guard);
+  }
+
+  function currentCustomTicket() {
+    const payVal = currentDealValuation();
+    const s = TVState.current;
+    if (!B.customTicketAmount) {
+      const defaults = TVFundMath.ticketOptions(B.st);
+      B.customTicketAmount = defaults[Math.min(1, defaults.length - 1)] || 1_000_000;
+    }
+    B.customTicketAmount = TVFundMath.customTicketAmount(
+      B.st, payVal, s.cash, B.customTicketAmount
+    );
+    return B.customTicketAmount;
+  }
+
+  function openInvestPhase() {
+    const payVal = currentDealValuation();
+    const defaults = TVFundMath.ticketOptions(B.st);
+    B.customTicketAmount = TVFundMath.customTicketAmount(
+      B.st, payVal, TVState.current.cash, defaults[Math.min(1, defaults.length - 1)] || 1_000_000
+    );
+    B.phase = "invest";
+    B.log = [
+      c("c-yellow", "TERM SHEET // scegli il ticket"),
+      c("c-white", "1-3 sono preset. 4/5 regolano il ticket custom."),
+      c("c-cyan", "6 invia il ticket custom alla valuation corrente.")
+    ];
+    draw();
+  }
+
+  function adjustCustomTicket(delta) {
+    const payVal = currentDealValuation();
+    const s = TVState.current;
+    const current = currentCustomTicket();
+    B.customTicketAmount = TVFundMath.customTicketAmount(
+      B.st, payVal, s.cash, current + delta
+    );
+    B.log = [
+      c("c-yellow", "TERM SHEET CUSTOM"),
+      c("c-white", "Ticket selezionato: " + TVRender.eur(B.customTicketAmount)),
+      c("c-white", "Ownership stimata: " +
+        (TVFundMath.ownershipPct(B.customTicketAmount, payVal) * 100).toFixed(1) + "%"),
+      c("c-cyan", "Ask valuation: " + TVRender.eur(payVal))
+    ];
+    draw();
   }
 
   function battleMusicTheme(st, profile) {
@@ -449,14 +525,32 @@
     }
     if (B.phase === "invest") {
       const payVal = currentDealValuation();
-      return TVFundMath.ticketOptions(B.st).map((amount, index) => {
-        const ownership = TVFundMath.ownershipPct(amount, payVal) * 100;
+      const custom = currentCustomTicket();
+      const customOwnership = TVFundMath.ownershipPct(custom, payVal) * 100;
+      const fixed = TVFundMath.termSheetOptions(B.st, payVal).map((option, index) => {
+        const ownership = option.ownership * 100;
         return command(index + 1,
-          "TS " + TVRender.eur(amount) + " // " + ownership.toFixed(1) + "%",
+          (option.capped ? "MAX TS " : "TS ") +
+            TVRender.eur(option.amount) + " // " + ownership.toFixed(1) + "%",
           "is-invest");
-      }).concat([
+      });
+      return fixed.concat([
+        command(4, "-1M TICKET", "is-research"),
+        command(5, "+1M TICKET", "is-research"),
+        command(6, "INVIA " + TVRender.eur(custom) + " // " + customOwnership.toFixed(1) + "%", "is-invest"),
         command(0, "ANNULLA", "is-danger")
       ]).join("");
+    }
+    if (B.phase === "rescue") {
+      return [
+        command(1, "ALZA VALUATION", "is-invest"),
+        command(2, "PORTA LEAD", "is-research"),
+        command(9, "WALK AWAY", "is-danger"),
+        command(0, "ANNULLA", "is-danger")
+      ].join("");
+    }
+    if (B.phase === "postEvent" && B.postBattleEvent) {
+      return command(1, "CONTINUA AL DEALFLOW", "is-invest wide");
     }
 
     const broken = B.phase === "broken";
@@ -528,15 +622,28 @@
     const s = TVState.current;
     const isMeetingNote = B.log.some(line => String(line).includes("MEETING NOTE"));
     const allLogLines = B.log.filter(line => line !== "");
-    const logZone = isMeetingNote ? allLogLines : allLogLines.slice(-4);
+    let logZone = allLogLines.slice(-4);
+    if (isMeetingNote) {
+      let noteStart = 0;
+      for (let i = allLogLines.length - 1; i >= 0; i--) {
+        if (String(allLogLines[i]).includes("MEETING NOTE")) {
+          noteStart = i;
+          break;
+        }
+      }
+      logZone = allLogLines.slice(noteStart);
+    }
     const dialogue = logZone.length
       ? logZone.join("<br>")
       : c("c-yellow", "Il founder ti osserva. Tocca a te.");
     const phase = B.phase === "invest" ? "TERM SHEET" :
-      (B.phase === "broken" ? "PRESSIONE MASSIMA" : "PITCH BATTLE");
+      (B.phase === "rescue" ? "ACCESSO AL ROUND" :
+      (B.phase === "postEvent" ? "DEAL MEMO" :
+      (B.phase === "broken" ? "PRESSIONE MASSIMA" : "PITCH BATTLE")));
 
     return (
       '<section class="console-scene battle-scene battle-stage-' + B.stage.key +
+        (isMeetingNote ? " is-note-mode" : "") +
         '" style="--battle-accent:' + B.stage.accent + '">' +
         '<div class="battle-bg"></div>' + stageSetdressHtml() + '<div class="battle-flash"></div>' +
         '<header class="battle-topbar">' +
@@ -861,12 +968,13 @@
           TVDealflow.setDecision(s, B.st.id, "passed");
           s.history.push({ year: s.year, type: "pass", startup: B.st.name,
                            note: "buttato fuori dal pitch" });
+          B.lastDecisionSummary = { decision: "lost" };
           snap();
         },
         push: ["", c("c-red", "SEI FUORI DAL DEAL. -2 reputazione.")],
         waitForInput: true, sound: () => TVAudio.error()
       });
-      seq(steps, () => exitToDealflow());
+      seq(steps, () => startPostBattleEvent("lost"));
       return;
     }
 
@@ -1002,10 +1110,11 @@
   }
 
   // ---------- investi (0) e passa (9) ----------
-  function doInvest(amount) {
+  function finalizeInvestment(amount, payVal, label) {
     const s = TVState.current;
     const st = B.st;
     const rv = B.rv;
+    amount = TVFundMath.capTicketAmount(amount, payVal);
     if (s.cash < amount) {
       miniLog(c("c-red", "CASH INSUFFICIENTE."));
       TVAudio.error();
@@ -1013,8 +1122,6 @@
       draw(); arm();
       return;
     }
-    const baseVal = st.valuation;
-    const payVal = currentDealValuation();
     const equityPct = TVFundMath.ownershipPct(amount, payVal);
     s.cash -= amount;
     s.invested += amount;
@@ -1022,12 +1129,22 @@
       id: st.id, name: st.name, sector: st.sector, sectorTag: st.sectorTag,
       investedAmount: amount, entryValuation: payVal, equityPct: equityPct,
       entryYear: s.year,
-      currentValueMultiplier: baseVal / payVal,
+      currentValueMultiplier: 1,
       status: "active", realizedAmount: 0,
       revealed: Object.assign({}, rv)
     });
     TVDealflow.setDecision(s, st.id, "invested");
-    s.history.push({ year: s.year, type: "invest", startup: st.name, amount: amount });
+    s.history.push({
+      year: s.year, type: "invest", startup: st.name,
+      amount: amount, valuation: payVal, note: label || "term sheet accepted"
+    });
+    B.lastDecisionSummary = {
+      decision: "invested",
+      amount: amount,
+      valuation: payVal,
+      equityPct: equityPct,
+      note: label || "term sheet accepted"
+    };
     TVState.save();
 
     const eur = TVRender.eur(amount);
@@ -1046,13 +1163,145 @@
                  (equityPct * 100).toFixed(1) + "%"),
                c("c-cyan", "VALUATION: " + TVRender.eur(payVal))], ms: 1500,
         flash: true, sound: () => TVAudio.fanfare() }
-    ], () => exitToDealflow());
+    ], () => startPostBattleEvent("invested"));
+  }
+
+  function doInvest(amount) {
+    const s = TVState.current;
+    const st = B.st;
+    const payVal = currentDealValuation();
+    amount = TVFundMath.capTicketAmount(amount, payVal);
+    const verdict = global.TVDealAccess
+      ? TVDealAccess.termSheetVerdict(s, st, {
+          rv: B.rv, intel: B.intel, battle: B.battle,
+          amount: amount, valuation: payVal
+        })
+      : { accepted: true, reason: "legacy access" };
+
+    if (verdict.accepted) {
+      finalizeInvestment(amount, payVal, verdict.reason);
+      return;
+    }
+
+    B.pendingTermSheet = { amount: amount, payVal: payVal, verdict: verdict };
+    B.phase = "rescue";
+    seq([
+      { log: [c("c-white", "Prepari il term sheet da " + TVRender.eur(amount) + "...")], ms: 800,
+        sound: () => TVAudio.keyPress() },
+      { push: ["", c("c-red", "IL FOUNDER NON FIRMA."),
+               c("c-yellow", "Motivo: " + verdict.reason),
+               c("c-cyan", "Leverage " + verdict.leverage + "/" + verdict.required +
+                 " // heat " + verdict.heat + "/8")],
+        waitForInput: true, sound: () => TVAudio.error() },
+      { push: [c("c-white", "Puoi migliorare le condizioni, portare un lead"),
+               c("c-white", "o camminare via prima di inseguire FOMO.")],
+        waitForInput: true }
+    ], () => arm());
+  }
+
+  function doRescue(num) {
+    const s = TVState.current;
+    const pending = B.pendingTermSheet;
+    if (!pending) { B.phase = "menu"; draw(); arm(); return; }
+    if (num === 0) {
+      B.phase = B.battle.over && B.battle.won ? "broken" : "menu";
+      draw(); arm();
+      return;
+    }
+    if (num === 9) {
+      B.pendingTermSheet = null;
+      doPass();
+      return;
+    }
+    if (num === 1) {
+      const richVal = Math.round(pending.payVal * 1.12);
+      const amount = TVFundMath.capTicketAmount(pending.amount, richVal);
+      if (s.cash < amount) {
+        miniLog(c("c-red", "CASH INSUFFICIENTE PER QUESTO TERM SHEET."));
+        TVAudio.error();
+        return;
+      }
+      s.reputation = Math.max(0, s.reputation - 1);
+      B.pendingTermSheet = null;
+      finalizeInvestment(amount, richVal, "founder-friendly valuation");
+      return;
+    }
+    if (num === 2) {
+      const cost = B.rv.coInvest ? 0 : 100_000;
+      const amount = TVFundMath.capTicketAmount(pending.amount, pending.payVal);
+      if (s.cash < cost + amount) {
+        miniLog(c("c-red", "CASH INSUFFICIENTE PER LEAD + TERM SHEET."));
+        TVAudio.error();
+        return;
+      }
+      s.cash -= cost;
+      s.researchSpent += cost;
+      B.rv.coInvest = true;
+      B.pendingTermSheet = null;
+      finalizeInvestment(amount, pending.payVal, "lead investor unlocked allocation");
+    }
+  }
+
+  function startPostBattleEvent(decision) {
+    const s = TVState.current;
+    if (global.TVPostBattleEvents && TVPostBattleEvents.recordAfterBattle) {
+      TVPostBattleEvents.recordAfterBattle(s, B.st, {
+          decision: decision,
+          rv: B.rv,
+          intel: B.intel,
+          battle: B.battle
+      });
+    }
+    const summary = B.lastDecisionSummary || { decision: decision };
+    B.postBattleEvent = { summary: true };
+    B.phase = "postEvent";
+
+    const lines = [c("c-yellow", "DEAL MEMO // " + B.st.name)];
+    if (decision === "invested") {
+      lines.push(c("c-green", "DECISIONE: INVESTITO"));
+      lines.push(c("c-white", "Ticket: " + TVRender.eur(summary.amount || 0)));
+      lines.push(c("c-white", "Entry valuation: " + TVRender.eur(summary.valuation || currentDealValuation())));
+      lines.push(c("c-white", "Ownership: " + (((summary.equityPct || 0) * 100).toFixed(1)) + "%"));
+      lines.push(c("c-cyan", "Cash residuo: " + TVRender.eur(s.cash)));
+    } else if (decision === "lost") {
+      lines.push(c("c-red", "DECISIONE: DEAL PERSO"));
+      lines.push(c("c-white", "Il founder ti ha chiuso fuori dal round."));
+      lines.push(c("c-cyan", "Reputation: " + s.reputation));
+    } else {
+      lines.push(c("c-magenta", "DECISIONE: PASS"));
+      lines.push(c("c-white", "Nessun capitale impegnato."));
+      lines.push(c("c-cyan", "Cash invariato: " + TVRender.eur(s.cash)));
+    }
+    lines.push("");
+    lines.push(c("c-yellow", "AZIONI FATTE"));
+    const actions = [];
+    if (B.rv.dd) actions.push("DD");
+    if (B.rv.refCall) actions.push("REF CALL");
+    if (B.rv.coInvest) actions.push("CO-INVEST");
+    if (B.rv.negotiated) actions.push(B.rv.negotiatedValuation ? "VALUATION NEGOZIATA" : "NEGOZIAZIONE FALLITA");
+    if (B.rv.pitchWon) actions.push("FOUNDER ROTTO");
+    if (B.intel && B.intel.level >= 2) actions.push("TACCUINO " + B.intel.label);
+    if (!actions.length) actions.push("solo pitch meeting");
+    wrap(actions.join(" // "), 42).forEach(line => lines.push(c("c-white", line)));
+    if (B.rv.pitchTruth) {
+      lines.push("");
+      lines.push(c("c-green", "VERITA':"));
+      wrap(B.rv.pitchTruth, 42).forEach(line => lines.push(c("c-white", line)));
+    }
+    lines.push("", c("c-white", "PREMI 1: TORNA AL DEALFLOW E RILEGGI LE NEWS."));
+    seq([{ log: lines, waitForInput: true, sound: () => TVAudio.pageChange() }], () => arm());
+  }
+
+  function finishPostBattleEvent() {
+    B.postBattleEvent = null;
+    exitToDealflow();
   }
 
   function doPass() {
     const s = TVState.current;
     TVDealflow.setDecision(s, B.st.id, "passed");
     s.history.push({ year: s.year, type: "pass", startup: B.st.name });
+    B.lastDecisionSummary = { decision: "passed" };
     TVState.save();
 
     seq([
@@ -1061,7 +1310,7 @@
         sound: () => TVAudio.keyPress() },
       { push: ["", c("c-magenta", "Il founder ti rimuove da LinkedIn.")], ms: 1200,
         sound: () => TVAudio.pageChange() }
-    ], () => exitToDealflow());
+    ], () => startPostBattleEvent("passed"));
   }
 
   // ---------- routing input ----------
@@ -1085,9 +1334,20 @@
       }
       return;
     }
+    if (B.phase === "postEvent") {
+      finishPostBattleEvent();
+      return;
+    }
+    if (B.phase === "rescue") {
+      doRescue(num);
+      return;
+    }
     if (B.phase === "invest") {
-      const tickets = TVFundMath.ticketOptions(B.st);
-      if (num >= 1 && num <= 3) doInvest(tickets[num - 1]);
+      const options = TVFundMath.termSheetOptions(B.st, currentDealValuation());
+      if (num >= 1 && num <= 3) doInvest(options[num - 1].amount);
+      else if (num === 4) adjustCustomTicket(-TVFundMath.TICKET_STEP);
+      else if (num === 5) adjustCustomTicket(TVFundMath.TICKET_STEP);
+      else if (num === 6) doInvest(currentCustomTicket());
       else if (num === 0) {
         B.phase = B.battle.over && B.battle.won ? "broken" : "menu";
         draw();
@@ -1109,7 +1369,7 @@
       case 7: doNegotiate(); break;
       case 8: doCoInvest(); break;
       case 9: doPass(); break;
-      case 0: B.phase = "invest"; draw(); break;
+      case 0: openInvestPhase(); break;
     }
   }
 

@@ -14,7 +14,7 @@
       accent: "#18e0ff",
       eyebrow: "NEW MILAN // LINEA MAGLEV 3000 // 06:12",
       title: "SEI IL GENERAL PARTNER",
-      body: 'Hai appena chiuso Fund I: <span class="hot">100M EUR</span> raccolti, 90M investibili e cinque anni per scalare la classifica.',
+      body: 'Hai appena chiuso Fund I: <span class="hot">100M EUR</span> raccolti, 90M investibili e tre anni per costruire un track record.',
       hold: 4600,
       logo: true,
       setpiece: "arrival"
@@ -24,7 +24,7 @@
       accent: "#ffe200",
       eyebrow: "COME SI GIOCA // PAGINE 110-190",
       title: "LE NEWS SONO ALPHA",
-      body: "Il Televideo non e' decorazione: ogni pagina letta puo' diventare indizio, tesi o rischio prima che il mercato se ne accorga.",
+      body: "Ogni anno le news parlano del dealflow di quell'anno. Leggerle prima della battle crea prove, dubbi e segnali da usare.",
       hold: 4900,
       setpiece: "teletext"
     },
@@ -33,17 +33,17 @@
       accent: "#33ff66",
       eyebrow: "DEALFLOW // PAGINA 200",
       title: "SCEGLI I DEAL DELL'ANNO",
-      body: "Ogni anno arrivano tre startup. Aprile, confrontale con le news, poi decidi se passare o entrare in Pitch Battle.",
-      hold: 5000,
+      body: "Ogni anno arrivano cinque startup. Aprile, confrontale con 110/120/140/160/180, poi entra nelle schede 301-305.",
+      hold: 5400,
       setpiece: "terminal"
     },
     {
       shot: "shot-teletext",
       accent: "#18e0ff",
-      eyebrow: "TACCUINO // PITCH BATTLE // 301-303",
-      title: "CREA PRESSIONE",
-      body: "La pagina 190 trasforma ritagli in dossier. Un dossier forte ti protegge dai contrattacchi e sblocca domande armate.",
-      hold: 5000,
+      eyebrow: "TACCUINO // PAGINA 190",
+      title: "COSTRUISCI IL CASO",
+      body: "Due ritagli indipendenti possono aprire una fonte riservata. Piu' prove hai, meno costa la DD e piu' forti sono le domande.",
+      hold: 5600,
       setpiece: "teletext"
     },
     {
@@ -51,8 +51,17 @@
       accent: "#ffe200",
       eyebrow: "BATTLE // DOMANDE = LEVE",
       title: "NON E' UN QUIZ",
-      body: "Le domande servono a rompere il pitch-script: abbassi la resistenza del founder, ottieni informazioni e migliori la trattativa.",
-      hold: 5200,
+      body: "NUMERI, COMPETITOR, TEAM e SILENZIO servono a estrarre informazioni business, non a indovinare la risposta giusta.",
+      hold: 5600,
+      setpiece: "terminal"
+    },
+    {
+      shot: "shot-office",
+      accent: "#ff4030",
+      eyebrow: "CONTROLLO SALA // RESISTENZA FOUNDER",
+      title: "OGNI MOSSA HA UN COSTO",
+      body: "Domande deboli o parate fanno perdere controllo sala. Domande preparate abbassano ask valuation e possono rivelare red flag.",
+      hold: 5600,
       setpiece: "terminal"
     },
     {
@@ -60,16 +69,25 @@
       accent: "#33ff66",
       eyebrow: "TERM SHEET // VALUATION // OWNERSHIP",
       title: "INVESTI SOLO QUANDO SAI PERCHE'",
-      body: "DD, ref call, co-invest e pressione ti dicono se il deal vale. Domande buone abbassano ASK VAL e aumentano la tua quota.",
-      hold: 5200,
+      body: "DD, ref call, co-invest e pressione determinano leverage. Alcuni founder non firmano senza condizioni o accesso al round.",
+      hold: 5600,
       setpiece: "teletext"
+    },
+    {
+      shot: "shot-office",
+      accent: "#ff3df0",
+      eyebrow: "FUND OPS // LP // PORTFOLIO",
+      title: "TRA UNA BATTLE E L'ALTRA SUCCEDE ROBA",
+      body: "LP call, portfolio company call e catalyst possono comparire mentre torni a news e dealflow. Ignorarli costa punteggio.",
+      hold: 5600,
+      setpiece: "terminal"
     },
     {
       shot: "shot-fund",
       accent: "#ff3df0",
       eyebrow: "PORTFOLIO // LP // FINE ANNO",
       title: "VINCI LA RUN",
-      body: "Scala la leaderboard con MOIC, DPI, deployment, reputazione e LP satisfaction. Chi legge meglio, investe meglio.",
+      body: "A fine anno il portfolio viene marcato. Score finale: MOIC, DPI, deployment, reputazione, impact e LP satisfaction.",
       hold: 0,
       final: true,
       setpiece: "fund"

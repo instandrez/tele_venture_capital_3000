@@ -176,6 +176,35 @@
     });
   }
 
+  function codecRing(kind) {
+    if (muted) return;
+    const t = now(0.015);
+    duckMusic(0.9);
+    const root = kind === "source" ? 330 : 392;
+    noise(0.18, { at: t, frequency: 1900, volume: 0.032, filterType: "bandpass" });
+    note(root, 0.055, { at: t + 0.02, wave: "square", volume: 0.055 });
+    note(root * 1.5, 0.055, { at: t + 0.11, wave: "square", volume: 0.05 });
+    note(root * 1.25, 0.09, { at: t + 0.22, wave: "triangle", volume: 0.06 });
+    noise(0.06, { at: t + 0.35, frequency: 5200, volume: 0.018 });
+    note(root * 2, 0.12, { at: t + 0.42, wave: "square", volume: 0.038, release: 0.035 });
+  }
+
+  function codecConfirm(kind) {
+    if (muted) return;
+    const t = now(0.01);
+    duckMusic(0.75);
+    noise(0.08, { at: t, frequency: 2400, volume: 0.026, filterType: "bandpass" });
+    if (kind === "source") {
+      note(262, 0.07, { at: t + 0.04, wave: "square", volume: 0.052 });
+      note(392, 0.07, { at: t + 0.13, wave: "square", volume: 0.052 });
+      note(784, 0.16, { at: t + 0.22, wave: "triangle", volume: 0.06 });
+      return;
+    }
+    note(523, 0.06, { at: t + 0.04, wave: "square", volume: 0.052 });
+    note(659, 0.06, { at: t + 0.12, wave: "square", volume: 0.052 });
+    note(1047, 0.14, { at: t + 0.2, wave: "triangle", volume: 0.058 });
+  }
+
   function lpOutcome(tone) {
     if (tone === "positive") {
       success();
@@ -451,6 +480,8 @@
     error,
     success,
     phoneRing,
+    codecRing,
+    codecConfirm,
     lpOutcome,
     jingle,
     startBattleMusic,

@@ -1,4 +1,4 @@
-/* Engine dealflow: pesca 3 startup per l'anno corrente, coerenti
+/* Engine dealflow: pesca le startup per l'anno corrente, coerenti
    con le news pubblicate (Markstrat-style: chi legge nota i pattern).
 
    Algoritmo:
@@ -9,6 +9,7 @@
    4. Seeded random per anno → partita riproducibile da save.
 */
 (function (global) {
+  const DEALS_PER_YEAR = 5;
 
   function seedFor(state) {
     // gameSeed varia tra partite, year varia dentro la partita:
@@ -35,7 +36,7 @@
   function sectorMomentum(news, year) {
     // somma delta news del settore già pubblicate fino all'anno corrente
     const map = {};
-    news.filter(n => n.year <= year && n.signal).forEach(n => {
+    news.filter(n => n.year === year && n.signal).forEach(n => {
       const k = n.signal.sector;
       map[k] = (map[k] || 0) + n.signal.delta;
     });
@@ -54,24 +55,14 @@
       focus: "Seed con trazione"
     },
     3: {
-      title: "SERIES A WINDOW",
-      memo: "arrivano deal piu' costosi: meno errori, piu' ownership da difendere",
-      focus: "Seed Ext. / Series A"
-    },
-    4: {
-      title: "HOT ROUNDS",
-      memo: "i winner corrono, le valuation salgono e gli LP guardano il DPI",
-      focus: "Series A / hype"
-    },
-    5: {
-      title: "FINAL SPRINT",
-      memo: "late-stage, exit narrative e scelte da leaderboard",
-      focus: "maturi / famosi / costosi"
+      title: "LATE-STAGE HEAT",
+      memo: "round piu' famosi, follow-up pesanti e decisioni da leaderboard",
+      focus: "Series A / growth / exit narrative"
     }
   };
 
   function yearTheme(year) {
-    const y = Math.max(1, Math.min(5, year || 1));
+    const y = Math.max(1, Math.min(3, year || 1));
     return YEAR_THEMES[y] || YEAR_THEMES[1];
   }
 
@@ -97,25 +88,16 @@
       if (stage.includes("series")) score -= 1;
       if (val >= 8_000_000 && val <= 35_000_000) score += 2;
       if (traction >= 4) score += 1;
-    } else if (year === 3) {
-      if (stage.includes("seed ext")) score += 6;
-      if (stage.includes("series")) score += 4;
-      if (stage === "seed") score += 2;
-      if (val >= 18_000_000 && val <= 70_000_000) score += 2;
-      if (traction >= 5) score += 1;
-    } else if (year === 4) {
-      if (stage.includes("series")) score += 6;
-      if (stage.includes("seed ext")) score += 3;
-      if (val >= 35_000_000) score += 2;
-      if (hype >= 8) score += 2;
-      if (val < 10_000_000) score -= 2;
     } else {
-      if (stage.includes("series")) score += 6;
-      if (stage.includes("seed ext")) score += 3;
-      if (val >= 50_000_000) score += 3;
+      if (stage.includes("seed ext")) score += 6;
+      if (stage.includes("series")) score += 7;
+      if (stage === "seed") score += 2;
+      if (val >= 18_000_000 && val <= 90_000_000) score += 2;
+      if (val >= 50_000_000) score += 2;
       if (traction >= 6) score += 2;
+      if (traction >= 5) score += 1;
       if (unit > 0) score += 1;
-      if (hype >= 8) score += 1;
+      if (hype >= 8) score += 2;
     }
 
     return score;
@@ -128,7 +110,7 @@
     })).sort((a, b) => b.score - a.score).map(item => item.startup);
   }
 
-  function pickThree(state) {
+  function pickDeals(state) {
     const seen = new Set(state.seenStartups || []);
     const portfolioIds = new Set((state.portfolio || []).map(p => p.id));
     const pool = TVStartups.all().filter(s => !seen.has(s.id) && !portfolioIds.has(s.id));
@@ -152,7 +134,8 @@
     const rand = rng(seedFor(state) + state.year);
     const picks = [];
 
-    // 1 HOT + 1 TRAP + 1 NEUTRAL quando possibile
+    // Mix: piu' deal per anno, ma sempre con almeno un winner e una trappola
+    // quando il mercato li offre.
     function take(bucket) {
       if (bucket.length === 0) return null;
       const list = rankedForYear(bucket, state.year, rand);
@@ -162,12 +145,12 @@
       return s;
     }
 
-    const order = ["HOT", "TRAP", "NEUTRAL"];
+    const order = ["HOT", "TRAP", "NEUTRAL", "HOT", "TRAP"];
     order.forEach(b => { const p = take(buckets[b]); if (p) picks.push(p); });
 
     // se mancano slot, riempi con pool generale
     const rest = rankedForYear([...buckets.HOT, ...buckets.TRAP, ...buckets.NEUTRAL], state.year, rand);
-    while (picks.length < 3 && rest.length > 0) picks.push(rest.shift());
+    while (picks.length < DEALS_PER_YEAR && rest.length > 0) picks.push(rest.shift());
 
     return picks;
   }
@@ -177,7 +160,7 @@
     if (!state.dealflowCache) state.dealflowCache = {};
     const key = "y" + state.year;
     if (!state.dealflowCache[key]) {
-      const picks = pickThree(state);
+      const picks = pickDeals(state);
       state.dealflowCache[key] = picks.map(s => s.id);
       // marca come viste
       picks.forEach(s => {
@@ -214,6 +197,6 @@
 
   global.TVDealflow = {
     currentYearDealflow, decisionsForYear, getDecision, setDecision, pendingDeals,
-    yearTheme
+    yearTheme, DEALS_PER_YEAR
   };
 })(window);

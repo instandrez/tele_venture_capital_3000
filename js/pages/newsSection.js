@@ -45,7 +45,9 @@
       const s = TVState.current || {};
       const year = s.year || 1;
       const meta = SECTION_META[sectionRoot];
-      const items = TVNews.listSection(sectionRoot, year);
+      const items = TVIntel.newsForCurrentDealflow
+        ? TVIntel.newsForCurrentDealflow(s, sectionRoot)
+        : TVNews.listSection(sectionRoot, year);
       const width = r.COLS - 2;
 
       const lines = [];
@@ -54,8 +56,8 @@
 
       if (items.length === 0) {
         lines.push("");
-        lines.push(r.center(r.color("c-white", "nessuna news pubblicata.")));
-        lines.push(r.center(r.color("c-white", "torna più tardi, GP.")));
+        lines.push(r.center(r.color("c-white", "nessuna news utile al dealflow.")));
+        lines.push(r.center(r.color("c-white", "torna dopo il prossimo round.")));
       } else {
         items.forEach((n, i) => {
           const intel = TVIntel.pageStatus(s, n.page);
@@ -128,7 +130,7 @@
       const unlocked = TVIntel.unlockedSourcesForPage(TVState.current, pageNum);
       if (unlocked.length) {
         lines.push(" " + r.color("c-magenta",
-          "DUE FIRME COMBACIANO. INTERNO " + unlocked[0].chain.page + "."));
+          "FONTE RISERVATA SBLOCCATA: " + unlocked[0].chain.page + "."));
       }
 
       while (lines.length < 19) lines.push("");
@@ -145,7 +147,9 @@
       const s = TVState.current || {};
       const year = s.year || 1;
       const meta = SECTION_META[sectionRoot];
-      const items = TVNews.listSection(sectionRoot, year);
+      const items = TVIntel.newsForCurrentDealflow
+        ? TVIntel.newsForCurrentDealflow(s, sectionRoot)
+        : TVNews.listSection(sectionRoot, year);
       const width = r.COLS - 2;
 
       const lines = [];
@@ -154,8 +158,8 @@
 
       if (items.length === 0) {
         lines.push("");
-        lines.push(r.center(r.color("c-white", "nessuna news pubblicata.")));
-        lines.push(r.center(r.color("c-white", "torna piu' tardi, GP.")));
+        lines.push(r.center(r.color("c-white", "nessuna news utile al dealflow.")));
+        lines.push(r.center(r.color("c-white", "torna dopo il prossimo round.")));
       } else {
         items.forEach(n => {
           const intel = TVIntel.pageStatus(s, n.page);
@@ -223,7 +227,7 @@
       const unlocked = TVIntel.unlockedSourcesForPage(TVState.current, pageNum);
       if (unlocked.length) {
         lines.push(" " + r.color("c-magenta",
-          "DUE FIRME COMBACIANO. INTERNO " + unlocked[0].chain.page + "."));
+          "FONTE RISERVATA SBLOCCATA: " + unlocked[0].chain.page + "."));
       }
 
       while (lines.length < 19) lines.push("");

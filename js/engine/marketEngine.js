@@ -89,8 +89,41 @@
     return mod;
   }
 
+  function sourceRealityEffect(startup, currentYear) {
+    if (!global.TVIntel || !TVIntel.sourceForecast) return 0;
+    const forecast = TVIntel.sourceForecast(startup);
+    if (!forecast) return 0;
+    if (forecast.materializeYear && forecast.materializeYear !== currentYear) {
+      return 0;
+    }
+    return forecast.effectPct || 0;
+  }
+
+  function contactedForecast(state, pos, currentYear) {
+    const record = state.investigationSources && state.investigationSources[pos.id];
+    const forecast = record && record.contacted && record.forecast;
+    if (!forecast) return null;
+    if (forecast.materializeYear && forecast.materializeYear !== currentYear) return null;
+    return forecast;
+  }
+
+  function enforceContactedForecast(effect, forecast) {
+    if (!forecast) return effect;
+    if (forecast.tone === "positive") return Math.max(effect, 0.06);
+    if (forecast.tone === "negative") return Math.min(effect, -0.08);
+    return effect;
+  }
+
+  function pendingCatalystsFor(state, pos, currentYear) {
+    return (state.portfolioCatalysts || []).filter(c =>
+      !c.applied &&
+      c.startupId === pos.id &&
+      (c.materializeYear || c.year || currentYear) <= currentYear
+    );
+  }
+
   // Applica gli effetti di un singolo anno a una posizione del portfolio
-  function applyYearToPosition(pos, currentYear, allNews, startup) {
+  function applyYearToPosition(state, pos, currentYear, allNews, startup) {
     let effect = 0;
     const newsToApply = allNews.filter(n =>
       n.signal && n.signal.materializeYear === currentYear
@@ -107,10 +140,24 @@
     const baseline = baselineModulation(startup, yearsHeld);
     effect += baseline;
 
+    const sourceReality = sourceRealityEffect(startup, currentYear);
+    effect += sourceReality;
+
+    const catalysts = pendingCatalystsFor(state, pos, currentYear);
+    catalysts.forEach(c => {
+      effect += c.multiplierPct || 0;
+      c.applied = true;
+      c.appliedYear = currentYear;
+    });
+
     // rumore deterministico piccolo (non distrugge la modellazione)
     const noiseSeed = (pos.id.charCodeAt(0) + currentYear * 17) % 100 / 100;
     const noise = (noiseSeed - 0.5) * 0.06;
     effect += noise;
+
+    const forecast = contactedForecast(state, pos, currentYear);
+    const effectBeforeForecastRail = effect;
+    effect = enforceContactedForecast(effect, forecast);
 
     const before = pos.currentValueMultiplier;
     pos.currentValueMultiplier = Math.max(0.05, before * (1 + effect));
@@ -120,8 +167,36 @@
       after: pos.currentValueMultiplier,
       effect: effect,
       matchedNews: matchedNews,
-      baseline: baseline
+      baseline: baseline,
+      sourceReality: sourceReality,
+      noise: noise,
+      forecastRail: effect - effectBeforeForecastRail,
+      catalysts: catalysts
     };
+  }
+
+  function pctLabel(value) {
+    const pct = Math.round((value || 0) * 100);
+    return (pct > 0 ? "+" : "") + pct + "%";
+  }
+
+  function operatingTriggers(state, pos, startup, result) {
+    const triggers = [];
+    const sourceRecord = state.investigationSources && state.investigationSources[pos.id];
+    if (Math.abs(result.sourceReality || 0) >= 0.01) {
+      if (sourceRecord && sourceRecord.contacted && sourceRecord.forecast) {
+        triggers.push("FONTE: " + sourceRecord.forecast.message);
+      } else {
+        triggers.push("OPERATING: fondamentali nascosti " + pctLabel(result.sourceReality));
+      }
+    }
+    if (Math.abs(result.baseline || 0) >= 0.015) {
+      triggers.push("FONDAMENTALI: team/traction/unit economics " + pctLabel(result.baseline));
+    }
+    if (Math.abs(result.forecastRail || 0) >= 0.01) {
+      triggers.push("FONTE: mark riallineato alla soffiata " + pctLabel(result.forecastRail));
+    }
+    return triggers;
   }
 
   function runYearEnd(state) {
@@ -132,13 +207,17 @@
       if (pos.status && pos.status !== "active") return;
       const startup = TVStartups.byId(pos.id);
       if (!startup) return;
-      const result = applyYearToPosition(pos, state.year, allNews, startup);
+      const result = applyYearToPosition(state, pos, state.year, allNews, startup);
+      const operating = operatingTriggers(state, pos, startup, result);
       events.push({
         startup: pos.name,
         before: result.before,
         after: result.after,
         pct: result.effect,
-        triggers: result.matchedNews.map(m => m.news.headline),
+        triggers: result.matchedNews.map(m => m.news.headline).concat(
+          operating,
+          (result.catalysts || []).map(c => "CATALYST: " + c.headline + " / " + c.label)
+        ),
         intel: result.matchedNews.map(m => ({
           page: m.news.page,
           headline: m.news.headline,

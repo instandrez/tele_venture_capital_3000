@@ -5,7 +5,7 @@
 
   function publishedNews(state) {
     const year = (state && state.year) || 1;
-    return TVNews.NEWS.filter(n => n.year <= year && n.signal);
+    return TVNews.NEWS.filter(n => n.year === year && n.signal);
   }
 
   function effectFor(news, startup) {
@@ -58,7 +58,7 @@
         const effect = effectFor(n, startup);
         const sameSector = n.signal.sector === root;
         const sectorContext = sameSector &&
-          ["trend", "macro", "regulation"].includes(n.signal.type);
+          ["trend", "macro", "regulation", "corporate_opp"].includes(n.signal.type);
         const priority = effect !== 0 ? 3 :
           (sectorContext ? 2 : (n.signal.type === "macro" ? 1 : 0));
         const evidence = evidenceFor(n, startup, effect);
@@ -89,6 +89,44 @@
       if (secondSignature) selected[5] = secondSignature;
     }
     return selected;
+  }
+
+  function newsForCurrentDealflow(state, sectionRoot) {
+    if (!state || !state.gameStarted || typeof TVDealflow === "undefined") {
+      return TVNews.listSection(sectionRoot, (state && state.year) || 1);
+    }
+    const seen = new Set();
+    const items = [];
+    const deals = TVDealflow.currentYearDealflow(state);
+    deals.forEach(st => {
+      relevantNews(state, st).forEach(item => {
+        const n = item.news;
+        if (!n || n.section !== sectionRoot || seen.has(n.page)) return;
+        seen.add(n.page);
+        items.push(n);
+      });
+    });
+    if (!items.length) {
+      const roots = new Set(deals.map(st => rootSector(st)));
+      TVNews.listSection(sectionRoot, state.year).forEach(n => {
+        if (seen.has(n.page)) return;
+        if (n.signal && roots.has(n.signal.sector)) {
+          seen.add(n.page);
+          items.push(n);
+        }
+      });
+    }
+    if (!items.length) {
+      TVNews.listSection(sectionRoot, state.year).slice(0, 2).forEach(n => {
+        if (seen.has(n.page)) return;
+        seen.add(n.page);
+        items.push(n);
+      });
+    }
+    return items.sort((a, b) => {
+      if (b.year !== a.year) return b.year - a.year;
+      return a.page - b.page;
+    });
   }
 
   function levelFor(evidenceScore) {
@@ -161,7 +199,7 @@
     return {
       move: strongest.move,
       label: strongest.moveLabel,
-      reason: reasons[strongest.kind] || "due fonti puntano allo stesso buco"
+      reason: reasons[strongest.kind] || "due ritagli puntano allo stesso buco"
     };
   }
 
@@ -193,6 +231,176 @@
     return "OPERATORE DI SETTORE";
   }
 
+  function sourceFace(startup) {
+    if (startup.founderProfile === "red_flag" || startup.founderProfile === "ego") return "shadow";
+    if (startup.regulatoryExposure <= -0.5) return "visor";
+    if (startup.corporateFitTag) return "corpdev";
+    if (startup.unitEconomics < 0) return "client";
+    return "operator";
+  }
+
+  function sourceCodename(startup) {
+    const root = String(startup.sectorTag || "CASE").split("_")[0];
+    const names = {
+      AI: "ORACLE",
+      BATTERY: "ANODE",
+      CLIMATE: "WINDTUNNEL",
+      ROBOTICS: "CALIPER",
+      MOBILITY: "ASPHALT",
+      SPACE: "ORBIT",
+      CYBER: "ROOT",
+      LEGALTECH: "SEAL",
+      SAAS: "LEDGER",
+      FINTECH: "VAULT",
+      CRYPTO: "COLDWALLET",
+      CONSUMER: "CART"
+    };
+    return names[root] || "BACKCHANNEL";
+  }
+
+  function sourceLocation(startup) {
+    const root = String(startup.sectorTag || "CASE").split("_")[0];
+    const places = {
+      AI: "slack di ex engineer",
+      BATTERY: "plant pilota",
+      CLIMATE: "corridoio procurement",
+      ROBOTICS: "magazzino cliente",
+      MOBILITY: "gara comunale",
+      SPACE: "ufficio export control",
+      CYBER: "canale security buyer",
+      LEGALTECH: "ordine professionale",
+      SAAS: "revops dashboard",
+      FINTECH: "risk office",
+      CRYPTO: "chat OTC",
+      CONSUMER: "gruppo operatori"
+    };
+    return places[root] || "canale non ufficiale";
+  }
+
+  function qualityScore(startup) {
+    return (
+      (startup.team || 0) * 0.20 +
+      (startup.traction || 0) * 0.28 +
+      (startup.strategicFit || 0) * 0.18 +
+      ((startup.unitEconomics || 0) + 1) * 1.9 -
+      (startup.hype || 0) * 0.09 -
+      (startup.hypeDecay || 0) * 1.2 -
+      (startup.founderProfile === "red_flag" ? 1.5 : 0) -
+      (startup.founderProfile === "ego" ? 0.7 : 0)
+    );
+  }
+
+  function scriptedOutcome(startup) {
+    const exits = global.TVExits && TVExits.EXIT_EVENTS;
+    if (!exits) return null;
+    return exits.find(e => e.startupId === startup.id) || null;
+  }
+
+  function sourceForecast(startup) {
+    const horizon = 3;
+    const ev = scriptedOutcome(startup);
+    if (ev && ev.year <= horizon) {
+      if (ev.kind === "exit" || ev.kind === "ipo") {
+        return {
+          code: "liquidity",
+          tone: "positive",
+          materializeYear: ev.year,
+          effectPct: 0.18,
+          message: "La linea vera e' liquidita' anno " + ev.year + ": " + ev.note + ".",
+          implication: "Se entri, il punto non e' il mark: e' arrivare vivo all'evento.",
+          check: "Controlla ownership, clausole e concentrazione del cliente che compra."
+        };
+      }
+      if (ev.kind === "acquihire") {
+        return {
+          code: "acquihire",
+          tone: "mixed",
+          materializeYear: ev.year,
+          effectPct: -0.06,
+          message: "Il prodotto non regge il piano: anno " + ev.year + " finisce in acqui-hire.",
+          implication: "Puoi salvare parte del capitale, ma non pagare multipli software.",
+          check: "Valuta team quality e prezzo di entrata, non il TAM del deck."
+        };
+      }
+      return {
+        code: "writeoff",
+        tone: "negative",
+        materializeYear: ev.year,
+        effectPct: -0.22,
+        message: "Il downside e' gia' nel sistema: anno " + ev.year + " " + ev.note + ".",
+        implication: "Entra solo se il prezzo compensa davvero il rischio di zero.",
+        check: "Cerca burn, governance e segnali legali prima del term sheet."
+      };
+    }
+
+    const score = qualityScore(startup);
+    if (score >= 6.6) {
+      return {
+        code: "markup",
+        tone: "positive",
+        materializeYear: null,
+        effectPct: 0.10,
+        message: "Il dato sporco e' migliore del deck: clienti e margine stanno tenendo.",
+        implication: "La startup dovrebbe rivalutarsi, ma solo se non strapaghi l'entry.",
+        check: "Verifica retention, pricing power e qualita' dei ricavi."
+      };
+    }
+    if (score <= 3.9 || ((startup.hype || 0) >= 8 && (startup.traction || 0) <= 2)) {
+      return {
+        code: "downmark",
+        tone: "negative",
+        materializeYear: null,
+        effectPct: -0.14,
+        message: "Il growth e' piu' narrativo che operativo: il prossimo mark e' fragile.",
+        implication: "La valuation deve scendere o il deal diventa una trappola.",
+        check: "Chiedi revenue quality, burn per cliente e prove non autoprodotte."
+      };
+    }
+    return {
+      code: "volatile",
+      tone: "mixed",
+      materializeYear: null,
+      effectPct: -0.02,
+      message: "Il deal puo' funzionare, ma non c'e' ancora una prova dominante.",
+      implication: "Il prezzo decide tutto: bene con sconto, mediocre se insegui FOMO.",
+      check: "Incrocia team, competitor e dati di traction prima di firmare."
+    };
+  }
+
+  function sourceVerdict(startup) {
+    const ue = typeof startup.unitEconomics === "number" ? startup.unitEconomics : 0;
+    if (startup.founderProfile === "red_flag") {
+      return "governance fragile: entra solo con prezzo molto piu' basso.";
+    }
+    if (ue <= -0.45) {
+      return "la crescita costa troppo: serve prova durissima prima del term sheet.";
+    }
+    if (ue >= 0.3 && startup.traction >= 5) {
+      return "rischio reale, ma il motore economico sembra difendibile.";
+    }
+    if (startup.strategicFit >= 8) {
+      return "puo' valere se compri l'accesso strategico, non solo il fatturato.";
+    }
+    if (startup.hype >= 8 && startup.traction <= 2) {
+      return "sembra piu' narrativa che business: negozia o lascia.";
+    }
+    return "caso aperto: il rischio va prezzato, non ignorato.";
+  }
+
+  function sourcePersona(startup) {
+    const label = sourceLabel(startup);
+    return {
+      role: label,
+      code: sourceCodename(startup),
+      face: sourceFace(startup),
+      location: sourceLocation(startup),
+      risk: startup.hiddenRisk,
+      upside: startup.hiddenUpside,
+      verdict: sourceVerdict(startup),
+      forecast: sourceForecast(startup)
+    };
+  }
+
   function chainFor(state, startup, relevant) {
     relevant = relevant || relevantNews(state, startup);
     const readSet = new Set((state && state.readPages) || []);
@@ -202,14 +410,18 @@
     const page = sourcePageFor(startup);
     const record = state && state.investigationSources &&
       state.investigationSources[startup.id];
+    const persona = sourcePersona(startup);
+    const forecast = record && record.forecast ? record.forecast : persona.forecast;
     return {
       fragments: kinds.length,
       kinds,
       unlocked: score >= 3 && kinds.length >= 2,
       contacted: !!(record && record.contacted),
       page,
-      source: sourceLabel(startup),
-      clue: startup.hiddenRisk
+      source: persona.role,
+      persona,
+      forecast,
+      clue: persona.risk
     };
   }
 
@@ -220,7 +432,8 @@
     state.investigationSources[startup.id] = {
       contacted: true,
       page: chain.page,
-      year: state.year
+      year: state.year,
+      forecast: chain.forecast
     };
     return chainFor(state, startup);
   }
@@ -296,9 +509,9 @@
   }
 
   global.TVIntel = {
-    relevantNews, forStartup, linkedDeals, pageStatus,
+    relevantNews, newsForCurrentDealflow, forStartup, linkedDeals, pageStatus,
     levelFor, labelFor, caseQuestion, theoryFor, sidekickLine,
-    leadFor, newsFingerprint, chainFor, contactSource,
+    leadFor, newsFingerprint, chainFor, contactSource, sourceForecast,
     sourcePageFor, sourceStartupByPage, unlockedSourcesForPage
   };
 })(typeof window !== "undefined" ? window : global);

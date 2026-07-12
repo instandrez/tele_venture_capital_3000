@@ -70,6 +70,11 @@
       },
       attack: "NAME DROPPING",
       attackLine: "cita tre unicorni 'amici suoi'.",
+      attackLines: [
+        "cita tre unicorni 'amici suoi'.",
+        "'Questa domanda me la fece anche Masa.'",
+        "ricorda alla sala il suo TED talk. Di nuovo."
+      ],
       crack: "Crolla: confessa i numeri veri pur di riavere l'attenzione."
     },
     hustle: {
@@ -90,6 +95,11 @@
       },
       attack: "BUZZWORD STORM",
       attackLine: "synergy, flywheel, AI-native.",
+      attackLines: [
+        "synergy, flywheel, AI-native.",
+        "'Siamo il sistema operativo della categoria.'",
+        "growth loop, PLG, founder-market fit. Respira."
+      ],
       crack: "Ammette: i numeri 'aspirazionali' erano... aspirazioni."
     },
     red_flag: {
@@ -110,6 +120,11 @@
       },
       attack: "CAMBIO DISCORSO",
       attackLine: "improvvisamente parla di vision.",
+      attackLines: [
+        "improvvisamente parla di vision.",
+        "'Preferirei non entrare nel legale.'",
+        "il CFO ombra gli passa un biglietto piegato."
+      ],
       crack: "Tra le righe: meta' del team se n'e' andata. E capisci perche'."
     },
     competent: {
@@ -130,6 +145,11 @@
       },
       attack: "RISPOSTA PUNTUALE",
       attackLine: "annoia, ma convince.",
+      attackLines: [
+        "annoia, ma convince.",
+        "risponde anche alla domanda che non hai fatto.",
+        "cita il cohort di gennaio a memoria. Riga per riga."
+      ],
       crack: "Apre il foglio dei numeri interni. Senza filtri."
     },
     grit: {
@@ -150,6 +170,11 @@
       },
       attack: "DATO DI FATTO",
       attackLine: "cita un cliente che paga dal 2019.",
+      attackLines: [
+        "cita un cliente che paga dal 2019.",
+        "'Il churn e' zero. Controllate pure.'",
+        "mostra la foto del capannone. Di proprieta'."
+      ],
       crack: "Si sbottona: ti dice dove il settore sta DAVVERO andando."
     },
     first_time: {
@@ -170,6 +195,11 @@
       },
       attack: "ENTUSIASMO NERVOSO",
       attackLine: "ride nel momento sbagliato.",
+      attackLines: [
+        "ride nel momento sbagliato.",
+        "ringrazia tre volte nella stessa frase.",
+        "'Scusate, questa slide non doveva esserci.'"
+      ],
       crack: "Ti dice tutto: il buono, il cattivo, il CAC."
     }
   };

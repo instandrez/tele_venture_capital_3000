@@ -1113,12 +1113,17 @@
       const counterCost = b.lastCounterCost || 1;
       const mood = counterCost >= 3 ? "La sala ormai pende dalle sue labbra."
         : (counterCost >= 2 ? "La sala comincia a spazientirsi." : null);
+      // la battuta del contrattacco ruota col turno: a match lungo
+      // il founder non si ripete mai due volte di fila
+      const attackFlavor = (p.attackLines && p.attackLines.length)
+        ? p.attackLines[(b.turn - 1) % p.attackLines.length]
+        : p.attackLine;
       const counterLines = ["",
         c("c-magenta", b.lastOutcome === "resist"
           ? "FOUNDER ribalta " + p.attack + "."
           : "FOUNDER usa " + p.attack + "!"),
         c("c-yellow", "CONTRATTACCO: -" + counterCost + " CONTROLLO SALA"),
-        c("c-white", p.attackLine)];
+        c("c-white", attackFlavor)];
       if (mood) counterLines.push(c("c-red", mood));
       steps.push({ push: counterLines,
                    waitForInput: true, sound: () => TVAudio.error() });

@@ -968,6 +968,31 @@ test("ogni founderProfile ha un profilo di battaglia completo", () => {
   });
 });
 
+test("ogni profilo ha 3 battute di contrattacco a rotazione", () => {
+  Object.keys(TVPitchBattle.PROFILES).forEach(fp => {
+    const p = TVPitchBattle.PROFILES[fp];
+    assert(Array.isArray(p.attackLines) && p.attackLines.length === 3,
+      fp + ": attese 3 attackLines");
+    eq(p.attackLines[0], p.attackLine, fp + ": la prima battuta resta quella storica");
+    eq(new Set(p.attackLines).size, 3, fp + ": battute duplicate");
+  });
+});
+
+test("i nuovi titoli finali coprono gli estremi", () => {
+  const base = { dpi: 0, lpSat: { pensione: 50, family: 50, sovereign: 50, endowment: 50 },
+                 reputation: 50, impact: 50, score: 40, deploymentRate: 0.6 };
+  eq(TVTitles.pickTitle(Object.assign({}, base, { moic: 0.1 })),
+     "Falo' Rituale di Capitale Altrui");
+  eq(TVTitles.pickTitle(Object.assign({}, base, { moic: 4.5 })),
+     "Outlier Certificato, Non Replicabile");
+  eq(TVTitles.pickTitle(Object.assign({}, base, { moic: 2.4, deploymentRate: 0.2 })),
+     "Cecchino col Freno a Mano Tirato");
+  eq(TVTitles.pickTitle(Object.assign({}, base, { moic: 0.8, deploymentRate: 0.95 })),
+     "Ha Deployato Anche gli Errori");
+  eq(TVTitles.pickTitle(Object.assign({}, base, { moic: 1.0 })),
+     "Ha Inventato il BTP Illiquido");
+});
+
 test("giocare debolezza e cambiare angolo vince (skill premiata)", () => {
   Object.keys(TVPitchBattle.PROFILES).forEach(fp => {
     const b = TVPitchBattle.newBattle(fp);

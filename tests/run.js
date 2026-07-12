@@ -347,6 +347,15 @@ test("il ticket custom rispetta cash disponibile e cap ownership", () => {
   assert(low >= 1_000_000, "ticket sotto minimo operativo");
 });
 
+test("lo sconto negoziato produce un mark d'ingresso sopra 1x", () => {
+  approx(TVFundMath.entryMultiplier(20_000_000, 20_000_000), 1, 1e-9, "full price");
+  const m = TVFundMath.entryMultiplier(20_000_000, 14_400_000);
+  approx(m, 20 / 14.4, 1e-6, "mark = full/paid");
+  assert(m > 1, "lo sconto deve pagare");
+  assert(TVFundMath.entryMultiplier(100_000_000, 1_000_000) <= 1.5, "cap a 1.5x");
+  assert(TVFundMath.entryMultiplier(0, 0) === 1, "input nulli → 1x");
+});
+
 test("la strategia media puo' distribuire il fondo, la massima deve selezionare", () => {
   let middle = 0, maximum = 0;
   TVStartups.STARTUPS.slice(0, 15).forEach(st => {

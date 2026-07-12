@@ -150,8 +150,8 @@
           '<button type="submit">START FUND</button>' +
           '<button type="button" id="start-name-back">BACK</button>' +
         '</div>' +
-      '</form>' +
-      '<div class="start-notice">SET YOUR FUND IDENTITY</div>'
+        '<div class="start-notice">SET YOUR FUND IDENTITY</div>' +
+      '</form>'
     );
   }
 

@@ -1,6 +1,7 @@
 /* Pagina 400 — Portfolio.
-   Mostra le posizioni attive con valore corrente (calcolato dal motore
-   in modo semplificato per Sprint 3; Sprint 4 ricalcola con news engine). */
+   Mostra le posizioni attive e chiuse. Il valore corrente è
+   investedAmount * currentValueMultiplier, dove il moltiplicatore è
+   aggiornato ogni anno dal market engine (news + fondamentali + exit). */
 (function (global) {
 
   function portfolioValue(state) {

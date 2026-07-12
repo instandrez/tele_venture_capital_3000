@@ -270,7 +270,7 @@
   function liveSectorIndex(sectorKey, year) {
     const idx = TVSectors.SECTOR_INDICES[sectorKey];
     if (!idx) return 0;
-    const yearIdx = Math.min(year, 5) - 1;
+    const yearIdx = Math.min(year, 3) - 1;
     let val = idx.base[yearIdx] || 0;
     TVNews.NEWS.forEach(n => {
       if (n.signal && n.signal.sector === sectorKey && n.signal.materializeYear === year) {

@@ -30,7 +30,7 @@
     const r = TVRender;
     const s = TVState.current || {};
     const year = s.year || 1;
-    const yearIdx = Math.min(year, 5) - 1;
+    const yearIdx = Math.min(year, 3) - 1;
     const width = r.COLS - 2;
 
     const lines = [];

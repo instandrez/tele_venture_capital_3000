@@ -17,15 +17,21 @@
     const lps = state.lpSat || { pensione: 50, family: 50, sovereign: 50, endowment: 50 };
     const lpSatAvg = (lps.pensione + lps.family + lps.sovereign + lps.endowment) / 4;
 
-    // Scoring components 0-100
-    const moicScore = Math.min(100, Math.max(0, moic * 30)); // 3.33x → 100
-    const dpiScore  = Math.min(100, Math.max(0, dpi * 50));  // 2x → 100
+    // Scoring components 0-100.
+    // Cap alti abbastanza da non saturare col gioco perfetto: 4x MOIC
+    // e 2.5x DPI valgono 100, così migliorare conta fino in fondo.
+    const moicScore = Math.min(100, Math.max(0, moic * 25)); // 4x → 100
+    const dpiScore  = Math.min(100, Math.max(0, dpi * 40));  // 2.5x → 100
     const lpScore   = Math.min(100, Math.max(0, lpSatAvg));
     const repScore  = Math.min(100, Math.max(0, state.reputation || 0));
     const impScore  = Math.min(100, Math.max(0, state.innovationImpact || 0));
     const investable = state.investableCapital || 90_000_000;
     const deploymentRate = investable > 0 ? state.invested / investable : 0;
-    const deploymentScore = Math.min(100, Math.max(0, deploymentRate / 0.80 * 100));
+    // Il target di deployment segue la run mode: in Quick Run i deal
+    // sono 9 in tutto, pretendere l'80% di 90M punirebbe anche la
+    // selezione perfetta. Partner Mode resta esigente.
+    const deploymentTarget = state.runMode === "quick" ? 0.60 : 0.80;
+    const deploymentScore = Math.min(100, Math.max(0, deploymentRate / deploymentTarget * 100));
 
     const score = Math.round(
       0.35 * moicScore +

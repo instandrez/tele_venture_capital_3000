@@ -57,7 +57,24 @@
     { startupId: "sovereignai", year: 3, kind: "writedown", factor: 0.55,
       note: "capex GPU rivalutato: unicorno ancora vivo, ma meno mitologico" },
     { startupId: "stealthmode", year: 3, kind: "writedown", factor: 0.02,
-      note: "rivelato: condivisione calendari. Val. 800M → 14M" }
+      note: "rivelato: condivisione calendari. Val. 800M → 14M" },
+
+    // ---- POWER LAW: il fund returner che nessuno guarda ----
+    // DeepForge: zero hype, traction invisibile, unit economics veri.
+    // Il deal noioso che ripaga il fondo da solo: la lezione più
+    // importante del venture sta qui, non nel megaround.
+    { startupId: "deepforge", year: 3, kind: "exit", premium: 5.0,
+      note: "acquisita da un gruppo industriale: il deal noioso ripaga il fondo" },
+
+    // ---- TRAPPOLE: l'hype si paga ----
+    // Il pool era troppo gentile: chi investiva a caso non scendeva
+    // mai sotto 1x. Il venture vero non perdona così poco.
+    { startupId: "agentforge", year: 3, kind: "writeoff", premium: 0,
+      note: "la timeline AGI slitta di un decennio: il round C non arriva" },
+    { startupId: "scootflow", year: 3, kind: "writeoff", premium: 0.2,
+      note: "unit economics da monopattino: fusione distressed col rivale" },
+    { startupId: "madbank", year: 3, kind: "writedown", factor: 0.5,
+      note: "down round del 50%: il conto deposito non era una moat" }
     // SaltCore resta in portfolio: grande markup ma non realizzata.
     // MOIC alto, DPI zero — un classico.
   ];

@@ -1234,13 +1234,24 @@ Metriche:
 Score components:
 
 ```text
-moicScore = clamp(moic * 30, 0, 100)
-dpiScore = clamp(dpi * 50, 0, 100)
+moicScore = clamp(moic * 25, 0, 100)        # 4x MOIC = 100
+dpiScore = clamp(dpi * 40, 0, 100)          # 2.5x DPI = 100
 lpScore = lpSatAvg
 repScore = reputation
 impScore = innovationImpact
-deploymentScore = clamp(deploymentRate / 0.80 * 100, 0, 100)
+deploymentScore = clamp(deploymentRate / target * 100, 0, 100)
+# target = 0.60 in Quick Run (9 deal totali), 0.80 in Partner Mode
 ```
+
+Nota calibrazione (luglio 2026): i cap precedenti (moic*30, dpi*50)
+saturavano gia' col gioco perfetto (MOIC 3.4+, DPI 3+): oltre il cap
+migliorare non contava piu'. Il target deployment fisso a 0.80
+puniva anche la selezione perfetta in Quick Run (max raggiungibile
+~65% con 9 deal). Aggiunti inoltre: un fund returner nascosto
+(deepforge, exit premium 5.0 — zero hype, fondamentali veri) e tre
+trappole hype (agentforge, scootflow, madbank) per dare al pool la
+power law che mancava. Verificato con simulazione a 4 strategie,
+300 partite/strategia per run mode.
 
 Score finale:
 

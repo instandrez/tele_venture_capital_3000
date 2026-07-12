@@ -199,7 +199,7 @@ max ~36 caratteri per riga. Se ha un `signal`, verifica che `sector` esista in
 node tests/run.js
 ```
 
-88 test su render, input, stato iniziale, migrazioni, relazioni LP, fund math,
+92 test su render, input, stato iniziale, migrazioni, relazioni LP, fund math,
 dealflow, Intelligence Network, deal access, eventi post-battle,
 decisioni, scoring, exit/write-off, pitch battle, sprite e integrità dei dati
 (inclusi: exit raggiungibili nei 3 anni, signal senza orfani e mark

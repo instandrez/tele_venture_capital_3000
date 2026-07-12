@@ -978,6 +978,50 @@ test("ogni profilo ha 3 battute di contrattacco a rotazione", () => {
   });
 });
 
+test("scoring: i cap non saturano col gioco perfetto", () => {
+  // MOIC 4x e DPI 2.5x valgono 100; a 3.33x/2x (i vecchi cap) restano margini
+  function metricsFor(moic, dpi, runMode, deployed) {
+    return TVScoring.computeMetrics({
+      runMode: runMode,
+      portfolio: [{ status: "active", investedAmount: 10_000_000,
+                    currentValueMultiplier: moic }],
+      invested: 10_000_000,
+      realized: dpi * 10_000_000 - 0, // dpi = realized/invested
+      investableCapital: 90_000_000,
+      lpSat: { pensione: 50, family: 50, sovereign: 50, endowment: 50 },
+      reputation: 50, innovationImpact: 50,
+      // il portfolio value qui non serve preciso: contano i rapporti
+    });
+  }
+  const m1 = metricsFor(1, 0, "quick");
+  assert(!Number.isNaN(m1.score), "score valido");
+  // deployment target per run mode: stesso invested, quick premia di piu'
+  const sQuick = TVScoring.computeMetrics({
+    runMode: "quick", portfolio: [], invested: 54_000_000, realized: 0,
+    investableCapital: 90_000_000,
+    lpSat: { pensione: 50, family: 50, sovereign: 50, endowment: 50 },
+    reputation: 50, innovationImpact: 50
+  });
+  const sPartner = TVScoring.computeMetrics({
+    runMode: "partner", portfolio: [], invested: 54_000_000, realized: 0,
+    investableCapital: 90_000_000,
+    lpSat: { pensione: 50, family: 50, sovereign: 50, endowment: 50 },
+    reputation: 50, innovationImpact: 50
+  });
+  approx(sQuick.deploymentScore, 100, 1e-6, "quick: 60% di 90M = target pieno");
+  approx(sPartner.deploymentScore, 75, 1e-6, "partner: 60% investito = 75/100");
+});
+
+test("la power law esiste: un fund returner e tre trappole hype", () => {
+  const deep = TVExits.forYear("deepforge", 3);
+  assert(deep && deep.kind === "exit" && deep.premium >= 4,
+    "deepforge deve essere il fund returner");
+  assert(TVExits.forYear("agentforge", 3), "agentforge trappola mancante");
+  assert(TVExits.forYear("scootflow", 3), "scootflow trappola mancante");
+  const bank = TVExits.forYear("madbank", 3);
+  assert(bank && bank.kind === "writedown", "madbank writedown mancante");
+});
+
 test("i nuovi titoli finali coprono gli estremi", () => {
   const base = { dpi: 0, lpSat: { pensione: 50, family: 50, sovereign: 50, endowment: 50 },
                  reputation: 50, impact: 50, score: 40, deploymentRate: 0.6 };

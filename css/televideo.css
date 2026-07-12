@@ -2589,8 +2589,9 @@ body::before {
   border: 2px solid currentColor;
   background: rgba(3,6,18,0.94);
   box-shadow: 4px 4px 0 #050713;
-  font-size: clamp(14px, 1.15vw, 20px);
-  letter-spacing: 0.05em;
+  font-size: clamp(15px, 1.35vw, 22px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
   white-space: nowrap;
 }
 .battle-intel.is-ready { color: var(--tv-green); }
@@ -3078,11 +3079,16 @@ body::before {
     width: min(34vh, 70vw);
     opacity: 0.45;
   }
-  .start-logo { top: 4%; }
+  .start-logo { top: 4%; filter: drop-shadow(3px 3px 0 #050713); }
   .start-kicker { font-size: 16px; }
   .start-logo h1 {
     width: min(7.6em, 94%);
     font-size: clamp(30px, calc(var(--fs) * 2.15), 58px);
+    /* ghost proporzionato al font ridotto: niente più testo sdoppiato */
+    text-shadow:
+      3px 3px 0 #050713,
+      5px 5px 0 rgba(255,61,240,0.5),
+      -2px -2px 0 rgba(24,224,255,0.3);
   }
   .start-logo p { font-size: 16px; }
   .start-skyline {
@@ -3473,8 +3479,12 @@ body::before {
     display: none;
   }
   #screen {
-    grid-template-rows: var(--cell) minmax(0, 1fr) var(--cell) var(--cell);
+    /* la banda di navigazione diventa una vera toolbar toccabile
+       (WCAG 2.2 target size): riga >= 28px invece di 1 cella teletext */
+    grid-template-rows: var(--cell) minmax(0, 1fr) minmax(28px, auto) var(--cell);
   }
+  #tv-nav { min-height: 28px; }
+  .chip { min-height: 28px; }
   #tv-content {
     width: calc(100% - 1.1em);
     padding: 8px 0.45em;
@@ -3506,9 +3516,9 @@ body::before {
   .tv-hotlink,
   .tv-action {
     display: inline-block;
-    min-width: 1.12em;
-    margin: 0 0.02em;
-    padding: 0 0.08em;
+    min-width: 1.5em;
+    margin: 0 0.03em;
+    padding: 0 0.16em;
     text-align: center;
     background: rgba(255,255,255,0.08);
     box-shadow: inset 0 -0.08em 0 rgba(0,0,0,0.35);

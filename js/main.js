@@ -116,6 +116,14 @@
     catch (err) { console.error("action handler", err); }
   }
 
+  function pulseInput() {
+    const screen = document.getElementById("screen");
+    if (!screen || !screen.classList) return;
+    if (screen.classList.remove) screen.classList.remove("input-pulse");
+    if (typeof screen.offsetWidth !== "undefined") void screen.offsetWidth;
+    if (screen.classList.add) screen.classList.add("input-pulse");
+  }
+
   function pressKey(key) {
     handleKey({ key: key, preventDefault() {} });
   }
@@ -125,6 +133,7 @@
     buffer = "";
     updateInputDisplay();
     TVAudio.keyPress();
+    pulseInput();
     runAction(num);
   }
 
@@ -139,6 +148,7 @@
         buffer = "";
         updateInputDisplay();
         TVAudio.keyPress();
+        pulseInput();
         runAction(parseInt(key, 10));
       } else if (buffer.length < 3) {
         buffer += key;
@@ -154,6 +164,7 @@
         updateInputDisplay();
         // 1 cifra + actionHandler attivo → azione contestuale
         if (len === 1 && actionHandler) {
+          pulseInput();
           runAction(target);
         } else {
           router.goto(target);

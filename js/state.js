@@ -2,12 +2,33 @@
    Le metriche LP sono tracciate separatamente per i 4 archetipi. */
 (function (global) {
   const SAVE_KEY = "tvc3000.save";
+  const RUN_MODES = {
+    quick:   { label: "Quick Run", maxYear: 3, dealsPerYear: 3 },
+    partner: { label: "Partner Mode", maxYear: 3, dealsPerYear: 5 }
+  };
+
+  function normalizeRunMode(mode) {
+    return mode === "partner" ? "partner" : "quick";
+  }
+
+  function applyRunMode(state, mode) {
+    const key = normalizeRunMode(mode);
+    const cfg = RUN_MODES[key];
+    state.runMode = key;
+    state.runModeLabel = cfg.label;
+    state.maxYear = cfg.maxYear;
+    state.dealsPerYear = cfg.dealsPerYear;
+    return state;
+  }
 
   function makeNewState() {
-    return {
-      version: 5,
+    const state = {
+      version: 7,
       year: 1,
-      maxYear: 3,
+      runMode: "quick",
+      runModeLabel: RUN_MODES.quick.label,
+      maxYear: RUN_MODES.quick.maxYear,
+      dealsPerYear: RUN_MODES.quick.dealsPerYear,
       gameSeed: Math.floor(Math.random() * 1e9),
       gameStarted: false,
       fundSize: 100_000_000,
@@ -33,7 +54,10 @@
       dealDecisions: {},      // { yN: { startupId: "invested"|"passed" } }
       followOnCache: {},      // { yN: [offerte follow-on] }
       portfolioIncidentCache: {}, // { yN: chiamata portfolio company }
+      portfolioIncidentQueue: [], // chiamate post-battle pendenti
       usedPortfolioIncidents: [],
+      usedPortfolioIncidentKeys: [],
+      proposedPortfolioIncidentKeys: [],
       lastYearOutcome: null,
       usedLPCalls: [],
       history: [],            // log decisioni/exit per il report finale
@@ -46,6 +70,7 @@
       nickname: null,
       gameOver: false
     };
+    return state;
   }
 
   /* Porta i save di versioni precedenti al formato corrente. */
@@ -55,11 +80,19 @@
       s.cash = Math.max(0, s.cash - 10_000_000);
     }
     if (!s.gameSeed) s.gameSeed = Math.floor(Math.random() * 1e9);
+    if (!s.runMode) {
+      // I save precedenti erano la run completa a 3 anni / 5 deal.
+      s.runMode = previousVersion < 6 && s.gameStarted ? "partner" : "quick";
+    }
+    applyRunMode(s, s.runMode);
     if (!s.dealDecisions) s.dealDecisions = {};
     if (!s.followOnCache) s.followOnCache = {};
     if (!s.portfolioIncidentCache) s.portfolioIncidentCache = {};
+    if (!s.portfolioIncidentQueue) s.portfolioIncidentQueue = [];
     if (!s.portfolioCatalysts) s.portfolioCatalysts = [];
     if (!s.usedPortfolioIncidents) s.usedPortfolioIncidents = [];
+    if (!s.usedPortfolioIncidentKeys) s.usedPortfolioIncidentKeys = [];
+    if (!s.proposedPortfolioIncidentKeys) s.proposedPortfolioIncidentKeys = [];
     if (typeof s.lastYearOutcome === "undefined") s.lastYearOutcome = null;
     if (!s.usedLPCalls) s.usedLPCalls = [];
     if (!s.readPages) s.readPages = [];
@@ -87,9 +120,8 @@
         if (!hasExplicitMark) p.currentValueMultiplier = 1;
       }
     });
-    s.maxYear = 3;
     if (!s.gameOver && s.year > s.maxYear) s.year = s.maxYear;
-    s.version = 5;
+    s.version = 7;
     return s;
   }
 
@@ -103,6 +135,7 @@
     newGame(options) {
       options = options || {};
       this.current = makeNewState();
+      applyRunMode(this.current, options.runMode);
       this.current.gameStarted = true;
       if (options.fundName) this.current.fundName = String(options.fundName).slice(0, 24);
       if (options.nickname) this.current.nickname = String(options.nickname).slice(0, 16);
@@ -168,4 +201,5 @@
   };
 
   global.TVState = TVState;
+  global.TVRunModes = RUN_MODES;
 })(window);

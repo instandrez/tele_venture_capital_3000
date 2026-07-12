@@ -226,6 +226,73 @@
     });
   }
 
+  function askText(opts) {
+    opts = opts || {};
+    if (!document || !document.createElement || !document.body) {
+      return Promise.resolve(null);
+    }
+    return new Promise(resolve => {
+      const overlay = document.createElement("div");
+      overlay.className = "tv-modal";
+      const fieldTag = opts.multiline ? "textarea" : "input";
+      overlay.innerHTML =
+        '<form class="tv-modal-box">' +
+          '<div class="tv-modal-kicker">VC3000 SYSTEM MODAL</div>' +
+          '<h2>' + escape(opts.title || "INSERISCI TESTO") + '</h2>' +
+          '<p>' + escape(opts.message || "").replace(/\n/g, "<br>") + '</p>' +
+          '<label><span>' + escape(opts.label || "VALORE") + '</span><' + fieldTag +
+            ' id="tv-modal-field"' + (opts.multiline ? "" : ' type="text"') + '></' + fieldTag + '></label>' +
+          '<div class="tv-modal-actions">' +
+            '<button type="submit">' + escape(opts.confirmLabel || "OK") + '</button>' +
+            '<button type="button" data-cancel>' + escape(opts.cancelLabel || "ANNULLA") + '</button>' +
+          '</div>' +
+        '</form>';
+
+      document.body.appendChild(overlay);
+      const form = overlay.querySelector("form");
+      const field = overlay.querySelector("#tv-modal-field");
+      const cancel = overlay.querySelector("[data-cancel]");
+      if (field) {
+        field.value = opts.value || "";
+        field.maxLength = opts.maxLength || (opts.multiline ? 4000 : 48);
+        field.readOnly = !!opts.readonly;
+      }
+
+      function cleanup(value) {
+        overlay.remove();
+        resolve(value);
+      }
+
+      overlay.addEventListener("keydown", e => {
+        e.stopPropagation();
+        if (e.key === "Escape") {
+          e.preventDefault();
+          cleanup(null);
+        }
+      });
+      if (form) {
+        form.addEventListener("submit", e => {
+          e.preventDefault();
+          e.stopPropagation();
+          cleanup(field ? field.value : "");
+        });
+      }
+      if (cancel) {
+        cancel.addEventListener("click", e => {
+          e.preventDefault();
+          e.stopPropagation();
+          cleanup(null);
+        });
+      }
+      setTimeout(() => {
+        if (field && field.focus) {
+          field.focus();
+          if (field.select) field.select();
+        }
+      }, 0);
+    });
+  }
+
 
   // Renderizza una pagina (stringa HTML) nel contenitore.
   // Applica un cap rigoroso a ROWS righe: se la pagina sfora,
@@ -283,6 +350,6 @@
   global.TVRender = {
     COLS, ROWS, escape, visibleLength, center, pad, padLeft, line, row,
     color, bg, blink, eur, lpAlert, portfolioAlert, show, showScene, setMode,
-    navTargetFor, updateNav
+    navTargetFor, updateNav, askText
   };
 })(window);

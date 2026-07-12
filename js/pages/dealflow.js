@@ -18,7 +18,7 @@
       TVPortfolioIncidents.activeIncident(s);
     if (incident) {
       TVRouter.flash("PORTFOLIO COMPANY IN LINEA");
-      TVRouter.goto(620, { skipLoading: true });
+      TVRouter.goto(100, { skipLoading: true });
       return;
     }
     TVRouter.goto(450, { skipLoading: true });
@@ -61,6 +61,16 @@
       r.color("c-yellow", "Target:") + " " +
       r.color(deployment.gap > 0 ? "c-magenta" : "c-green", r.eur(deployment.target))
     );
+    if (s.runMode !== "partner" && pending[0]) {
+      const guide = TVIntel.forStartup(s, pending[0]).guidance;
+      const isFirstDealGuide = s.year === 1 && !(s.history || []).length;
+      if (isFirstDealGuide) {
+        lines.push(r.bg("bg-yellow", "  " + r.pad("MARTA MINI-RUN: LEGGI UNA PISTA, POI APRI 301", width)));
+        lines.push(" " + r.color("c-cyan", (guide || "").replace(/^MARTA: /, "").slice(0, 54)));
+      } else {
+        lines.push(" " + r.color("c-cyan", (guide || "").slice(0, 54)));
+      }
+    }
     lines.push(r.color("c-blue", " " + "-".repeat(width)));
 
     if (picks.length === 0) {

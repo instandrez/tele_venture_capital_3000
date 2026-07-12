@@ -412,6 +412,47 @@
       era: "consumer"
     },
 
+    // ===================== LATE STAGE / UNICORN BAIT =====================
+    {
+      id: "ledgernova",
+      name: "LedgerNova",
+      sector: "B2B SaaS / CFO OS",
+      stage: "Growth", valuation: 1_200_000_000,
+      team: 8, traction: 9, hype: 6, strategicFit: 8,
+      sectorTag: "SAAS_VERTICAL", regulatoryExposure: +0.2,
+      hypeDecay: 0.2, unitEconomics: +0.6,
+      founderProfile: "grit", corporateFitTag: null,
+      hiddenRisk: "Net retention ottima ma crescita ormai costosa",
+      hiddenUpside: "Secondary gia' discussa con due fondi growth",
+      era: "late_stage"
+    },
+    {
+      id: "sovereignai",
+      name: "SovereignAI",
+      sector: "AI / Sovereign Cloud",
+      stage: "Growth", valuation: 1_600_000_000,
+      team: 9, traction: 5, hype: 10, strategicFit: 9,
+      sectorTag: "AI_FOUNDATION", regulatoryExposure: -0.4,
+      hypeDecay: 0.6, unitEconomics: -0.3,
+      founderProfile: "ego", corporateFitTag: "telco_ai_api",
+      hiddenRisk: "Capex GPU enorme, margini promessi via slide",
+      hiddenUpside: "Procurement pubblico e telco lo vogliono nel memo",
+      era: "late_stage"
+    },
+    {
+      id: "lumengrid",
+      name: "LumenGrid",
+      sector: "Battery / Grid Storage",
+      stage: "Growth", valuation: 950_000_000,
+      team: 9, traction: 7, hype: 7, strategicFit: 9,
+      sectorTag: "BATTERY_INDUSTRIAL", regulatoryExposure: +0.7,
+      hypeDecay: 0.2, unitEconomics: +0.3,
+      founderProfile: "competent", corporateFitTag: "sdv_partnership",
+      hiddenRisk: "Supply chain lunga, working capital feroce",
+      hiddenUpside: "Contratti quadro con utility e project finance vicino",
+      era: "late_stage"
+    },
+
     // ===================== EVERGREEN / ARCHETIPI =====================
     {
       id: "stealthmode",

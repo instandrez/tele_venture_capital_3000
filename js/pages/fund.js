@@ -19,17 +19,22 @@
     lines.push(r.color("c-cyan", "  · slide trimestrali"));
     lines.push(r.color("c-cyan", "    con frecce verso l'alto"));
     lines.push("");
-    lines.push(" Hai " + r.color("c-yellow", "3 anni") + " per dimostrare di non essere");
-    lines.push(" l'ennesimo VC che parla di " + r.color("c-magenta", "tesi") + ".");
+    lines.push(" Scegli il formato:");
+    lines.push(" " + r.color("c-green", "1 QUICK RUN") +
+      r.color("c-white", " 2 anni, 3 deal/anno"));
+    lines.push(" " + r.color("c-cyan", "2 PARTNER MODE") +
+      r.color("c-white", " 3 anni, 5 deal/anno"));
+    lines.push(" Entrambe contengono abbastanza tesi");
+    lines.push(" per rovinare una cena di settore.");
     lines.push("");
-    lines.push(r.bg("bg-yellow", " 1 AVVIA FONDO    9 INDIETRO            "));
+    lines.push(r.bg("bg-yellow", " 1 QUICK RUN   2 PARTNER MODE   9 HOME "));
 
     r.show(pageNum, lines.join("\n"), { title: "NUOVO FONDO" });
 
     // input contestuale
     TVRouter.setActionHandler(num => {
-      if (num === 1) {
-        TVState.newGame();
+      if (num === 1 || num === 2) {
+        TVState.newGame({ runMode: num === 2 ? "partner" : "quick" });
         TVRouter.goto(105); // sigla d'apertura, poi indice del terminale
       } else if (num === 9) {
         TVRouter.goto(100);
@@ -64,7 +69,8 @@
     lines.push(r.bg("bg-cyan", "  " + r.pad("REGOLE", 38)));
     lines.push("");
     lines.push(r.color("c-yellow", " OBIETTIVO"));
-    lines.push(" Gestire un fondo VC da 100M€ per 3 anni.");
+    lines.push(" Quick Run: 3 anni, 3 deal/anno.");
+    lines.push(" Partner Mode: 3 anni, 5 deal/anno.");
     lines.push(" Alla fine: punteggio e classifica.");
     lines.push("");
     lines.push(r.color("c-yellow", " COMANDI"));
@@ -131,19 +137,40 @@
       } else if (num === 2) {
         const exp = TVState.exportSave();
         if (exp && navigator.clipboard) {
-          navigator.clipboard.writeText(exp).then(() => TVRouter.flash("COPIATO IN CLIPBOARD"));
+          navigator.clipboard.writeText(exp)
+            .then(() => TVRouter.flash("COPIATO IN CLIPBOARD"))
+            .catch(() => showExport(exp));
         } else {
-          prompt("Save export:", exp);
+          showExport(exp);
         }
       } else if (num === 3) {
-        const v = prompt("Incolla save export:");
-        if (v && TVState.importSave(v.trim())) {
-          TVRouter.flash("SAVE IMPORTATO");
-          renderManage(pageNum);
-        } else if (v) {
-          TVRouter.flash("SAVE NON VALIDO");
-        }
+        TVRender.askText({
+          title: "IMPORTA SAVE",
+          message: "Incolla il codice esportato da VC3000.",
+          label: "SAVE DATA",
+          multiline: true,
+          maxLength: 20000
+        }).then(v => {
+          if (v && TVState.importSave(v.trim())) {
+            TVRouter.flash("SAVE IMPORTATO");
+            renderManage(pageNum);
+          } else if (v) {
+            TVRouter.flash("SAVE NON VALIDO");
+          }
+        });
       }
+    });
+  }
+
+  function showExport(exp) {
+    TVRender.askText({
+      title: "ESPORTA SAVE",
+      message: "Codice del salvataggio. Tienilo fuori dal data room.",
+      label: "SAVE DATA",
+      value: exp || "",
+      multiline: true,
+      readonly: true,
+      confirmLabel: "CHIUDI"
     });
   }
 

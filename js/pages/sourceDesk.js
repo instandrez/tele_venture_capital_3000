@@ -6,8 +6,12 @@
     return TVRender.escape(value);
   }
 
-  function currentDeal(state, startup) {
-    return TVDealflow.currentYearDealflow(state).some(st => st.id === startup.id);
+  function sourceAccessible(state, startup) {
+    if (!state || !startup) return false;
+    if (TVIntel.currentDealStartup && TVIntel.currentDealStartup(state, startup)) return true;
+    return (state.portfolio || []).some(p =>
+      p.id === startup.id && (!p.status || p.status === "active")
+    );
   }
 
   function sourceAccent(persona) {
@@ -121,13 +125,12 @@
             '<div class="source-single-message ' + forecastToneClass(forecast) + '">' +
               '<div class="source-tag">MESSAGGIO FONTE // ' + esc(persona.code) + '</div>' +
               '<p class="source-main">"' + esc(forecast.message || persona.verdict) + '"</p>' +
-              '<p><b>IMPLICAZIONE VC</b> ' + esc(forecast.implication || persona.verdict) + '</p>' +
-              '<p><b>COSA CONTROLLARE</b> ' + esc(forecast.check || persona.risk) + '</p>' +
+              '<p><b>SEGNALE GREZZO</b> ' + esc(persona.risk || forecast.code || "non verificato") + '</p>' +
             '</div>' +
             '<div class="source-effects">' +
               '<span>+1 copertura battle</span>' +
               '<span>Dossier Strike potenziato</span>' +
-              '<span>Il prossimo portfolio update segue questo segnale</span>' +
+              '<span>Segnale salvato nel taccuino</span>' +
             '</div>' +
           '</main>' +
           '<aside class="codec-card codec-remote codec-reaction-card">' +
@@ -187,7 +190,7 @@
   function render(pageNum) {
     const s = TVState.current;
     const st = TVIntel.sourceStartupByPage(pageNum);
-    if (!s || !s.gameStarted || !st || !currentDeal(s, st)) {
+    if (!s || !s.gameStarted || !st || !sourceAccessible(s, st)) {
       TVRouter.goto(190, { skipLoading: true });
       return;
     }

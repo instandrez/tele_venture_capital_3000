@@ -50,6 +50,12 @@
       note: "acquisita nella wave enterprise software" },
     { startupId: "humanoidops", year: 3, kind: "exit", premium: 1.3,
       note: "acquisizione del team e dei brevetti" },
+    { startupId: "ledgernova", year: 3, kind: "exit", premium: 1.25,
+      note: "secondary growth: DPI vero, entusiasmo moderato" },
+    { startupId: "lumengrid", year: 3, kind: "ipo", premium: 1.35,
+      note: "IPO utility-tech: industriale, lenta, finalmente liquida" },
+    { startupId: "sovereignai", year: 3, kind: "writedown", factor: 0.55,
+      note: "capex GPU rivalutato: unicorno ancora vivo, ma meno mitologico" },
     { startupId: "stealthmode", year: 3, kind: "writedown", factor: 0.02,
       note: "rivelato: condivisione calendari. Val. 800M → 14M" }
     // SaltCore resta in portfolio: grande markup ma non realizzata.

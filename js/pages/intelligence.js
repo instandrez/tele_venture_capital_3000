@@ -36,6 +36,9 @@
     lines.push(" " + r.color("c-white", "Due ritagli indipendenti possono aprire una fonte riservata."));
     lines.push(" " + r.color("c-green", "3 punti = TEORIA") +
       r.color("c-white", " (domanda armata + DD scontata)"));
+    if (s.runMode !== "partner") {
+      lines.push(" " + r.color("c-cyan", "QUICK RUN: MARTA indica una pista, non la tesi."));
+    }
     lines.push(r.color("c-blue", " " + "-".repeat(r.COLS - 2)));
 
     deals.forEach((st, i) => {
@@ -57,12 +60,12 @@
         lines.push("   " + (intel.lead
           ? r.color("c-green", "LEVA " + intel.lead.move + " " + intel.lead.label +
             ": " + intel.lead.reason)
-          : r.color("c-white", intel.sidekick)));
+          : r.color("c-white", intel.guidance || intel.sidekick)));
       }
     });
 
     lines.push(r.bg("bg-blue", "  REGOLA D'UFFICIO: NON FIDARTI DELLA SLIDE 12"));
-    lines.push(" " + r.color("c-white", "MARTA e' la tua analista. Non e' assicurata."));
+    lines.push(" " + r.color("c-white", "MARTA e' la tua analista. Ha gia' visto tre SAFE tossici oggi."));
     lines.push(r.color("c-white", " 110 NEWS   190 TACCUINO   200 DEALFLOW   400 PORTFOLIO"));
 
     r.show(pageNum, lines.join("\n"), { title: "TACCUINO DEL GP" });

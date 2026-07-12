@@ -17,12 +17,18 @@
     if (!s.followOnCache) s.followOnCache = {};
     const key = "y" + s.year;
     if (!s.followOnCache[key]) {
-      const candidates = s.portfolio.filter(p =>
+      const eligible = s.portfolio.filter(p =>
         (!p.status || p.status === "active") &&
-        p.entryYear < s.year &&
+        p.entryYear < s.year
+      ).sort((a, b) => (b.currentValueMultiplier || 1) - (a.currentValueMultiplier || 1));
+      let candidates = eligible.filter(p =>
         p.currentValueMultiplier >= 1.15 &&
         TVState.roll("fo|" + p.id + "|" + s.year) < 0.6
       ).slice(0, 2);
+      if (!candidates.length && eligible.length) {
+        candidates = eligible.filter(p => (p.currentValueMultiplier || 1) >= 0.95).slice(0, 1);
+        if (!candidates.length) candidates = eligible.slice(0, 1);
+      }
       s.followOnCache[key] = candidates.map(p => ({
         id: p.id, name: p.name,
         cost: Math.max(500_000, Math.round(p.investedAmount * 0.5)),
@@ -50,7 +56,7 @@
       TVPortfolioIncidents.activeIncident(s);
     if (incident) {
       TVRouter.flash("PORTFOLIO COMPANY IN LINEA");
-      TVRouter.goto(620, { skipLoading: true });
+      TVRouter.goto(100, { skipLoading: true });
       return;
     }
 

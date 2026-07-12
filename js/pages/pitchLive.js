@@ -549,6 +549,20 @@
         command(0, "ANNULLA", "is-danger")
       ].join("");
     }
+    if (B.phase === "negotiate") {
+      const currentVal = currentDealValuation();
+      const proposed = B.negotiationValuation || Math.round(currentVal * 0.88);
+      const discount = Math.max(0, 1 - proposed / currentVal);
+      return [
+        command(1, "-5M VAL", "is-research"),
+        command(2, "-1M VAL", "is-research"),
+        command(3, "+1M VAL", "is-research"),
+        command(4, "+5M VAL", "is-research"),
+        command(6, "PROPONI " + TVRender.eur(proposed) + " -" +
+          Math.round(discount * 100) + "%", "is-invest wide"),
+        command(0, "ANNULLA", "is-danger")
+      ].join("");
+    }
     if (B.phase === "postEvent" && B.postBattleEvent) {
       return command(1, "CONTINUA AL DEALFLOW", "is-invest wide");
     }
@@ -617,6 +631,76 @@
     '</div>';
   }
 
+  function martaAdviceText() {
+    if (B.phase === "postEvent") {
+      const decision = (B.lastDecisionSummary && B.lastDecisionSummary.decision) || "memo";
+      if (decision === "invested") return "Screenshot pronto: se hai pagato FOMO, almeno il memo e' bello.";
+      if (decision === "passed") return "Passare e' una decisione. Il non-memo e' codardia.";
+      return "Fuori dal round. La prossima volta entra con prove, non con vibe.";
+    }
+    if (B.busy) {
+      return B.awaitingAdvance
+        ? "Leggi la reazione, poi premi 1. Non e' un tap perso: e' teatro."
+        : "Input ricevuto. L'animazione si puo' accelerare con un altro tap.";
+    }
+    if (B.phase === "invest") {
+      return "Term sheet: compra ownership, non una story. Controlla valuation e cash.";
+    }
+    if (B.phase === "negotiate") {
+      return "Valuation: usa +/- per trovare il taglio. Troppo sconto e il founder ti lancia fuori.";
+    }
+    if (B.phase === "rescue") {
+      return "Il round e' caldo: alza prezzo, porta lead o scappa prima del FOMO.";
+    }
+    if (B.phase === "broken") {
+      return "Guardia a zero. Puoi inviare TS con piu' leverage o passare con dignita'.";
+    }
+    if (B.battle.intelStrikeAvailable && B.intel && B.intel.lead) {
+      return "Usa " + B.intel.lead.move + " " + MOVE_NAMES[B.intel.lead.move] +
+        ": e' la domanda armata dal taccuino.";
+    }
+    if (B.intel && B.intel.level >= 2) {
+      return "Hai prove: fai una domanda forte, poi negozia prima del term sheet.";
+    }
+    if (B.intel && B.intel.level === 1) {
+      return "Hai appunti, non una tesi. DD/ref call o una pista news in piu'.";
+    }
+    return "Stai pitchando al buio. DD o ref call prima di pagare la narrativa.";
+  }
+
+  function memoTone(decision) {
+    if (decision === "invested") return B.intel && B.intel.level >= 2 ? "TESI CON DENTI" : "FOMO PAGATA";
+    if (decision === "passed") return B.intel && B.intel.level >= 2 ? "PASS DA ADULTO" : "PASS O PANICO";
+    return "FUORI DAL ROUND";
+  }
+
+  function memoPosterHtml() {
+    if (B.phase !== "postEvent") return "";
+    const s = TVState.current;
+    const summary = B.lastDecisionSummary || {};
+    const decision = summary.decision || "memo";
+    const tag = decision === "invested" ? "INVEST" : (decision === "passed" ? "PASS" : "LOST");
+    const metric = decision === "invested"
+      ? "TICKET " + TVRender.eur(summary.amount || 0)
+      : (decision === "passed" ? "CASH " + TVRender.eur(s.cash || 0) : "REP " + s.reputation);
+    const ownership = summary.equityPct
+      ? "OWN " + (summary.equityPct * 100).toFixed(1) + "%"
+      : "NO CAP TABLE";
+    const intel = B.intel && B.intel.level >= 2 ? "TACCUINO " + B.intel.label : "DECK ONLY";
+    return (
+      '<div class="battle-meme-card is-' + TVRender.escape(decision) + '">' +
+        '<div class="meme-kicker">VC3000 DEAL MEMO</div>' +
+        '<div class="meme-stamp">' + TVRender.escape(memoTone(decision)) + '</div>' +
+        '<div class="meme-startup">' + TVRender.escape(B.st.name) + '</div>' +
+        '<div class="meme-metrics"><span>' + TVRender.escape(tag) + '</span>' +
+          '<span>' + TVRender.escape(metric) + '</span>' +
+          '<span>' + TVRender.escape(ownership) + '</span>' +
+          '<span>' + TVRender.escape(intel) + '</span></div>' +
+        '<div class="meme-line">NOTA ANALISTA: "' + TVRender.escape(martaAdviceText()) + '"</div>' +
+      '</div>'
+    );
+  }
+
   function battleSceneHtml() {
     const r = TVRender;
     const s = TVState.current;
@@ -641,9 +725,11 @@
       (B.phase === "postEvent" ? "DEAL MEMO" :
       (B.phase === "broken" ? "PRESSIONE MASSIMA" : "PITCH BATTLE")));
 
+    const decision = (B.lastDecisionSummary && B.lastDecisionSummary.decision) || "memo";
     return (
       '<section class="console-scene battle-scene battle-stage-' + B.stage.key +
         (isMeetingNote ? " is-note-mode" : "") +
+        (B.phase === "postEvent" ? " is-deal-memo is-memo-" + decision : "") +
         '" style="--battle-accent:' + B.stage.accent + '">' +
         '<div class="battle-bg"></div>' + stageSetdressHtml() + '<div class="battle-flash"></div>' +
         '<header class="battle-topbar">' +
@@ -658,6 +744,7 @@
         '<div class="battle-bottom">' +
           '<section class="battle-dialogue' + (isMeetingNote ? " is-note" : "") + '">' +
             '<div class="dialogue-speaker">' + TVRender.escape(B.st.name) + '</div>' +
+            memoPosterHtml() +
             '<div class="dialogue-lines">' + dialogue + '</div>' +
             '<div class="battle-hint">' + hintHtml() + '</div>' +
           '</section>' +
@@ -1057,6 +1144,13 @@
     const rv = B.rv;
     const b = B.battle;
     if (rv.negotiated) { miniLog(c("c-blue", "Gia' negoziata.")); return; }
+    const initialVal = currentDealValuation();
+    B.negotiationValuation = Math.max(1_000_000, Math.round(initialVal * 0.88));
+    B.phase = "negotiate";
+    B.log = negotiationLog();
+    draw();
+    arm();
+    return;
 
     // più hai scalfito la guardia, più il founder cede al tavolo
     let prob = 0.35 +
@@ -1092,7 +1186,156 @@
                    shake: true, sound: () => TVAudio.error() });
     }
     TVState.save();
-    seq(steps, () => arm());
+    seq(steps, () => {
+      if (ok) {
+        openInvestPhase();
+      } else {
+        B.phase = B.battle.over && B.battle.won ? "broken" : "menu";
+        arm();
+      }
+    });
+  }
+
+  function negotiationLeverage() {
+    return 0.35 +
+      (1 - B.battle.guard / TVPitchBattle.GUARD_MAX) * 0.35 +
+      (B.rv.dd ? 0.10 : 0) +
+      B.intel.negotiationBonus;
+  }
+
+  function negotiationChance(proposedVal) {
+    const currentVal = currentDealValuation();
+    const discount = Math.max(0, 1 - proposedVal / currentVal);
+    const discountPenalty = Math.max(0, discount - 0.08) * 1.7;
+    return Math.max(0.03, Math.min(0.95, negotiationLeverage() - discountPenalty));
+  }
+
+  function negotiationLog() {
+    const currentVal = currentDealValuation();
+    const proposed = B.negotiationValuation || Math.round(currentVal * 0.88);
+    const discount = Math.max(0, 1 - proposed / currentVal);
+    return [
+      c("c-yellow", "NEGOZIA VALUATION // USA +/-"),
+      c("c-cyan", "ASK attuale: " + TVRender.eur(currentVal)),
+      c("c-white", "Proposta: " + TVRender.eur(proposed) +
+        " (-" + Math.round(discount * 100) + "%)"),
+      c("c-white", "Pressione negoziale: " +
+        pressurePoints(B.battle.guard) + "/" + TVPitchBattle.GUARD_MAX),
+      c("c-yellow", "La chance verra' rivelata solo quando proponi.")
+    ];
+  }
+
+  function adjustNegotiationValuation(delta) {
+    const currentVal = currentDealValuation();
+    const maxVal = Math.max(1_000_000, currentVal - 1_000_000);
+    const base = B.negotiationValuation || Math.round(currentVal * 0.88);
+    B.negotiationValuation = Math.round(
+      Math.max(1_000_000, Math.min(maxVal, base + delta)) / 100_000
+    ) * 100_000;
+    B.log = negotiationLog();
+    draw();
+  }
+
+  function submitNegotiation() {
+    const proposedVal = B.negotiationValuation;
+    if (!proposedVal || proposedVal < 1_000_000 || proposedVal >= currentDealValuation()) {
+      miniLog(c("c-red", "Valuation non valida: deve essere sotto ASK e sopra 1M."));
+      TVAudio.error();
+      return;
+    }
+    resolveNegotiation(proposedVal);
+  }
+
+  function openNegotiationModal() {
+    const currentVal = currentDealValuation();
+    const suggested = Math.round(currentVal * 0.88);
+    TVRender.askText({
+      title: "NEGOZIA VALUATION",
+      message: "ASK attuale: " + TVRender.eur(currentVal) +
+        "\nScrivi la valuation che vuoi proporre. Esempi: 12M, 12.5, 12500000.",
+      label: "PROPOSTA",
+      value: (suggested / 1_000_000).toFixed(suggested % 1_000_000 ? 1 : 0) + "M",
+      maxLength: 16,
+      confirmLabel: "PROPONI",
+      cancelLabel: "ANNULLA"
+    }).then(value => {
+      if (!alive()) return;
+      if (value == null) { draw(); arm(); return; }
+      const proposedVal = parseValuationInput(value);
+      if (!proposedVal || proposedVal < 1_000_000 || proposedVal >= currentVal) {
+        miniLog(c("c-red", "Valuation non valida: deve essere sotto ASK e sopra 1M."));
+        TVAudio.error();
+        return;
+      }
+      resolveNegotiation(proposedVal);
+    });
+  }
+
+  function parseValuationInput(value) {
+    let raw = String(value || "").trim().toLowerCase();
+    if (!raw) return 0;
+    raw = raw.replace(/€/g, "").replace(/\s+/g, "").replace(",", ".");
+    let mult = 1;
+    if (raw.endsWith("m")) {
+      mult = 1_000_000;
+      raw = raw.slice(0, -1);
+    } else if (raw.endsWith("k")) {
+      mult = 1_000;
+      raw = raw.slice(0, -1);
+    }
+    const num = parseFloat(raw);
+    if (!isFinite(num) || num <= 0) return 0;
+    if (mult === 1 && num < 1000) mult = 1_000_000;
+    return Math.round(num * mult);
+  }
+
+  function resolveNegotiation(proposedVal) {
+    const s = TVState.current;
+    const st = B.st;
+    const rv = B.rv;
+    const b = B.battle;
+    const currentVal = currentDealValuation();
+    const pressure = pressurePoints(b.guard);
+    const discount = Math.max(0, 1 - proposedVal / currentVal);
+    const prob = negotiationChance(proposedVal);
+    const chance = Math.round(prob * 100);
+    const ok = TVState.roll("nego|" + st.id + "|" + s.year + "|" + proposedVal) < prob;
+    rv.negotiated = true;
+
+    const steps = [
+      { log: [c("c-white", "Butti li':"),
+              c("c-cyan", "Pressione negoziale: " + pressure + "/" + TVPitchBattle.GUARD_MAX),
+              c("c-cyan", "ASK VAL attuale: " + TVRender.eur(currentVal)),
+              c("c-cyan", "TUA PROPOSTA: " + TVRender.eur(proposedVal) +
+                " (-" + Math.round(discount * 100) + "%)"),
+              c("c-yellow", "Chance stimata: " + chance + "%")], ms: 900 },
+      { push: [c("c-yellow", "\"Quella valuation... e' un'opinione.\"")], ms: 1100,
+        sound: () => TVAudio.keyPress() }
+    ];
+    if (ok) {
+      rv.negotiatedValuation = proposedVal;
+      steps.push({ push: ["", c("c-white", "Il founder espira. A lungo."),
+                          c("c-green", "ACCETTA. Odiandoti."),
+                          c("c-green", "VALUATION " + TVRender.eur(currentVal) +
+                            " -> " + TVRender.eur(rv.negotiatedValuation)),
+                          c("c-cyan", "A parita' di ticket compri piu' ownership.")], ms: 900,
+                   sound: () => TVAudio.fanfare() });
+    } else {
+      s.reputation = Math.max(0, s.reputation - 3);
+      steps.push({ push: ["", c("c-yellow", '"La porta e\' quella."'),
+                          c("c-red", "Rifiutata. -3 reputazione.")], ms: 900,
+                   shake: true, sound: () => TVAudio.error() });
+    }
+    TVState.save();
+    seq(steps, () => {
+      if (ok) {
+        openInvestPhase();
+        arm();
+      } else {
+        B.phase = B.battle.over && B.battle.won ? "broken" : "menu";
+        arm();
+      }
+    });
   }
 
   function doCoInvest() {
@@ -1247,6 +1490,49 @@
     }
   }
 
+  function decisionFeedback(decision, summary) {
+    const lines = ["", c("c-yellow", "VERDETTO ANALISTA")];
+    const intelReady = B.intel && B.intel.level >= 2;
+    const contacted = B.intel && B.intel.chain && B.intel.chain.contacted;
+    const fate = scriptedFate(B.st);
+    let why;
+    let lesson;
+
+    if (decision === "invested") {
+      if (contacted) {
+        why = c("c-green", "Buona: hai investito con una fonte vera, non con il deck.");
+      } else if (intelReady) {
+        why = c("c-green", "Buona: ritagli + leva. Questa e' tesi, non karaoke VC.");
+      } else if (B.rv.dd || B.rv.refCall || B.rv.coInvest) {
+        why = c("c-yellow", "Mista: hai pagato controlli, ma il memo resta sudato.");
+      } else {
+        why = c("c-red", "Stupida: term sheet nudo. Se va bene sara' fortuna post-razionalizzata.");
+      }
+      lesson = c("c-white", "Prezzo: " + TVRender.eur(summary.valuation || currentDealValuation()) +
+        " // own " + (((summary.equityPct || 0) * 100).toFixed(1)) +
+        "%. La FOMO si paga in cap table.");
+      lines.push(why, lesson);
+      return lines;
+    }
+
+    if (decision === "passed") {
+      if (fate && (fate.kind === "exit" || fate.kind === "ipo")) {
+        why = c("c-magenta", "Rischiosa: il Televideo odorava liquidita', tu hai chiuso il naso.");
+      } else if (intelReady) {
+        why = c("c-green", "Buona: pass documentato. Raro, quasi elegante.");
+      } else {
+        why = c("c-yellow", "Mista: pass con poche prove. Disciplina o paura del comitato?");
+      }
+      lesson = c("c-white", "Niente cash bruciato. Ma ogni pass diventa genius o rimpianto al prossimo aperitivo.");
+      lines.push(why, lesson);
+      return lines;
+    }
+
+    lines.push(c("c-red", "Stupida: hai perso la sala. Troppe domande deboli, zero alpha."));
+    lines.push(c("c-white", "La prossima volta leggi 190 prima di entrare in boardroom."));
+    return lines;
+  }
+
   function startPostBattleEvent(decision) {
     const s = TVState.current;
     let ops = null;
@@ -1259,7 +1545,7 @@
       });
     }
     const summary = B.lastDecisionSummary || { decision: decision };
-    B.postBattleEvent = { summary: true };
+    B.postBattleEvent = { summary: true, decision: decision };
     B.phase = "postEvent";
 
     const lines = [c("c-yellow", "DEAL MEMO // " + B.st.name)];
@@ -1294,6 +1580,7 @@
       lines.push(c("c-green", "VERITA':"));
       wrap(B.rv.pitchTruth, 42).forEach(line => lines.push(c("c-white", line)));
     }
+    decisionFeedback(decision, summary).forEach(line => lines.push(line));
     // l'evento operativo post-battle: cosa e' successo davvero al fondo
     if (ops && ops.event) {
       lines.push("");
@@ -1313,7 +1600,20 @@
   }
 
   function finishPostBattleEvent() {
+    const s = TVState.current;
+    const queued = global.TVPortfolioIncidents && TVPortfolioIncidents.queueAfterBattle
+      ? TVPortfolioIncidents.queueAfterBattle(s, B.st, {
+          decision: (B.lastDecisionSummary && B.lastDecisionSummary.decision) ||
+            (B.postBattleEvent && B.postBattleEvent.decision) || "memo",
+          rv: B.rv,
+          intel: B.intel,
+          battle: B.battle
+        })
+      : null;
     B.postBattleEvent = null;
+    if (queued) {
+      TVRouter.flash("PORTFOLIO COMPANY IN LINEA");
+    }
     exitToDealflow();
   }
 
@@ -1360,6 +1660,19 @@
     }
     if (B.phase === "rescue") {
       doRescue(num);
+      return;
+    }
+    if (B.phase === "negotiate") {
+      if (num === 1) adjustNegotiationValuation(-5_000_000);
+      else if (num === 2) adjustNegotiationValuation(-1_000_000);
+      else if (num === 3) adjustNegotiationValuation(1_000_000);
+      else if (num === 4) adjustNegotiationValuation(5_000_000);
+      else if (num === 6) submitNegotiation();
+      else if (num === 0) {
+        B.phase = B.battle.over && B.battle.won ? "broken" : "menu";
+        B.log = B.log.concat(["", c("c-blue", "Negoziazione annullata.")]);
+        draw();
+      }
       return;
     }
     if (B.phase === "invest") {

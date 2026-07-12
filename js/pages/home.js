@@ -24,8 +24,10 @@
     lines.push("");
     if (activeGame) {
       lines.push(r.bg("bg-cyan", "  FONDO ATTIVO                           "));
-      lines.push("  " + r.color("c-yellow", (s.fundName || "Fund I").slice(0, 22)) +
-                 "  " + r.color("c-white", "GP " + (s.nickname || "GP").slice(0, 12)));
+      const modeLabel = s.runMode === "partner" ? "PARTNER" : "QUICK";
+      lines.push("  " + r.color("c-yellow", (s.fundName || "Fund I").slice(0, 18)) +
+                 "  " + r.color("c-white", "GP " + (s.nickname || "GP").slice(0, 10)) +
+                 "  " + r.color("c-cyan", modeLabel));
       lines.push("  " + r.color("c-green", "200") + "  DEALFLOW DELL'ANNO    " +
                  r.color("c-yellow", "190") + "  TACCUINO");
       lines.push("  " + r.color("c-green", "400") + "  PORTFOLIO             " +

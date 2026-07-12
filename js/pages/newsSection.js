@@ -2,6 +2,7 @@
    news pubblicate fino all'anno corrente. Cliccando il numero pagina
    relativo (es. 121, 122...) si apre il dettaglio. */
 (function (global) {
+  const PUBLIC_SEASON_MAX_YEAR = 3;
 
   const SECTION_META = {
     110: { title: "ULTIM'ORA",        bg: "bg-red",     accent: "c-red"     },
@@ -243,11 +244,11 @@
   P[160] = { render: renderListSafe(160) };
   P[180] = { render: renderListSafe(180) };
 
-  // Registra TUTTE le pagine di dettaglio news (cross-anno)
-  // per le sezioni 110, 120, 160, 180 (140 lo gestisce borsa.js).
+  // Registra solo la stagione pubblica. Gli anni 4+ restano nel calendario
+  // come espansione, ma non sono pagine navigabili in questa build.
   const detailRender = renderDetailSafe();
   TVNews.NEWS.forEach(n => {
-    if ([110, 120, 160, 180].includes(n.section)) {
+    if (n.year <= PUBLIC_SEASON_MAX_YEAR && [110, 120, 160, 180].includes(n.section)) {
       P[n.page] = { render: detailRender };
     }
   });

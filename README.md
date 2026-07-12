@@ -1,9 +1,12 @@
 # Tele Venture Capital 3000
 
 Browser game ironico-didattico in stile Televideo RAI anni '90: gestisci un
-fondo VC da 100M€ per 3 anni, con 90M€ investibili dopo le fee, navigando
+fondo VC da 100M€ in una **Quick Run** da 2 anni, 3 deal/anno, oppure in
+**Partner Mode** da 3 anni, 5 deal/anno, con 90M€ investibili dopo le fee,
+navigando
 **solo per numeri di pagina**, come nel
-teletext originale. Niente mouse: digiti un numero, premi INVIO.
+teletext originale. Puoi digitare i numeri o cliccare/tappare i controlli
+numerici: la tastiera resta il ritmo principale, il touch non deve tradire.
 
 Il cuore del gioco è il **motore di news**: il Televideo è pieno di pagine
 (ultim'ora, politica, borsa, cronaca startup, corporate watch) e nessuna è lì
@@ -27,6 +30,7 @@ python -m http.server 5173
 |---|---|
 | `0-9` + INVIO | naviga a pagina / esegue azione contestuale |
 | `0-9` in Pitch Battle | esegue subito la mossa, senza INVIO |
+| click/tap su un numero | stessa azione del tasto numerico |
 | un tasto durante una scena Battle | accelera oppure continua dopo la lettura |
 | ESC | torna alla home (pag 100) |
 | M | toggle audio |
@@ -38,14 +42,14 @@ python -m http.server 5173
 | 000 | Start Game / schermata titolo arcade |
 | 100 | Home / indice |
 | 101–109 | Nuovo fondo, riprendi, regole, gestione save |
-| 105 | Tutorial / sigla d'apertura (parte su New Game, rivedibile) |
+| 105 | Tutorial / sigla d'apertura: al termine torna alla home 100 |
 | 110–119 | Ultim'Ora (+ dettagli anni 2-3 su 211+, 311+) |
 | 120–139 | Politica & Regolazione |
 | 140–159 | Borsa & indici settoriali (live, signal inclusi) |
 | 160–179 | Cronaca Startup |
 | 180–189 | Corporate Watch |
 | 190 | Taccuino del GP: casi, ritagli trovati e ipotesi |
-| 200 | Dealflow dell'anno (5 startup, stato delibera) |
+| 200 | Dealflow dell'anno (3 startup in Quick Run, 5 in Partner Mode) |
 | 301–305 | PITCH BATTLE (deal pendente) / scheda consultazione (deliberato) |
 | 400 | Portfolio (attive + chiuse) |
 | 450 | Follow-on round + chiusura anno (pro-rata / raddoppio / diluizione) |
@@ -63,6 +67,8 @@ python -m http.server 5173
 ```
 index.html            entry unico, carica gli script in ordine
 css/televideo.css     palette teletext, griglia wide 56 colonne, console mode
+css/visual-overrides.css
+                      solo interventi grafici caricati per ultimi
 js/main.js            router pagine + input tastiera
 js/state.js           gameState, save/load LocalStorage, seed, migrazioni
 js/data/              contenuti: startups, newsCalendar (signal inclusi),
@@ -73,6 +79,8 @@ js/engine/            marketEngine (signal→effetti), intelligence (prove/
 js/pages/             una funzione render per pagina
 js/ui/                render monospace, header, effetto loading
 tests/run.js          test del motore (node, zero dipendenze)
+GAMEPLAY_MECHANICS_MAP.md
+                      mappa passo-passo di flussi, script e leve di design
 ```
 
 ## Come funziona il motore (per chi scrive contenuti)
@@ -85,9 +93,14 @@ tests/run.js          test del motore (node, zero dipendenze)
   `scope` (es. la regolazione AI colpisce `AI_FOUNDATION`, non `AI_INFRA`).
 - Gli eventi di liquidità sono scriptati in `exitEvents.js` e allineati alle
   news di Cronaca: chi legge sa in anticipo chi esce bene e chi muore.
+  La run pubblica di default chiude in 2 anni; Partner Mode usa la timeline
+  completa a 3 anni.
   La timeline è compressa sul fondo a 3 anni: l'anno 2 porta il primo
   assaggio di liquidità, l'anno 3 è la stagione del raccolto (exit, IPO
   e write-off arrivano tutti prima del report finale).
+- **Stagione pubblica**: la Quick Run mostra al massimo 3 ritagli utili per
+  deal. Le news anno 4+ restano nel calendario come materiale espansione, ma
+  non sono registrate come pagine navigabili nella build pubblica attuale.
 - **Taccuino investigativo**: pagina 190 non indica più sezioni o news da
   leggere. Pone una domanda ambigua per ogni deal e registra soltanto i
   ritagli già scoperti. Ogni ritaglio ha una firma investigativa
@@ -96,6 +109,8 @@ tests/run.js          test del motore (node, zero dipendenze)
   coperture e una domanda armata nella Pitch Battle. La domanda armata
   infligge un `DOSSIER STRIKE` una tantum e blocca la replica del founder.
   Le letture danno anche un bonus progressivo alla negoziazione.
+  In Quick Run MARTA, l'analista, suggerisce una prossima pista utile senza
+  risolvere il caso: serve a tenere la run breve e leggibile.
 - **Catene investigative**: una teoria con almeno due firme diverse
   (Mercato, Regole, Persone, Exit o Contesto) può aprire una pagina interna
   9xx. Il giocatore deve annotarla e navigarci manualmente. Verificare la
@@ -122,11 +137,17 @@ tests/run.js          test del motore (node, zero dipendenze)
   taccuino, pitch battle come leva negoziale, term sheet, portfolio,
   classifica e LP. Non è un MP4: resta nitida,
   adattabile e controllabile con `1` / `0`.
+  Fine sigla e skip portano alla pagina 100, che resta l'ingresso canonico
+  della Quick Run.
+- **Start screen a due modalità**: la schermata 000 propone Quick Run come
+  default pubblico e Partner Mode come versione completa per chi vuole più
+  deal, più news e più occasioni di farsi male.
 - **Navigatore FastText**: la banda colorata porta a Home, News, Taccuino,
   Dealflow, Portfolio e LP Call. Evidenzia l'area corrente ed è cliccabile;
   la navigazione numerica resta il controllo principale.
 - **Logo VC3000** a blocchi pixel (sigla 105), stile copertina cartuccia.
-- **PITCH BATTLE**: aprire una startup pendente (301-303) fa partire la
+- **PITCH BATTLE**: aprire una startup pendente (301-303 in Quick Run,
+  301-305 in Partner Mode) fa partire la
   battaglia a turni col founder — boardroom panoramica stile SNES,
   personaggi DOM pixel-art scalabili, HUD separati, camera arcade,
   idle bob e dialog box bordata. L'HUD distingue
@@ -147,10 +168,19 @@ tests/run.js          test del motore (node, zero dipendenze)
   accelerare, ma il comando non viene accodato come mossa successiva.
   Lo stato della battaglia si salva a ogni turno (`rv.snap`): niente retry
   da save.
+- **Deal memo post-battle**: dopo invest/pass/deal perso il memo spiega in due
+  righe se la decisione era alpha, disciplina o FOMO. La schermata genera
+  anche una memo-card visuale pensata per screenshot social.
 - **LP Call**: triggerate dalle condizioni di portfolio
   (`js/data/lpCalls.js`). Quando una call è attiva, le pagine principali
   mostrano il banner lampeggiante "((( LP IN LINEA )))"; chiudere l'anno
   senza rispondere chiede conferma e costa satisfaction.
+
+- **Portfolio Call**: cambiano per archetipo, non solo per startup:
+  round quasi chiuso da sei mesi, governance da aperitivo, procurement eterno,
+  plant visit del Nordest, bando minuscolo e bridge/burn alert. Il bersaglio
+  è il VC italiano allusivo: family office, corporate innovation, anchor
+  pubblico, comitati e portali, senza nomi reali.
 
 ### Aggiungere una startup
 
@@ -169,7 +199,7 @@ max ~36 caratteri per riga. Se ha un `signal`, verifica che `sector` esista in
 node tests/run.js
 ```
 
-75 test su render, input, stato iniziale, migrazioni, relazioni LP, fund math,
+80 test su render, input, stato iniziale, migrazioni, relazioni LP, fund math,
 dealflow, Intelligence Network, deal access, eventi post-battle,
 decisioni, scoring, exit/write-off, pitch battle, sprite e integrità dei dati
 (inclusi: exit raggiungibili nei 3 anni e signal senza orfani).

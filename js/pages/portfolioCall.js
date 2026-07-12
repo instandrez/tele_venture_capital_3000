@@ -35,6 +35,19 @@
     return '<div class="codec-signal-bars" aria-hidden="true">' + bars + "</div>";
   }
 
+  function toneAccent(tone) {
+    return {
+      round: "#ff3df0",
+      founder: "#ff4030",
+      regulatory: "#ffe200",
+      enterprise: "#18e0ff",
+      industrial: "#33ff66",
+      policy: "#ff9320",
+      burn: "#ff4030",
+      growth: "#33ff66"
+    }[tone] || "#33ff66";
+  }
+
   function choicesHtml(incident) {
     return incident.choices.map((choice, i) =>
       '<button type="button" class="codec-choice" data-action="' + (i + 1) +
@@ -53,13 +66,25 @@
   function tacticalMessage(report) {
     const headline = (report.incident && report.incident.headline) || "";
     const choice = report.choice || {};
-    if (headline === "FOUNDER DRAMA") {
-      return "La governance e' il prodotto, almeno per i prossimi sessanta giorni.";
+    if (headline === "GOVERNANCE DA APERITIVO") {
+      return "La governance e' il prodotto, almeno finche' il founder smette di fare roadmap al bar.";
     }
-    if (headline === "REGULATORY NOTICE") {
+    if (headline === "ROUND QUASI CHIUSO DA SEI MESI") {
+      return "Il round quasi chiuso e' un asset illiquido: vale solo se qualcuno risponde al telefono.";
+    }
+    if (headline === "PORTALE COMPLIANCE IN FIAMME") {
       return "Il mercato non premia chi ignora il regolatore. Devi comprare tempo credibile.";
     }
-    if (headline === "BURN ALERT") {
+    if (headline === "PROCUREMENT ETERNO") {
+      return "Corporate innovation applaude; procurement converte gli applausi in allegati Excel.";
+    }
+    if (headline === "PLANT VISIT DEL NORDEST") {
+      return "Se il prodotto regge in stabilimento, il memo pesa piu' di qualunque demo in ufficio.";
+    }
+    if (headline === "BANDO MINUSCOLO, RENDICONTO ENORME") {
+      return "Il bando e' segnale, non strategia. Se diventa strategia hai appena assunto burocrazia.";
+    }
+    if (headline === "BRIDGE O TAGLIO DEL GROWTH HACKER") {
       return "La crescita senza margine e' debito mascherato. O correggi il modello o il mark scende.";
     }
     if (headline === "GROWTH BREAKPOINT") {
@@ -89,9 +114,10 @@
   }
 
   function callScene(incident) {
+    const accent = toneAccent(incident.tone);
     return (
       '<section class="console-scene codec-scene codec-lp portfolio-codec" ' +
-        'style="--lp-accent:#33ff66;--codec-accent:#33ff66">' +
+        'style="--lp-accent:' + accent + ';--codec-accent:' + accent + '">' +
         '<div class="codec-bg"></div><div class="codec-grid-bg"></div><div class="codec-scan"></div>' +
         '<header class="codec-header"><span>VC3000 TACTICAL PORTFOLIO CODEC</span>' +
           '<strong class="lp-live">FREQ 620 LIVE</strong></header>' +
@@ -133,6 +159,7 @@
   }
 
   function resultScene(report) {
+    const accent = toneAccent(report.incident && report.incident.tone);
     const metrics = report.metrics.length
       ? report.metrics.map(metricHtml).join("")
       : '<div class="lp-no-change">NESSUNA METRICA MODIFICATA</div>';
@@ -141,7 +168,7 @@
     ).join("");
     return (
       '<section class="console-scene codec-scene codec-result-scene is-' + report.tone +
-        ' portfolio-codec" style="--lp-accent:#33ff66;--codec-accent:#33ff66">' +
+        ' portfolio-codec" style="--lp-accent:' + accent + ';--codec-accent:' + accent + '">' +
         '<div class="codec-bg"></div><div class="codec-grid-bg"></div><div class="codec-scan"></div>' +
         '<header class="codec-header"><span>VC3000 TACTICAL PORTFOLIO LOG</span>' +
           '<strong>CHIAMATA CONCLUSA</strong></header>' +
@@ -225,7 +252,7 @@
         className: "lp-cinematic codec-cinematic"
       });
       TVRouter.setActionHandler(next => {
-        if (next === 1) TVRouter.goto(450, { skipLoading: true });
+        if (next === 1) TVRouter.goto(report.incident.afterResolvePage || 450, { skipLoading: true });
         else if (next === 0) TVRouter.goto(100, { skipLoading: true });
       });
     });

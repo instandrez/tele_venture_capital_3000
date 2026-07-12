@@ -55,11 +55,14 @@
     // deal deliberato → scheda di sola consultazione
     const rv = reveals(s, id);
     const intel = TVIntel.forStartup(s, st);
+    const negotiatedPct = rv.negotiatedValuation
+      ? Math.round((1 - rv.negotiatedValuation / st.valuation) * 100)
+      : 0;
     const lines = [];
     lines.push(r.bg("bg-yellow", "  " + r.pad(st.name + " — " + st.stage, 38)));
     lines.push(" " + r.color("c-cyan", st.sector) +
                r.color("c-white", "   val. " + r.eur(rv.negotiatedValuation || st.valuation)) +
-               (rv.negotiatedValuation ? r.color("c-green", " (-20%)") : ""));
+               (rv.negotiatedValuation ? r.color("c-green", " (-" + negotiatedPct + "%)") : ""));
     lines.push(r.color("c-blue", " " + "─".repeat(38)));
 
     const pitch = TVPitches.forStartup(st.id);

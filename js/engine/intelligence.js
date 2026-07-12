@@ -17,6 +17,39 @@
     return String((startup && startup.sectorTag) || "").split("_")[0];
   }
 
+  function portfolioPosition(state, startup) {
+    if (!state || !startup) return null;
+    return (state.portfolio || []).find(p =>
+      p.id === startup.id && (!p.status || p.status === "active")
+    ) || null;
+  }
+
+  function currentDealStartup(state, startup) {
+    if (!state || !startup || typeof TVDealflow === "undefined") return false;
+    return TVDealflow.currentYearDealflow(state).some(st => st.id === startup.id);
+  }
+
+  function investigationState(state, startup) {
+    if (!state || currentDealStartup(state, startup)) return state;
+    const pos = portfolioPosition(state, startup);
+    if (!pos || !pos.entryYear) return state;
+    return Object.assign({}, state, { year: pos.entryYear });
+  }
+
+  function investigableStartups(state) {
+    if (!state || !state.gameStarted) return [];
+    const byId = {};
+    if (typeof TVDealflow !== "undefined") {
+      TVDealflow.currentYearDealflow(state).forEach(st => { byId[st.id] = st; });
+    }
+    (state.portfolio || []).forEach(pos => {
+      if (pos.status && pos.status !== "active") return;
+      const st = TVStartups.byId(pos.id);
+      if (st) byId[st.id] = st;
+    });
+    return Object.keys(byId).map(id => byId[id]);
+  }
+
   const EVIDENCE = {
     trend:         { kind: "MERCATO",  move: 2, moveLabel: "COMPETITOR" },
     macro:         { kind: "CONTESTO", move: 1, moveLabel: "NUMERI" },
@@ -52,8 +85,9 @@
   }
 
   function relevantNews(state, startup) {
+    const scopedState = investigationState(state, startup);
     const root = rootSector(startup);
-    const sorted = publishedNews(state)
+    const sorted = publishedNews(scopedState)
       .map(n => {
         const effect = effectFor(n, startup);
         const sameSector = n.signal.sector === root;
@@ -82,11 +116,12 @@
         return strength || a.news.page - b.news.page;
       });
 
-    const selected = sorted.slice(0, 6);
+    const cap = scopedState && scopedState.runMode === "partner" ? 6 : 3;
+    const selected = sorted.slice(0, cap);
     const selectedKinds = new Set(selected.map(x => x.kind));
-    if (selected.length === 6 && selectedKinds.size < 2) {
-      const secondSignature = sorted.slice(6).find(x => !selectedKinds.has(x.kind));
-      if (secondSignature) selected[5] = secondSignature;
+    if (selected.length === cap && selectedKinds.size < 2) {
+      const secondSignature = sorted.slice(cap).find(x => !selectedKinds.has(x.kind));
+      if (secondSignature) selected[cap - 1] = secondSignature;
     }
     return selected;
   }
@@ -450,6 +485,21 @@
     return "MARTA: \"Caso solido. Ora roviniamolo con una decisione.\"";
   }
 
+  function guidanceFor(state, startup, intel) {
+    intel = intel || forStartup(state, startup);
+    if (!state || state.runMode === "partner") return sidekickLine(intel);
+    if (intel.level >= 2) {
+      const lead = intel.lead ? "mossa " + intel.lead.move + " (" + intel.lead.label + ")" : "domanda armata";
+      return "MARTA: \"Hai abbastanza. In battle usa " + lead + ", poi decidi.\"";
+    }
+    const next = intel.unread && intel.unread[0];
+    if (next && next.news) {
+      return "MARTA: \"Quick Run: apri p" + next.news.page +
+        ". Se resta solo fumo, vai in battle.\"";
+    }
+    return sidekickLine(intel);
+  }
+
   function forStartup(state, startup) {
     const relevant = relevantNews(state, startup);
     const readSet = new Set((state && state.readPages) || []);
@@ -483,13 +533,18 @@
       chain: chain,
       privateClue: sourceBonus ? chain.clue : null,
       sidekick: sidekickLine({ level: level }),
+      guidance: guidanceFor(state, startup, {
+        level: level,
+        lead: lead,
+        unread: unread
+      }),
       sections: Array.from(new Set(unread.map(x => x.news.section)))
     };
   }
 
   function linkedDeals(state, pageNum) {
     if (!state || !state.gameStarted || typeof TVDealflow === "undefined") return [];
-    return TVDealflow.currentYearDealflow(state).filter(st =>
+    return investigableStartups(state).filter(st =>
       relevantNews(state, st).some(x => x.news.page === pageNum)
     );
   }
@@ -502,7 +557,7 @@
 
   function unlockedSourcesForPage(state, pageNum) {
     if (!state || !state.gameStarted || typeof TVDealflow === "undefined") return [];
-    return TVDealflow.currentYearDealflow(state)
+    return investigableStartups(state)
       .filter(st => relevantNews(state, st).some(x => x.news.page === pageNum))
       .map(st => ({ startup: st, chain: chainFor(state, st) }))
       .filter(x => x.chain.unlocked && !x.chain.contacted);
@@ -511,7 +566,8 @@
   global.TVIntel = {
     relevantNews, newsForCurrentDealflow, forStartup, linkedDeals, pageStatus,
     levelFor, labelFor, caseQuestion, theoryFor, sidekickLine,
-    leadFor, newsFingerprint, chainFor, contactSource, sourceForecast,
-    sourcePageFor, sourceStartupByPage, unlockedSourcesForPage
+    guidanceFor, leadFor, newsFingerprint, chainFor, contactSource, sourceForecast,
+    sourcePageFor, sourceStartupByPage, unlockedSourcesForPage,
+    investigableStartups, currentDealStartup
   };
 })(typeof window !== "undefined" ? window : global);

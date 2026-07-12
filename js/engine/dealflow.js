@@ -9,7 +9,17 @@
    4. Seeded random per anno → partita riproducibile da save.
 */
 (function (global) {
-  const DEALS_PER_YEAR = 5;
+  const QUICK_DEALS_PER_YEAR = 3;
+  const PARTNER_DEALS_PER_YEAR = 5;
+
+  function dealsPerYear(state) {
+    if (state && typeof state.dealsPerYear === "number") {
+      return Math.max(3, Math.min(PARTNER_DEALS_PER_YEAR, state.dealsPerYear));
+    }
+    return (state && state.runMode === "partner")
+      ? PARTNER_DEALS_PER_YEAR
+      : QUICK_DEALS_PER_YEAR;
+  }
 
   function seedFor(state) {
     // gameSeed varia tra partite, year varia dentro la partita:
@@ -55,9 +65,9 @@
       focus: "Seed con trazione"
     },
     3: {
-      title: "LATE-STAGE HEAT",
-      memo: "round piu' famosi, follow-up pesanti e decisioni da leaderboard",
-      focus: "Series A / growth / exit narrative"
+      title: "UNICORN WEATHER",
+      memo: "late stage, secondarie, follow-up pesanti e DPI da spiegare agli LP",
+      focus: "Series A / unicorn / exit narrative"
     }
   };
 
@@ -103,10 +113,60 @@
     return score;
   }
 
-  function rankedForYear(bucket, year, rand) {
+  function stageBand(startup) {
+    const stage = String(startup.stage || "").toLowerCase();
+    const val = startup.valuation || 0;
+    const traction = startup.traction || 0;
+    if (val >= 500_000_000 || stage.includes("growth") || stage.includes("unicorn")) {
+      return "UNICORN";
+    }
+    if (stage.includes("series") || val >= 50_000_000) return "LATE";
+    if (stage.includes("seed ext") || traction >= 4 || val >= 18_000_000) return "MID";
+    return "EARLY";
+  }
+
+  function targetBands(state, count) {
+    const year = state.year || 1;
+    const partner = state.runMode === "partner";
+    if (year <= 1) {
+      return (partner
+        ? ["EARLY", "EARLY", "MID", "EARLY", "MID"]
+        : ["EARLY", "EARLY", "MID"]).slice(0, count);
+    }
+    if (year === 2) {
+      return (partner
+        ? ["EARLY", "MID", "MID", "LATE", "LATE"]
+        : ["EARLY", "MID", "LATE"]).slice(0, count);
+    }
+    return (partner
+      ? ["MID", "LATE", "UNICORN", "LATE", "EARLY"]
+      : ["MID", "LATE", "UNICORN"]).slice(0, count);
+  }
+
+  function liquidityEvent(startup, state) {
+    const exits = global.TVExits && TVExits.EXIT_EVENTS;
+    if (!exits) return null;
+    const maxYear = (state && state.maxYear) || 3;
+    return exits.find(e =>
+      e.startupId === startup.id &&
+      e.year >= ((state && state.year) || 1) &&
+      e.year <= maxYear
+    ) || null;
+  }
+
+  function heavyValuation(startup) {
+    return (startup && startup.valuation || 0) >= 80_000_000 ||
+      stageBand(startup) === "UNICORN";
+  }
+
+  function rankedForYear(bucket, year, rand, momentum, state) {
     return bucket.map(s => ({
       startup: s,
-      score: stageScore(s, year) + rand() * 6
+      score: stageScore(s, year) +
+        (Math.abs(momentum[((s.sectorTag || "").split("_")[0])] || 0) / 4) +
+        (liquidityEvent(s, state) && year >= 2 ? 4 : 0) +
+        (stageBand(s) === "UNICORN" && year >= 3 ? 4 : 0) +
+        rand() * 6
     })).sort((a, b) => b.score - a.score).map(item => item.startup);
   }
 
@@ -129,28 +189,68 @@
     }
 
     const buckets = { HOT: [], TRAP: [], NEUTRAL: [] };
-    pool.forEach(s => buckets[classify(s)].push(s));
+    const bands = { EARLY: [], MID: [], LATE: [], UNICORN: [] };
+    pool.forEach(s => {
+      buckets[classify(s)].push(s);
+      bands[stageBand(s)].push(s);
+    });
 
     const rand = rng(seedFor(state) + state.year);
     const picks = [];
+    const selected = new Set();
 
-    // Mix: piu' deal per anno, ma sempre con almeno un winner e una trappola
-    // quando il mercato li offre.
-    function take(bucket) {
-      if (bucket.length === 0) return null;
-      const list = rankedForYear(bucket, state.year, rand);
-      const s = list[0];
-      const idx = bucket.indexOf(s);
-      bucket.splice(idx, 1);
-      return s;
+    function addPick(startup) {
+      if (!startup || selected.has(startup.id)) return false;
+      selected.add(startup.id);
+      picks.push(startup);
+      return true;
     }
 
-    const order = ["HOT", "TRAP", "NEUTRAL", "HOT", "TRAP"];
-    order.forEach(b => { const p = take(buckets[b]); if (p) picks.push(p); });
+    const count = dealsPerYear(state);
+    targetBands(state, count).forEach(band => {
+      const candidates = bands[band].filter(s => !selected.has(s.id));
+      const ranked = rankedForYear(candidates, state.year, rand, momentum, state);
+      addPick(ranked[0]);
+    });
+
+    // Dall'anno 2 mettiamo sul tavolo almeno una societa' con possibile
+    // evento di liquidita' entro l'orizzonte della run, se il pool lo offre.
+    if (state.year >= 2 && !picks.some(s => liquidityEvent(s, state))) {
+      const liquid = rankedForYear(pool.filter(s =>
+        !selected.has(s.id) && liquidityEvent(s, state)
+      ), state.year, rand, momentum, state)[0];
+      if (liquid) {
+        if (picks.length >= count) {
+          selected.delete(picks[picks.length - 1].id);
+          picks[picks.length - 1] = liquid;
+          selected.add(liquid.id);
+        } else {
+          addPick(liquid);
+        }
+      }
+    }
+
+    // Dall'anno 2 deve arrivare almeno un deal a prezzo pesante: e' il
+    // momento in cui il giocatore smette di comprare solo seed option.
+    if (state.year >= 2 && !picks.some(heavyValuation)) {
+      const heavy = rankedForYear(pool.filter(s =>
+        !selected.has(s.id) && heavyValuation(s)
+      ), state.year, rand, momentum, state)[0];
+      if (heavy) {
+        if (picks.length >= count) {
+          selected.delete(picks[picks.length - 1].id);
+          picks[picks.length - 1] = heavy;
+          selected.add(heavy.id);
+        } else {
+          addPick(heavy);
+        }
+      }
+    }
 
     // se mancano slot, riempi con pool generale
-    const rest = rankedForYear([...buckets.HOT, ...buckets.TRAP, ...buckets.NEUTRAL], state.year, rand);
-    while (picks.length < DEALS_PER_YEAR && rest.length > 0) picks.push(rest.shift());
+    const rest = rankedForYear(pool.filter(s => !selected.has(s.id)),
+      state.year, rand, momentum, state);
+    while (picks.length < count && rest.length > 0) addPick(rest.shift());
 
     return picks;
   }
@@ -197,6 +297,9 @@
 
   global.TVDealflow = {
     currentYearDealflow, decisionsForYear, getDecision, setDecision, pendingDeals,
-    yearTheme, DEALS_PER_YEAR
+    yearTheme, dealsPerYear, stageBand,
+    DEALS_PER_YEAR: PARTNER_DEALS_PER_YEAR,
+    QUICK_DEALS_PER_YEAR,
+    PARTNER_DEALS_PER_YEAR
   };
 })(window);

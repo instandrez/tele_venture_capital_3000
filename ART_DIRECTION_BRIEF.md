@@ -2,7 +2,8 @@
 
 ## Stato attuale
 
-Il gioco ha gia un loop completo da 5 anni: dealflow, news con segnali,
+Il gioco ha gia un loop completo con Quick Run da 2 anni e Partner Mode da
+3 anni: dealflow, news con segnali,
 Pitch Battle, due diligence, negoziazione, portfolio, follow-on, LP call,
 eventi di liquidita, report finale e leaderboard locale.
 
@@ -10,7 +11,7 @@ La base tecnica e solida:
 
 - HTML, CSS e JavaScript vanilla, senza build
 - navigazione solo da tastiera e salvataggio LocalStorage
-- 48 test automatici verdi
+- 80 test automatici verdi
 - sprite founder, animazioni a turni e audio Web Audio generato in tempo reale
 
 ## Problema percepito
@@ -106,3 +107,22 @@ La terza passata rende l'esplorazione piu' simile a una piccola indagine:
 - 100M di commitments diventano 90M investibili dopo 10M di fee
 - ticket stage-based e ownership post-money sostituiscono il vecchio 1/3/5M
 - target annuale e deployment finale rendono visibile la disciplina di fondo
+
+## Public demo pass
+
+La quarta passata rende il gioco piu' breve, condivisibile e leggibile per
+una nicchia VC italiana:
+
+- Quick Run come default pubblico: 2 anni, 3 deal/anno
+- Partner Mode opzionale: 3 anni, 5 deal/anno
+- start screen canonico con scelta modalita' e naming del fondo; fine sigla e
+  skip portano alla home 100, ingresso canonico della Quick Run
+- Quick Run limitata a 3 ritagli utili per deal; anni 4+ tenuti come
+  espansione non navigabile nella build pubblica
+- MARTA guida la Quick Run con una pista utile senza risolvere il caso
+- deal memo post-battle con verdetto secco e memo-card visuale da screenshot
+- modali in-cartridge per import/export save e classifica
+- share card finale copiabile per chat e social
+- portfolio call differenziate: round quasi chiuso, procurement eterno,
+  plant visit del Nordest, bando minuscolo, governance e burn
+- piu' archetipi LP e battute vicine al VC italiano, senza nomi reali

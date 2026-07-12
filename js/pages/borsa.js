@@ -2,6 +2,7 @@
    Tabella ispirata al Televideo finanziario classico:
    nome indice, valore, variazione %, segnale. */
 (function (global) {
+  const PUBLIC_SEASON_MAX_YEAR = 3;
 
   function wrapText(text, width) {
     const words = String(text || "").split(/\s+/).filter(Boolean);
@@ -149,8 +150,10 @@
 
   const P = global.TVPages = global.TVPages || {};
   P[140] = { render };
-  // registra dinamicamente le news Borsa cross-anno
+  // registra solo la stagione pubblica; anni 4+ restano materiale espansione
   TVNews.NEWS.forEach(n => {
-    if (n.section === 140) P[n.page] = { render: renderNewsDetailSafe };
+    if (n.year <= PUBLIC_SEASON_MAX_YEAR && n.section === 140) {
+      P[n.page] = { render: renderNewsDetailSafe };
+    }
   });
 })(window);

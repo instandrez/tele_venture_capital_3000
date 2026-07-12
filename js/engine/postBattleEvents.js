@@ -58,7 +58,7 @@
         headline: "PORTFOLIO PING",
         context: [
           "Mentre esci dalla battle, arriva un update da " + portco.name + ".",
-          "Non e' ancora una rivalutazione: e' un segnale operativo da portare al prossimo portfolio update.",
+          "Non e' una rivalutazione: e' un segnale operativo da monitorare.",
           "Il fondo continua a muoversi anche quando passi un deal."
         ],
         choices: [
@@ -225,9 +225,8 @@
       const catalyst = queueCatalyst(state, event, choice, e.multiplierPct);
       if (catalyst) {
         const sign = e.multiplierPct > 0 ? "+" : "";
-        metric("Portfolio catalyst", "memo", "prossimo update",
+        metric("Portfolio catalyst", "memo", "registrato",
           sign + Math.round(e.multiplierPct * 100) + "%");
-        notes.push({ text: "Il multiplo non cambia ora: il catalyst verra' applicato al prossimo portfolio update." });
       }
     }
     if (e.reputation) {
@@ -270,7 +269,7 @@
   /* L'evento post-battle si risolve subito con la scelta automatica
      (guidata dalla preparazione: DD/ref call/taccuino scelgono meglio).
      Gli effetti su cash/reputation/LP sono applicati DAVVERO; il
-     multiplo resta un catalyst per il prossimo portfolio update. */
+     multiplo resta un catalyst per l'aggiornamento di portafoglio. */
   function recordAfterBattle(state, startup, ctx) {
     const event = eventFor(state, startup, ctx);
     if (!event || !event.choices || !event.choices.length) return null;

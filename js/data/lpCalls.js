@@ -45,7 +45,7 @@
         "\"Come gestite il rischio di concentrazione?\""
       ],
       choices: [
-        { label: "Piano di riequilibrio nei prossimi 18 mesi",
+        { label: "Piano di riequilibrio, non un post LinkedIn",
           effects: { lpSat: { pensione: +12, sovereign: -4 }, reputation: +2 } },
         { label: "\"AI is the new electricity\"",
           effects: { lpSat: { pensione: -18, sovereign: +8 }, reputation: -3 } },
@@ -84,15 +84,15 @@
         "esposizione a robotica industriale né a",
         "batterie.\"",
         "",
-        "\"Avete pensato al nostro stabilimento di",
-        "Schio?\""
+        "\"Avete pensato al nostro stabilimento?",
+        "C'e' anche una sala riunioni con proiettore.\""
       ],
       choices: [
-        { label: "Aggiungeremo deal industriale nei prossimi 6 mesi",
+        { label: "Deal industriale entro 6 mesi, con casco in visita",
           effects: { lpSat: { family: +12 }, innovationImpact: +3 } },
         { label: "La nostra tesi privilegia capital-light",
           effects: { lpSat: { family: -12 }, reputation: +1 } },
-        { label: "Possiamo organizzare visita al vostro plant",
+        { label: "Plant visit + demo non in PowerPoint",
           effects: { lpSat: { family: +8 }, reputation: 0 } }
       ]
     },
@@ -153,7 +153,7 @@
       choices: [
         { label: "Sì, abbiamo modellato i follow-on round",
           effects: { lpSat: { pensione: +8, family: +4 } } },
-        { label: "Faremo capital call aggiuntivo",
+        { label: "Faremo capital call aggiuntivo, con tono sereno",
           effects: { lpSat: { pensione: -14, family: -8 }, reputation: -3 } },
         { label: "Considereremo selettivamente",
           effects: { lpSat: { pensione: -2 } } }

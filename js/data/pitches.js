@@ -206,6 +206,26 @@
       "CTO licenziato via WhatsApp. Pubblico."
     ],
 
+    // ---------- LATE STAGE / UNICORN ----------
+    ledgernova: [
+      "CFO OS per aziende noiose e ricche.",
+      "Revenue vera, retention quasi illegale.",
+      "Valuation da unicorno adulto.",
+      "Crescita costosa, ma il DPI chiama."
+    ],
+    sovereignai: [
+      "Cloud AI sovrano, GPU ovunque.",
+      "Procurement pubblico nel deck.",
+      "Clienti grandi, margini in preghiera.",
+      "Il founder dice 'strategico' 19 volte."
+    ],
+    lumengrid: [
+      "Storage grid-scale per utility.",
+      "Contratti quadro, capex pesante.",
+      "Team industriale, hype controllato.",
+      "Quasi unicorno, casco obbligatorio."
+    ],
+
     // ---------- ARCHETIPI ----------
     stealthmode: [
       "Settore: riservato. Team: riservato.",

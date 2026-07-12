@@ -7,6 +7,7 @@
   let frameIdx = 0;
   let startNotice = "";
   let startMode = "menu";
+  let selectedRunMode = "quick";
 
   const FRAMES = [
     {
@@ -14,7 +15,7 @@
       accent: "#18e0ff",
       eyebrow: "NEW MILAN // LINEA MAGLEV 3000 // 06:12",
       title: "SEI IL GENERAL PARTNER",
-      body: 'Hai appena chiuso Fund I: <span class="hot">100M EUR</span> raccolti, 90M investibili e tre anni per costruire un track record.',
+      body: 'Hai appena chiuso Fund I: <span class="hot">100M EUR</span> raccolti, 90M investibili e una run breve per non annoiare il gruppo WhatsApp dei VC.',
       hold: 4600,
       logo: true,
       setpiece: "arrival"
@@ -33,7 +34,7 @@
       accent: "#33ff66",
       eyebrow: "DEALFLOW // PAGINA 200",
       title: "SCEGLI I DEAL DELL'ANNO",
-      body: "Ogni anno arrivano cinque startup. Aprile, confrontale con 110/120/140/160/180, poi entra nelle schede 301-305.",
+      body: "Quick Run: tre startup per anno. Aprile, confrontale con 110/120/140/160/180, poi entra nelle schede 301-303.",
       hold: 5400,
       setpiece: "terminal"
     },
@@ -87,7 +88,7 @@
       accent: "#ff3df0",
       eyebrow: "PORTFOLIO // LP // FINE ANNO",
       title: "VINCI LA RUN",
-      body: "A fine anno il portfolio viene marcato. Score finale: MOIC, DPI, deployment, reputazione, impact e LP satisfaction.",
+      body: "Ora parti dalla pagina 100: indice, news, taccuino e dealflow. Il FOMO resta facoltativo, purtroppo.",
       hold: 0,
       final: true,
       setpiece: "fund"
@@ -123,12 +124,13 @@
     const continueClass = hasSave ? "" : " is-disabled";
     const notice = startNotice
       ? '<div class="start-notice">' + TVRender.escape(startNotice) + '</div>'
-      : '<div class="start-notice is-muted">WELCOME TO NEW MILAN</div>';
+      : '<div class="start-notice is-muted">QUICK RUN: 3 ANNI // 3 DEAL PER ANNO</div>';
     return (
       '<div class="start-menu" role="menu">' +
-        '<button type="button" class="start-option is-primary" data-action="1"><b>1</b><span>NEW GAME</span></button>' +
-        '<button type="button" class="start-option' + continueClass + '" data-action="2"><b>2</b><span>LOAD GAME</span></button>' +
-        '<button type="button" class="start-option" data-action="3"><b>3</b><span>TELETEXT INDEX</span></button>' +
+        '<button type="button" class="start-option is-primary" data-action="1"><b>1</b><span>QUICK RUN</span></button>' +
+        '<button type="button" class="start-option" data-action="2"><b>2</b><span>PARTNER MODE</span></button>' +
+        '<button type="button" class="start-option' + continueClass + '" data-action="3"><b>3</b><span>LOAD GAME</span></button>' +
+        '<button type="button" class="start-option" data-action="4"><b>4</b><span>TELETEXT INDEX</span></button>' +
         '<button type="button" class="start-option" data-action="9"><b>9</b><span>OPTIONS</span></button>' +
       '</div>' +
       notice
@@ -136,8 +138,12 @@
   }
 
   function startNameHtml() {
+    const cfg = (global.TVRunModes && TVRunModes[selectedRunMode]) ||
+      { label: "Quick Run", maxYear: 3, dealsPerYear: 3 };
     return (
       '<form class="start-name-form" id="start-name-form">' +
+        '<div class="start-mode-line"><b>' + TVRender.escape(cfg.label.toUpperCase()) +
+          '</b><span>' + cfg.maxYear + ' anni // ' + cfg.dealsPerYear + ' deal/anno</span></div>' +
         '<label><span>GP NAME</span><input id="start-nickname" maxlength="16" autocomplete="off" value="GP"></label>' +
         '<label><span>FUND NAME</span><input id="start-fund" maxlength="24" autocomplete="off" value="New Milan Capital"></label>' +
         '<div class="start-name-actions">' +
@@ -168,11 +174,11 @@
         '<div class="start-logo" aria-label="Tele Venture Capital 3000">' +
           '<div class="start-kicker">TELEVIDEO ARCADE SYSTEM</div>' +
           '<h1><span>TELE</span><span>VENTURE</span><span>CAPITAL</span><em>3000</em></h1>' +
-          '<p>FUND MANAGER CARTRIDGE</p>' +
+          '<p>FUND MANAGER CARTRIDGE // NICCHIA VC ITALIA</p>' +
         '</div>' +
         (startMode === "naming" ? startNameHtml() : startMenuHtml(hasSave)) +
         '<div class="start-ticker"><span>VC3000 // ' + saveLine +
-          ' // NEW GAME STARTS FUND I // LOAD GAME RESUMES SAVE // NEWS IS ALPHA</span></div>' +
+          ' // QUICK RUN 2Y/3 DEAL // PARTNER MODE 3Y/5 DEAL // NEWS IS ALPHA // VEICOLO PAZIENTE NON COMMENTA</span></div>' +
       '</section>'
     );
   }
@@ -199,7 +205,9 @@
     function begin() {
       startMode = "menu";
       startNotice = "";
-      TVState.newGame(collectPlayerNames(nick && nick.value, fund && fund.value));
+      const names = collectPlayerNames(nick && nick.value, fund && fund.value);
+      names.runMode = selectedRunMode;
+      TVState.newGame(names);
       TVRouter.goto(105);
     }
 
@@ -243,10 +251,16 @@
     TVRouter.setActionHandler(num => {
       const hasSave = hasPlayableSave();
       if (num === 1) {
+        selectedRunMode = "quick";
         startNotice = "";
         startMode = "naming";
         renderStart();
       } else if (num === 2) {
+        selectedRunMode = "partner";
+        startNotice = "";
+        startMode = "naming";
+        renderStart();
+      } else if (num === 3) {
         if (hasSave) {
           startNotice = "";
           TVRouter.goto(102);
@@ -255,7 +269,7 @@
           TVAudio.error();
           renderStart();
         }
-      } else if (num === 3) {
+      } else if (num === 4) {
         startNotice = "";
         TVRouter.goto(100);
       } else if (num === 9) {
@@ -307,13 +321,26 @@
     const logo = frame.logo
       ? '<div class="intro-logo"><strong><span class="mark-vc">VC</span><span class="mark-3000">3000</span></strong><small>VENTURE CAPITAL SIMULATOR</small></div>'
       : "";
-    const action = frame.final ? "PAGINA 100" : "AVANTI";
+    const action = frame.final ? "PRIMO DEALFLOW" : "AVANTI";
+    const mission = String(idx + 1).padStart(2, "0") + "/" + String(FRAMES.length).padStart(2, "0");
+    const progress = Math.round(((idx + 1) / FRAMES.length) * 100);
     return (
       '<section class="console-scene intro-scene ' + frame.shot + '" style="--intro-accent:' + frame.accent +
-        ';--intro-progress:' + (((idx + 1) / FRAMES.length) * 100) + '%">' +
+        ';--intro-progress:' + progress + '%">' +
         '<div class="intro-bg"></div>' +
         '<div class="intro-city-lights"></div>' +
         '<div class="intro-grade"></div>' +
+        '<div class="intro-vhs" aria-hidden="true"><span>VC3000 BOOT SEQ</span><b>REC</b></div>' +
+        '<div class="intro-marquee" aria-hidden="true"><span>INSERT ALPHA // READ BEFORE FOMO // NO REAL FUNDS WERE HARMED // </span></div>' +
+        '<div class="intro-hud" aria-hidden="true">' +
+          '<span>MISSION ' + mission + '</span>' +
+          '<span>' + progress + '% SYNDICATED</span>' +
+          '<span>SEED: ' + (((TVState.current && TVState.current.gameSeed) || 0) % 9999) + '</span>' +
+        '</div>' +
+        '<div class="intro-radar" aria-hidden="true"><i></i><b></b><em></em></div>' +
+        '<div class="intro-side-panel" aria-hidden="true">' +
+          '<span>NEWS</span><span>DEALS</span><span>LP</span><span>EXIT</span>' +
+        '</div>' +
         '<div class="intro-progress"></div>' +
         logo +
         setpieceHtml(frame.setpiece) +
@@ -323,8 +350,8 @@
           '<p>' + frame.body + '</p>' +
         '</div>' +
         '<div class="intro-controls">' +
-          '<span><b>1</b> ' + action + '</span>' +
-          '<span><b>0</b> SALTA SIGLA</span>' +
+          '<button type="button" class="intro-action" data-action="1"><b>1</b> ' + action + '</button>' +
+          '<button type="button" class="intro-action" data-action="0"><b>0</b> SALTA SIGLA</button>' +
         '</div>' +
       '</section>'
     );

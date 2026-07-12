@@ -247,6 +247,14 @@ body::before {
 /* il tubo "respira" appena, come un CRT vero */
 @keyframes crt-breathe { 0%,100% { opacity: 1; } 50% { opacity: 0.97; } }
 #screen { animation: crt-breathe 3.6s ease-in-out infinite; }
+@keyframes input-pulse {
+  0% { filter: brightness(1.45) saturate(1.35); transform: translateY(0); }
+  100% { filter: brightness(1) saturate(1); transform: translateY(0); }
+}
+#screen.input-pulse #tv-content,
+#screen.input-pulse #console-stage {
+  animation: input-pulse 0.16s steps(2, end);
+}
 
 #screen[data-section="system"]    { --section-accent: var(--tv-yellow); }
 #screen[data-section="news"]      { --section-accent: var(--tv-red); }
@@ -1004,6 +1012,26 @@ body::before {
   background: rgba(3,6,18,0.96);
   box-shadow: 7px 7px 0 #050713, inset 0 0 0 3px #26366d;
 }
+.start-mode-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6em;
+  padding: 0.18em 0.45em;
+  border: 3px solid var(--tv-cyan);
+  color: var(--tv-white);
+  background: #050b22;
+  box-shadow: 4px 4px 0 #050713;
+  font-size: clamp(15px, calc(var(--fs) * 0.76), 23px);
+}
+.start-mode-line b {
+  color: var(--tv-green);
+  font-weight: 400;
+}
+.start-mode-line span {
+  color: var(--tv-yellow);
+  text-align: right;
+}
 .start-name-form label {
   display: grid;
   grid-template-columns: 8.5em minmax(0, 1fr);
@@ -1047,6 +1075,96 @@ body::before {
 }
 .start-name-actions button:first-child {
   background: var(--tv-green);
+}
+
+/* ---------- modal in-cartridge ---------- */
+.tv-modal {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: clamp(10px, 3vw, 28px);
+  background: rgba(0, 0, 0, 0.72);
+}
+.tv-modal-box {
+  width: min(720px, 94vw);
+  display: grid;
+  gap: 0.55em;
+  padding: clamp(12px, 2.2vw, 22px);
+  border: 4px solid var(--tv-cyan);
+  color: var(--tv-white);
+  background: linear-gradient(180deg, rgba(5,10,32,0.98), rgba(2,4,12,0.98));
+  box-shadow: 10px 10px 0 #050713, inset 0 0 0 4px #26366d;
+}
+.tv-modal-kicker {
+  justify-self: start;
+  padding: 0.05em 0.45em;
+  color: #050713;
+  background: var(--tv-yellow);
+  box-shadow: 3px 3px 0 #050713;
+  font-size: clamp(14px, calc(var(--fs) * 0.72), 22px);
+}
+.tv-modal-box h2 {
+  margin: 0;
+  color: var(--tv-green);
+  font-size: clamp(28px, calc(var(--fs) * 1.45), 44px);
+  font-weight: 400;
+  line-height: 1;
+}
+.tv-modal-box p {
+  margin: 0;
+  color: var(--tv-white);
+  font-size: clamp(18px, calc(var(--fs) * 0.95), 28px);
+  line-height: 1.05;
+}
+.tv-modal-box label {
+  display: grid;
+  gap: 0.25em;
+}
+.tv-modal-box label span {
+  color: var(--tv-yellow);
+}
+.tv-modal-box input,
+.tv-modal-box textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 0.38em 0.48em;
+  border: 3px solid var(--tv-cyan);
+  color: var(--tv-green);
+  background: #050713;
+  font: inherit;
+  font-size: clamp(18px, calc(var(--fs) * 0.9), 28px);
+  line-height: 1.05;
+}
+.tv-modal-box textarea {
+  min-height: 7em;
+  resize: vertical;
+}
+.tv-modal-box input:focus,
+.tv-modal-box textarea:focus {
+  outline: 3px solid var(--tv-yellow);
+  border-color: var(--tv-yellow);
+}
+.tv-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.45em;
+}
+.tv-modal-actions button {
+  appearance: none;
+  border: 3px solid #050713;
+  color: #050713;
+  background: var(--tv-green);
+  box-shadow: 4px 4px 0 #050713;
+  font: inherit;
+  font-size: clamp(16px, calc(var(--fs) * 0.78), 24px);
+  padding: 0.12em 0.7em;
+  cursor: pointer;
+}
+.tv-modal-actions button[data-cancel] {
+  background: #59617c;
+  color: var(--tv-white);
 }
 @keyframes start-pulse {
   50% { border-color: #f4f0dd; color: #f4f0dd; }
@@ -1458,6 +1576,24 @@ body::before {
   color: #fff;
   font-size: clamp(16px, calc(var(--fs) * 0.86), 25px);
   text-shadow: 3px 3px 0 #000;
+}
+.intro-action {
+  appearance: none;
+  border: 2px solid rgba(244,240,221,0.68);
+  padding: 0.12em 0.48em;
+  color: #fff;
+  background: rgba(3,6,18,0.74);
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.45);
+  font: inherit;
+  text-shadow: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.intro-action:hover,
+.intro-action:focus-visible {
+  outline: 2px solid var(--intro-accent);
+  outline-offset: 2px;
+  filter: brightness(1.18);
 }
 .intro-controls b { color: var(--tv-yellow); }
 .intro-progress {
@@ -2861,6 +2997,71 @@ body::before {
 .battle-dialogue.is-note .battle-hint {
   display: none;
 }
+.battle-meme-card {
+  position: relative;
+  margin: 0 0 0.65em;
+  padding: clamp(10px, 1.1vw, 18px);
+  color: #fff;
+  border: 3px solid var(--battle-accent);
+  background:
+    linear-gradient(135deg, rgba(255,226,0,0.18), transparent 34%),
+    linear-gradient(315deg, rgba(255,61,240,0.24), transparent 38%),
+    #07102f;
+  box-shadow:
+    7px 7px 0 #050713,
+    inset 0 0 0 3px rgba(255,255,255,0.08);
+  overflow: hidden;
+}
+.battle-meme-card::after {
+  content: "";
+  position: absolute;
+  inset: auto -8% -22% auto;
+  width: 42%;
+  aspect-ratio: 1;
+  border: 4px solid rgba(255,255,255,0.14);
+  transform: rotate(-12deg);
+}
+.meme-kicker {
+  color: var(--tv-cyan);
+  font-size: clamp(14px, 1vw, 18px);
+}
+.meme-stamp {
+  color: var(--tv-yellow);
+  font-size: clamp(32px, 4.5vw, 72px);
+  line-height: 0.86;
+  text-shadow: 5px 5px 0 #050713, 0 0 18px rgba(255,226,0,0.28);
+}
+.battle-meme-card.is-lost .meme-stamp { color: var(--tv-red); }
+.battle-meme-card.is-passed .meme-stamp { color: var(--tv-cyan); }
+.battle-meme-card.is-invested .meme-stamp { color: var(--tv-green); }
+.meme-startup {
+  margin-top: 0.18em;
+  color: #fff;
+  font-size: clamp(21px, 2.2vw, 34px);
+}
+.meme-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35em;
+  margin-top: 0.45em;
+}
+.meme-metrics span {
+  min-width: 0;
+  padding: 0.18em 0.35em;
+  color: #050713;
+  background: #f4f0dd;
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+  font-size: clamp(13px, 1.05vw, 18px);
+  line-height: 1;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.meme-line {
+  margin-top: 0.55em;
+  color: #dff8ff;
+  font-size: clamp(15px, 1.18vw, 20px);
+  line-height: 1.05;
+}
 .dialogue-lines .c-yellow,
 .dialogue-lines .c-green,
 .dialogue-lines .c-red,
@@ -3077,6 +3278,11 @@ body::before {
     top: 10%;
     width: min(34vh, 70vw);
     opacity: 0.45;
+  }
+  .start-grid {
+    left: 0;
+    right: 0;
+    height: 46%;
   }
   .start-logo { top: 4%; }
   .start-kicker { font-size: 16px; }
@@ -3309,9 +3515,28 @@ body::before {
     text-overflow: clip;
   }
   .battle-topbar .battle-cash { justify-self: end; }
-  .battle-intel { display: none; }
+  .battle-intel {
+    top: 56px;
+    left: 8px;
+    right: 8px;
+    min-width: 0;
+    width: auto;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.25em;
+    transform: none;
+    padding: 4px 6px;
+    font-size: clamp(9px, 2.45vw, 11px);
+    line-height: 1;
+    white-space: normal;
+  }
+  .battle-intel span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: clip;
+  }
   .fighter {
-    top: 62px;
+    top: 88px;
     bottom: auto;
     width: calc(50% - 14px);
     min-width: 0;
@@ -3412,21 +3637,37 @@ body::before {
     overflow-y: auto;
   }
   .battle-commands {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-content: stretch;
-    gap: 6px;
-    padding: 6px;
+    gap: 7px;
+    padding: 7px;
     min-height: 0;
     max-height: 38vh;
     overflow-y: auto;
   }
   .battle-command {
-    min-height: clamp(34px, 5.7vh, 42px);
-    padding: 4px 5px;
+    min-height: clamp(42px, 6.8vh, 52px);
+    padding: 6px 7px;
     gap: 4px;
-    font-size: clamp(10px, 2.8vw, 12px);
+    font-size: clamp(11px, 3vw, 13px);
     line-height: 1.02;
     white-space: normal;
+  }
+  .battle-meme-card {
+    margin-bottom: 0.5em;
+    padding: 9px;
+    border-width: 2px;
+    box-shadow: 4px 4px 0 #050713, inset 0 0 0 2px rgba(255,255,255,0.08);
+  }
+  .meme-stamp {
+    font-size: clamp(29px, 10vw, 44px);
+  }
+  .meme-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .meme-line {
+    font-size: clamp(12px, 3.2vw, 14px);
   }
   .battle-command .keycap {
     width: 1.35em;

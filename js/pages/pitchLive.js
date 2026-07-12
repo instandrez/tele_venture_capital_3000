@@ -67,7 +67,12 @@
         enemyReveal: resumed ? 9 : 0,
         enemyDrop: (battle.over && battle.won) ? 9 : 0,
         playerDrop: 0,
-        bob: 0
+        bob: 0,
+        /* overlay arcade: vs = splash iniziale (0/1/2),
+           cutin = banda DOSSIER STRIKE, rank = timbro S/A/B/C/KO */
+        vs: 0,
+        cutin: 0,
+        rank: (resumed && battle.over) ? battleRank(battle.won, battle) : null
       },
       busy: false,
       awaitingAdvance: false,
@@ -468,6 +473,59 @@
       '</div>';
   }
 
+  /* ---------- overlay arcade: VS screen, cut-in, rank ---------- */
+
+  /* Rank di fine battle, stile sala giochi: premia chi chiude in
+     fretta senza perdere la sala. KO = buttato fuori dal round. */
+  function battleRank(won, battle) {
+    if (!won) return "KO";
+    const credLost = (battle.credMax || TVPitchBattle.CRED_MAX) - battle.cred;
+    if (battle.turn <= 3 && credLost <= 1) return "S";
+    if (battle.turn <= 4 && credLost <= 2) return "A";
+    if (battle.turn <= 6) return "B";
+    return "C";
+  }
+
+  const RANK_LINES = {
+    S: "sala espugnata, chirurgico.",
+    A: "pressione da manuale.",
+    B: "vinta ai punti.",
+    C: "vinta, ma la sala se la ricorda.",
+    KO: "il comitato manda i fiori."
+  };
+
+  function vsOverlayHtml() {
+    const r = TVRender;
+    const fund = (TVState.current.fundName || "FUND I").toUpperCase();
+    return '<div class="battle-vs' + (B.fx.vs === 2 ? " is-hold" : "") +
+      '" aria-hidden="true">' +
+      '<div class="vs-side vs-player">' +
+        '<div class="vs-art vs-art-gp"><span>GP</span></div>' +
+        '<b>GENERAL PARTNER</b><span>' + r.escape(fund.slice(0, 22)) + '</span>' +
+      '</div>' +
+      '<div class="vs-core"><em>VS</em>' +
+        '<span>' + r.escape(B.stage.label) + '</span>' +
+        '<i>ROUND 1 — FIGHT!</i></div>' +
+      '<div class="vs-side vs-founder">' +
+        '<div class="vs-art is-mystery">' + TVSprites.gridHtml(B.battle.profile) + '</div>' +
+        '<b>' + r.escape(B.st.name.toUpperCase().slice(0, 22)) + '</b>' +
+        '<span>SFIDANTE MISTERIOSO</span>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function cutinOverlayHtml() {
+    return '<div class="battle-cutin" aria-hidden="true"><div class="cutin-band">' +
+      '<b>★ DOSSIER STRIKE ★</b>' +
+      '<span>la prova entra nel verbale</span>' +
+    '</div></div>';
+  }
+
+  function rankStampHtml() {
+    return '<div class="battle-rank is-rank-' + String(B.fx.rank).toLowerCase() +
+      '" aria-hidden="true"><span>RANK</span><b>' + B.fx.rank + '</b></div>';
+  }
+
   function fighterHtml(role) {
     const r = TVRender;
     const s = TVState.current;
@@ -750,6 +808,9 @@
           '</section>' +
           '<section class="battle-commands">' + commandsHtml() + '</section>' +
         '</div>' +
+        (B.fx.rank ? rankStampHtml() : "") +
+        (B.fx.cutin ? cutinOverlayHtml() : "") +
+        (B.fx.vs ? vsOverlayHtml() : "") +
       '</section>'
     );
   }
@@ -832,6 +893,14 @@
     const s = TVState.current;
 
     const steps = [];
+    /* VS screen stile cabinato: i due contendenti si sbattono dentro,
+       il founder resta in silhouette (lo sprite si rivela solo in sala).
+       Un tasto qualsiasi la salta, come ogni splash arcade che si rispetti. */
+    steps.push(
+      { fn: () => { B.fx.vs = 1; }, ms: 1500, sound: () => TVAudio.fanfare() },
+      { fn: () => { B.fx.vs = 2; }, ms: 650 },
+      { fn: () => { B.fx.vs = 0; }, ms: 120 }
+    );
     if (!s.tutorialFlags) s.tutorialFlags = {};
     if (!s.tutorialFlags.pitchBattle) {
       s.tutorialFlags.pitchBattle = true;
@@ -930,6 +999,16 @@
       { log: [youLine, c("c-cyan", "                  ►►►")], ms: 130 }
     ];
 
+    // la domanda armata merita il trattamento super-move: cut-in
+    // a schermo intero prima dell'impatto, stile fighting game
+    if (b.intelTriggered) {
+      steps.push(
+        { fn: () => { B.fx.cutin = 1; }, ms: 1000, flash: true,
+          sound: () => TVAudio.fanfare() },
+        { fn: () => { B.fx.cutin = 0; }, ms: 120 }
+      );
+    }
+
     // impatto — col numero di danno, gusto Pokemon
     if (b.lastOutcome === "weak") {
       steps.push({ log: [youLine, c("c-green", "DOMANDA FORTE!  ") +
@@ -988,6 +1067,13 @@
       }
       const crack = wrap(p.crack, 36).map(l => c("c-yellow", l));
       steps.push({ push: crack, waitForInput: true });
+      const rank = battleRank(true, b);
+      steps.push({
+        fn: () => { B.fx.rank = rank; },
+        push: ["", c(rank === "S" ? "c-yellow" : "c-cyan",
+          "RANK " + rank + " — " + RANK_LINES[rank])],
+        ms: 900, flash: rank === "S", sound: () => TVAudio.success()
+      });
       steps.push({
         fn: () => {
           B.rv.pitchWon = true;
@@ -1048,6 +1134,11 @@
         steps.push({ fn: (v => () => { B.fx.playerDrop = v; })(d),
                      ms: 90, sound: () => TVAudio.keyPress() });
       }
+      steps.push({
+        fn: () => { B.fx.rank = "KO"; },
+        push: ["", c("c-red", "RANK KO — " + RANK_LINES.KO)],
+        ms: 900, sound: () => TVAudio.error()
+      });
       steps.push({ push: [c("c-white", "Il founder guarda l'orologio."),
                           c("c-yellow", '"Abbiamo altri 12 fondi in coda."')],
                    waitForInput: true });

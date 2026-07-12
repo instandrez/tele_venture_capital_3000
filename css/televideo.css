@@ -2415,6 +2415,201 @@ body::before {
     radial-gradient(circle at 22% 66%, rgba(255,45,221,0.12), transparent 24%),
     radial-gradient(circle at 78% 58%, rgba(24,224,255,0.14), transparent 25%);
 }
+/* ---------- VS SCREEN — splash da cabinato prima della battle ---------- */
+.battle-vs {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  gap: 1em;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,61,240,0.14), transparent 55%),
+    repeating-linear-gradient(135deg, #050713 0 26px, #0a1130 26px 52px);
+}
+.battle-vs::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  background: linear-gradient(135deg,
+    transparent 42%, rgba(255,226,0,0.10) 42% 58%, transparent 58%);
+  animation: vs-sheen 1.4s steps(6, end) infinite;
+}
+@keyframes vs-sheen { to { transform: translateX(24%); } }
+.vs-side {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: 0.3em;
+  text-align: center;
+}
+.vs-player  { animation: vs-slam-l 0.45s steps(5, end) both; }
+.vs-founder { animation: vs-slam-r 0.45s steps(5, end) both; }
+@keyframes vs-slam-l { from { transform: translateX(-70vw); } }
+@keyframes vs-slam-r { from { transform: translateX(70vw); } }
+.vs-side b {
+  color: #fff;
+  font-size: clamp(16px, 2vw, 28px);
+  letter-spacing: 0.08em;
+  text-shadow: 3px 3px 0 #000;
+}
+.vs-side span {
+  color: var(--tv-cyan);
+  font-size: clamp(12px, 1.3vw, 18px);
+  letter-spacing: 0.06em;
+}
+.vs-art {
+  position: relative;
+  width: clamp(90px, 13vw, 170px);
+  display: grid;
+  place-items: center;
+  padding: 0.4em;
+  border: 3px solid var(--tv-cyan);
+  background: rgba(3,6,18,0.9);
+  box-shadow: 6px 6px 0 rgba(0,0,0,0.5), 0 0 26px rgba(24,224,255,0.25);
+}
+.vs-art .sprite-grid {
+  position: static;
+  transform: none;
+  width: 100%;
+  aspect-ratio: 18 / var(--sprite-rows, 9);
+  display: grid;
+  grid-template-columns: repeat(18, 1fr);
+  grid-template-rows: repeat(var(--sprite-rows, 9), 1fr);
+  image-rendering: pixelated;
+}
+/* lo sfidante resta in silhouette: lo sprite si rivela solo in sala */
+.vs-art.is-mystery .sprite-grid {
+  filter: brightness(0) drop-shadow(0 0 8px rgba(24,224,255,0.85));
+}
+.vs-art-gp {
+  border-color: var(--tv-yellow);
+  box-shadow: 6px 6px 0 rgba(0,0,0,0.5), 0 0 26px rgba(255,226,0,0.25);
+}
+.vs-art-gp span {
+  color: var(--tv-yellow);
+  font-size: clamp(40px, 6vw, 84px);
+  font-weight: bold;
+  line-height: 1.1;
+  text-shadow: 4px 4px 0 #000;
+}
+.vs-core {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: 0.25em;
+  text-align: center;
+}
+.vs-core em {
+  font-style: normal;
+  color: var(--tv-red);
+  font-size: clamp(54px, 9vw, 130px);
+  line-height: 0.9;
+  text-shadow:
+    4px 4px 0 #050713,
+    7px 7px 0 rgba(255,61,240,0.55);
+  animation: vs-pop 0.35s steps(3, end) 0.4s both;
+}
+@keyframes vs-pop { from { transform: scale(3.2); opacity: 0; } }
+.vs-core span {
+  color: var(--tv-white);
+  font-size: clamp(12px, 1.4vw, 19px);
+  letter-spacing: 0.14em;
+}
+.vs-core i {
+  font-style: normal;
+  color: var(--tv-yellow);
+  font-size: clamp(14px, 1.7vw, 24px);
+  letter-spacing: 0.14em;
+  animation: blink 0.7s steps(2, start) infinite;
+}
+@media (max-width: 700px) {
+  .battle-vs { flex-direction: column; justify-content: center; gap: 0.5em; }
+  .vs-art { width: clamp(70px, 24vw, 110px); }
+  .vs-core em { font-size: clamp(44px, 16vw, 72px); }
+}
+
+/* ---------- CUT-IN — la super mossa del dossier ---------- */
+.battle-cutin {
+  position: absolute;
+  inset: 0;
+  z-index: 28;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  pointer-events: none;
+  background: rgba(3,5,15,0.55);
+}
+.cutin-band {
+  width: 120%;
+  margin-left: -10%;
+  padding: 0.4em 0 0.5em;
+  text-align: center;
+  background: #050713;
+  border-top: 4px solid var(--tv-yellow);
+  border-bottom: 4px solid var(--tv-yellow);
+  box-shadow: 0 0 44px rgba(255,226,0,0.4);
+  transform: rotate(-6deg);
+  animation: cutin-sweep 0.22s steps(4, end) both;
+}
+@keyframes cutin-sweep {
+  from { transform: translateX(-70vw) rotate(-6deg); }
+  to   { transform: translateX(0) rotate(-6deg); }
+}
+.cutin-band b {
+  display: block;
+  color: var(--tv-yellow);
+  font-size: clamp(26px, 4.2vw, 56px);
+  letter-spacing: 0.14em;
+  text-shadow: 4px 4px 0 #000;
+}
+.cutin-band span {
+  color: #fff;
+  font-size: clamp(13px, 1.6vw, 22px);
+  letter-spacing: 0.1em;
+}
+
+/* ---------- RANK — timbro di fine battle ---------- */
+.battle-rank {
+  position: absolute;
+  z-index: 26;
+  top: clamp(88px, 15vh, 150px);
+  right: clamp(14px, 5vw, 80px);
+  padding: 0.14em 0.5em 0.28em;
+  text-align: center;
+  color: var(--tv-yellow);
+  border: 4px solid currentColor;
+  background: rgba(5,7,19,0.9);
+  box-shadow: 6px 6px 0 rgba(0,0,0,0.55);
+  transform: rotate(8deg);
+  animation: rank-pop 0.3s steps(4, end) both;
+  pointer-events: none;
+}
+@keyframes rank-pop { from { transform: scale(3) rotate(8deg); opacity: 0; } }
+.battle-rank span {
+  display: block;
+  font-size: clamp(11px, 1.1vw, 15px);
+  letter-spacing: 0.34em;
+  color: #fff;
+}
+.battle-rank b {
+  font-size: clamp(36px, 4.8vw, 66px);
+  line-height: 0.9;
+}
+.battle-rank.is-rank-s {
+  animation: rank-pop 0.3s steps(4, end) both,
+             rank-flash 1.1s steps(2, end) 0.4s infinite;
+}
+@keyframes rank-flash { 50% { filter: brightness(1.6); } }
+.battle-rank.is-rank-a  { color: var(--tv-green); }
+.battle-rank.is-rank-b  { color: var(--tv-cyan); }
+.battle-rank.is-rank-c  { color: var(--tv-orange); }
+.battle-rank.is-rank-ko { color: var(--tv-red); transform: rotate(-9deg); }
+
 .battle-setdress {
   position: absolute;
   inset: 0;
@@ -3817,5 +4012,12 @@ body::before {
   .intro-terminal i,
   .intro-fund-seal,
   .intro-copy,
-  .battle-scene .battle-flash { animation: none; }
+  .battle-scene .battle-flash,
+  .battle-vs::before,
+  .vs-player,
+  .vs-founder,
+  .vs-core em,
+  .vs-core i,
+  .cutin-band,
+  .battle-rank { animation: none; }
 }

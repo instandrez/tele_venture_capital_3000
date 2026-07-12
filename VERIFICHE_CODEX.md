@@ -1,5 +1,15 @@
 # VERIFICHE CODEX
 
+> **NOTA STORICA (luglio 2026).** Questo documento è l'audit originale di
+> giugno 2026 e viene conservato come archivio. La maggior parte dei problemi
+> P0/P1 qui elencati è stata risolta: Git inizializzato, suite di test
+> automatici (`node tests/run.js`), exit/DPI reali, follow-on e diluizione,
+> seed di partita, RNG deterministico, decisioni dealflow persistenti, pagine
+> protette da prerequisiti, migrazioni di stato versionate e — da ultimo — lo
+> sconto negoziato che ora incide sul mark d'ingresso della posizione.
+> Il fondo è inoltre passato da 5 a 3 anni. Leggere quanto segue come contesto
+> storico, non come stato corrente del codice.
+
 ## Stato del documento
 
 - Data verifica: 10 giugno 2026

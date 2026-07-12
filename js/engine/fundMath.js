@@ -21,6 +21,16 @@
     return Math.min(MAX_OWNERSHIP, amount / postMoney);
   }
 
+  // Il mark d'ingresso premia lo sconto strappato in trattativa: chi entra
+  // sotto il prezzo pieno parte già sopra 1x (modello a multiplo). Il tetto
+  // a 1.5x tiene la leva dentro un range sano (pressione + negoziazione
+  // valgono al massimo ~1.39x).
+  function entryMultiplier(fullValuation, paidValuation) {
+    const full = Math.max(1, fullValuation || 0);
+    const paid = Math.max(1, paidValuation || 0);
+    return Math.max(1, Math.min(1.5, full / paid));
+  }
+
   function maxTicketForOwnership(preMoneyValuation, cap) {
     cap = Math.max(0.01, Math.min(0.95, cap || MAX_OWNERSHIP));
     const pre = Math.max(1, preMoneyValuation || 0);
@@ -96,6 +106,7 @@
     customTicketBounds,
     customTicketAmount,
     ownershipPct,
+    entryMultiplier,
     targetForYear,
     deployment
   };

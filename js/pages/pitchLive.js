@@ -1134,7 +1134,7 @@
       id: st.id, name: st.name, sector: st.sector, sectorTag: st.sectorTag,
       investedAmount: amount, entryValuation: payVal, equityPct: equityPct,
       entryYear: s.year,
-      currentValueMultiplier: 1,
+      currentValueMultiplier: TVFundMath.entryMultiplier(st.valuation, payVal),
       status: "active", realizedAmount: 0,
       revealed: Object.assign({}, rv)
     });
@@ -1153,6 +1153,15 @@
     TVState.save();
 
     const eur = TVRender.eur(amount);
+    const entryMult = TVFundMath.entryMultiplier(st.valuation, payVal);
+    const closeLines = ["", c("c-green", "HA GIA' FIRMATO."),
+      c("c-green", "AFFARE FATTO: " + eur + " // " +
+        (equityPct * 100).toFixed(1) + "%"),
+      c("c-cyan", "VALUATION: " + TVRender.eur(payVal))];
+    if (entryMult > 1.001) {
+      closeLines.push(c("c-yellow", "SCONTO STRAPPATO: mark d'ingresso " +
+        entryMult.toFixed(2) + "x"));
+    }
     seq([
       { log: [c("c-white", "Prepari il term sheet da " + eur + "...")], ms: 800,
         sound: () => TVAudio.keyPress() },
@@ -1163,10 +1172,7 @@
       { push: ["", c("c-white", "Il founder lo guarda.")], ms: 800 },
       { push: [c("c-white", ". . .")], ms: 800, sound: () => TVAudio.keyPress() },
       { push: [c("c-white", "Finge di pensarci.")], ms: 900, sound: () => TVAudio.keyPress() },
-      { push: ["", c("c-green", "HA GIA' FIRMATO."),
-               c("c-green", "AFFARE FATTO: " + eur + " // " +
-                 (equityPct * 100).toFixed(1) + "%"),
-               c("c-cyan", "VALUATION: " + TVRender.eur(payVal))], ms: 1500,
+      { push: closeLines, ms: 1500,
         flash: true, sound: () => TVAudio.fanfare() }
     ], () => startPostBattleEvent("invested"));
   }

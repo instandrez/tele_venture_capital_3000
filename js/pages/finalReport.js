@@ -70,9 +70,11 @@
       } else if (num === 2) {
         TVRouter.goto(701);
       } else if (num === 9) {
+        // torna alla schermata titolo: naming del fondo + tutorial,
+        // invece di far nascere un fondo anonimo saltando la sigla
         TVState.clear();
-        TVState.newGame();
-        TVRouter.goto(100);
+        TVState.init();
+        TVRouter.goto(0, { skipLoading: true });
       }
     });
   }

@@ -299,6 +299,19 @@ test("ownership e term sheet non superano mai il 50%", () => {
   assert(options.some(o => o.capped), "almeno un ticket deve essere cappato");
 });
 
+test("lo sconto negoziato produce un mark d'ingresso sopra 1x", () => {
+  // prezzo pieno: nessun bonus
+  approx(TVFundMath.entryMultiplier(20_000_000, 20_000_000), 1, 1e-9, "full price");
+  // sconto ~28%: mark d'ingresso > 1x
+  const m = TVFundMath.entryMultiplier(20_000_000, 14_400_000);
+  approx(m, 20 / 14.4, 1e-6, "mark = full/paid");
+  assert(m > 1, "lo sconto deve pagare");
+  // il tetto tiene la leva sotto 1.5x anche con input estremi
+  assert(TVFundMath.entryMultiplier(100_000_000, 1_000_000) <= 1.5, "cap a 1.5x");
+  // input degeneri non producono NaN o valori < 1
+  assert(TVFundMath.entryMultiplier(0, 0) === 1, "input nulli → 1x");
+});
+
 test("il ticket custom rispetta cash disponibile e cap ownership", () => {
   const st = { stage: "Pre-seed" };
   const amount = TVFundMath.customTicketAmount(st, 4_000_000, 3_500_000, 20_000_000);

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="5" fill="#0a0a12"/>
+  <rect x="3" y="3" width="26" height="26" rx="3" fill="none" stroke="#1d3a5f" stroke-width="1"/>
+  <g font-family="'VT323','Courier New',monospace" font-weight="bold" text-anchor="middle">
+    <text x="16" y="15" font-size="12" fill="#3cf07a">VC</text>
+    <text x="16" y="26" font-size="9" fill="#f5d33c">3000</text>
+  </g>
+</svg>

@@ -44,11 +44,6 @@
 
   function line(char) { return (char || "═").repeat(COLS); }
 
-  function row(left, right) {
-    const space = COLS - left.length - right.length;
-    return left + (space > 0 ? " ".repeat(space) : " ") + right;
-  }
-
   // Avvolge testo in classe colore, conservando layout (output HTML)
   function color(cls, text) {
     return '<span class="' + cls + '">' + escape(text) + '</span>';
@@ -281,7 +276,7 @@
   }
 
   global.TVRender = {
-    COLS, ROWS, escape, visibleLength, center, pad, padLeft, line, row,
+    COLS, ROWS, escape, visibleLength, center, pad, padLeft, line,
     color, bg, blink, eur, lpAlert, portfolioAlert, show, showScene, setMode,
     navTargetFor, updateNav
   };

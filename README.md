@@ -106,6 +106,10 @@ tests/run.js          test del motore (node, zero dipendenze)
   (Pre-seed 2/4/6M, Seed 3/6/9M, Series A 5/8/12M), la quota è calcolata
   post-money e il gioco mostra un target di deployment crescente ogni anno.
   Il deployment pesa anche nel punteggio finale.
+  Lo **sconto strappato in trattativa conta davvero**: entrare sotto il prezzo
+  pieno (pressione sulla guardia + negoziazione) alza il mark d'ingresso della
+  posizione fino a ~1.4x (`TVFundMath.entryMultiplier`), quindi la Pitch Battle
+  ha una conseguenza economica diretta, non solo narrativa.
 - DD e negoziazioni usano un RNG deterministico legato al `gameSeed`
   (`TVState.roll`): ricaricare il save non cambia gli esiti.
 - **Scocca CRT responsive**: il televisore occupa quasi tutto il viewport;
@@ -169,12 +173,13 @@ max ~36 caratteri per riga. Se ha un `signal`, verifica che `sector` esista in
 node tests/run.js
 ```
 
-75 test su render, input, stato iniziale, migrazioni, relazioni LP, fund math,
+76 test su render, input, stato iniziale, migrazioni, relazioni LP, fund math,
 dealflow, Intelligence Network, deal access, eventi post-battle,
 decisioni, scoring, exit/write-off, pitch battle, sprite e integrità dei dati
-(inclusi: exit raggiungibili nei 3 anni e signal senza orfani).
-Vanno eseguiti prima di ogni
-commit che tocca il motore.
+(inclusi: exit raggiungibili nei 3 anni, signal senza orfani e mark d'ingresso
+dallo sconto negoziato). Vanno eseguiti prima di ogni
+commit che tocca il motore. La stessa suite gira in CI su ogni push/PR verso
+`master` (`.github/workflows/ci.yml`).
 
 La direzione grafica e sonora corrente è descritta in
 [`ART_DIRECTION_BRIEF.md`](ART_DIRECTION_BRIEF.md): "VC3000: Teletext Cartridge",
@@ -188,3 +193,7 @@ una sintesi tra Televideo, NES e Sega Master System.
 
 Nota: il font VT323 è caricato da Google Fonts con fallback monospace; offline
 l'estetica degrada con grazia ma il gioco funziona.
+
+## Licenza
+
+Rilasciato con licenza [MIT](LICENSE).

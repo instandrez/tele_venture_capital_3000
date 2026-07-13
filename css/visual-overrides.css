@@ -912,6 +912,42 @@ body::after {
   .end-score { font-size: clamp(38px, 14vw, 62px); }
 }
 
+/* ---------- FX: gradienti a bande nelle cinematiche ----------
+   Cieli con stop netti (posterizzati) al posto dei gradienti lisci:
+   piu' coerenti col resto della grafica 16-bit. Le scene con
+   fondale raster (shot-office/shot-fund) non sono toccate. */
+.intro-scene .intro-bg {
+  background:
+    linear-gradient(0deg, rgba(2,4,12,0.72) 0 18%, transparent 54%),
+    repeating-linear-gradient(to right,
+      transparent 0 34px, rgba(24,224,255,0.18) 34px 36px,
+      transparent 36px 72px),
+    linear-gradient(180deg,
+      #0c2158 0 14%, #0a1b4b 14% 30%, #081540 30% 46%,
+      #061031 46% 62%, #040a20 62% 78%, #030614 78% 90%,
+      #02040a 90% 100%);
+}
+.intro-scene.shot-teletext .intro-bg {
+  background:
+    repeating-linear-gradient(to bottom,
+      rgba(51,255,102,0.18) 0 3px, transparent 3px 20px),
+    repeating-linear-gradient(to right,
+      transparent 0 28px, rgba(255,226,0,0.14) 28px 31px,
+      transparent 31px 64px),
+    linear-gradient(180deg,
+      #081a3c 0 22%, #071632 22% 44%, #05122a 44% 66%,
+      #040d20 66% 84%, #031023 84% 100%);
+}
+.start-scene {
+  background:
+    radial-gradient(circle at 50% 28%, rgba(255,61,240,0.22), transparent 28%),
+    radial-gradient(circle at 18% 20%, rgba(255,226,0,0.16), transparent 18%),
+    linear-gradient(180deg,
+      #10105a 0 16%, #0c1550 16% 30%, #091845 30% 42%,
+      #07143d 42% 55%, #050e2b 55% 68%, #030714 68% 82%,
+      #05060b 82% 100%);
+}
+
 @media (max-width: 700px) {
   .hp-track::after { inset: 2px; }
   .fx-dmg { font-size: 13px; }

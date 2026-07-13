@@ -267,3 +267,43 @@
     attributes: true, attributeFilter: ["class"], attributeOldValue: true
   });
 })(window);
+
+/* ---------- FX: score finale con count-up ----------
+   Il punteggio del report finale sale a scatti da 0, stile
+   contatore da flipper. */
+(function (global) {
+  const FX = global.TVFX;
+  if (!FX) return;
+  let lastRun = 0;
+
+  function animate(el) {
+    const node = el.firstChild;
+    if (!node || node.nodeType !== 3) return;
+    const raw = node.nodeValue.trim();
+    const target = parseInt(raw, 10);
+    if (isNaN(target)) return;
+    const pad = raw.length;
+    const t0 = performance.now();
+    const DUR = 1150;
+    const timer = setInterval(() => {
+      if (!node.parentNode) { clearInterval(timer); return; }
+      const t = Math.min(1, (performance.now() - t0) / DUR);
+      const eased = 1 - Math.pow(1 - t, 3);
+      node.nodeValue = String(Math.round(target * eased)).padStart(pad, "0");
+      if (t >= 1) clearInterval(timer);
+    }, 55);
+  }
+
+  const stage = FX.stage();
+  if (!stage) return;
+  new MutationObserver(() => {
+    const el = stage.querySelector(".end-score");
+    if (!el || el.dataset.fxCount) return;
+    el.dataset.fxCount = "1";
+    if (FX.reduced) return;
+    const now = Date.now();
+    if (now - lastRun < 4000) return; // ridisegni ravvicinati: niente replay
+    lastRun = now;
+    animate(el);
+  }).observe(stage, { childList: true });
+})(window);

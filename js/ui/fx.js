@@ -307,3 +307,49 @@
     animate(el);
   }).observe(stage, { childList: true });
 })(window);
+
+/* ---------- FX: ticker ULTIM'ORA in home 100 ----------
+   Striscia scorrevole con i titoli dell'anno in corso, per dare
+   vita alla home e spingere verso le pagine news. Solo desktop. */
+(function (global) {
+  const FX = global.TVFX;
+  if (!FX || !global.TVRender) return;
+
+  function headlines() {
+    try {
+      const news = global.TVNews;
+      if (!news || !news.byYear) return [];
+      const st = global.TVState && global.TVState.current;
+      const year = st && st.gameStarted && !st.gameOver ? st.year : 1;
+      const pool = news.byYear(year).slice();
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+      }
+      return pool.slice(0, 6).map(n => n.headline + " · pag." + n.section);
+    } catch (e) { return []; }
+  }
+
+  function inject() {
+    if (FX.reduced) return;
+    try {
+      if (global.matchMedia("(max-width: 700px)").matches) return;
+    } catch (e) {}
+    const content = document.getElementById("tv-content");
+    if (!content) return;
+    const heads = headlines();
+    if (!heads.length) return;
+    const el = document.createElement("div");
+    el.className = "fx-ticker";
+    el.setAttribute("aria-hidden", "true");
+    const span = document.createElement("span");
+    span.textContent = "+++ " + heads.join(" +++ ") + " +++";
+    el.appendChild(span);
+    content.appendChild(el);
+  }
+
+  FX.wrap(global.TVRender, "show", orig => function (pageNum, html, opts) {
+    orig(pageNum, html, opts);
+    if (pageNum === 100) inject();
+  });
+})(window);

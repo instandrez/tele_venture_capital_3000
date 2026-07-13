@@ -795,11 +795,75 @@ body::after {
   to   { transform: translateY(700%); }
 }
 
+/* ---------- FX: HP bar da picchiaduro ----------
+   Tacche da 10 punti + barra fantasma (--hp-ghost via fx.js) che
+   mostra il danno appena subito e si scarica in ritardo. */
+.hp-track {
+  position: relative;
+  overflow: hidden;
+  background-color: #050713;
+  background-image:
+    linear-gradient(90deg,
+      rgba(255, 106, 80, 0.55) 0 var(--hp-ghost, 0%), transparent 0);
+  background-origin: content-box;
+  background-clip: content-box;
+}
+.hp-track::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  pointer-events: none;
+  background: repeating-linear-gradient(90deg,
+    transparent 0 calc(10% - 2px), rgba(3, 5, 12, 0.7) calc(10% - 2px) 10%);
+}
+
+/* ---------- FX: contatore di danno fluttuante ---------- */
+.fx-dmg {
+  position: absolute;
+  z-index: 9;
+  transform: translate(-50%, 0);
+  color: var(--tv-yellow);
+  font-family: var(--font-arcade, inherit);
+  font-size: clamp(16px, 1.9vw, 30px);
+  line-height: 1;
+  text-shadow: 3px 3px 0 #000;
+  pointer-events: none;
+  animation: fx-dmg-in 0.16s steps(2, end) both;
+}
+.fx-dmg.is-hurt { color: var(--tv-red); }
+.fx-dmg.is-heal { color: var(--tv-green); }
+.fx-dmg.is-tick { animation: fx-dmg-tick 0.14s steps(2, end); }
+.fx-dmg.is-done { animation: fx-dmg-out 0.55s steps(7, end) both; }
+@keyframes fx-dmg-in {
+  from { transform: translate(-50%, 10px) scale(1.6); opacity: 0; }
+  to   { transform: translate(-50%, 0) scale(1); opacity: 1; }
+}
+@keyframes fx-dmg-tick {
+  50% { transform: translate(-50%, -4px) scale(1.28); }
+}
+@keyframes fx-dmg-out {
+  to { transform: translate(-50%, -46px); opacity: 0; }
+}
+
+/* ---------- FX: hit-stop (impact frame congelato) ---------- */
+#console-stage.fx-hitstop,
+#console-stage.fx-hitstop *,
+#console-stage.fx-hitstop *::before,
+#console-stage.fx-hitstop *::after {
+  animation-play-state: paused !important;
+}
+
+@media (max-width: 700px) {
+  .hp-track::after { inset: 2px; }
+  .fx-dmg { font-size: 13px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   #screen { animation: none; }
   #crt { transition: none; }
   .fx-tracking,
-  .fx-static { display: none; }
+  .fx-static,
+  .fx-dmg { display: none; }
 }
 
 @media (max-width: 700px) {

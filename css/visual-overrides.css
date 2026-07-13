@@ -752,10 +752,54 @@ body::after {
   100%      { transform: translateY(1250%); opacity: 0; }
 }
 
+/* ---------- FX: neve da cambio canale ----------
+   Overlay generato da fx.js al salto di sezione; si autodistrugge. */
+.fx-static {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg,
+      rgba(255,255,255,0.16) 0 1px,
+      rgba(8,10,18,0.78) 1px 3px,
+      rgba(190,200,230,0.10) 3px 4px),
+    repeating-linear-gradient(90deg,
+      rgba(255,255,255,0.09) 0 2px,
+      transparent 2px 5px,
+      rgba(160,180,255,0.07) 5px 9px);
+  animation: fx-static-noise 0.2s steps(4, end) both;
+}
+.fx-static.is-long { animation-duration: 0.34s; }
+.fx-static::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -20%;
+  height: 18%;
+  background: linear-gradient(to bottom,
+    transparent, rgba(255,255,255,0.3), transparent);
+  animation: fx-static-band 0.2s steps(6, end) both;
+}
+.fx-static.is-long::after { animation-duration: 0.34s; }
+@keyframes fx-static-noise {
+  0%   { opacity: 1;    background-position: 0 0, 0 0; }
+  25%  {                background-position: -17px 5px, 23px -7px; }
+  50%  { opacity: 0.85; background-position: 29px -11px, -13px 9px; }
+  75%  {                background-position: -23px -5px, 7px 13px; }
+  100% { opacity: 0;    background-position: 11px 7px, -27px -9px; }
+}
+@keyframes fx-static-band {
+  from { transform: translateY(0); }
+  to   { transform: translateY(700%); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   #screen { animation: none; }
   #crt { transition: none; }
-  .fx-tracking { display: none; }
+  .fx-tracking,
+  .fx-static { display: none; }
 }
 
 @media (max-width: 700px) {

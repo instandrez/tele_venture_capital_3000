@@ -126,3 +126,33 @@ una nicchia VC italiana:
 - portfolio call differenziate: round quasi chiuso, procurement eterno,
   plant visit del Nordest, bando minuscolo, governance e burn
 - piu' archetipi LP e battute vicine al VC italiano, senza nomi reali
+
+## Graphics FX pass
+
+La quinta passata e' solo grafica e vive in due punti: `js/ui/fx.js`
+(nuovo layer che si aggancia dall'esterno a TVRender/TVLoading e al DOM
+via MutationObserver, zero logica di gioco) e la coda FX di
+`css/visual-overrides.css`. Rimuovendo il tag script di fx.js da
+index.html si spegne tutta la parte JS.
+
+Effetti introdotti:
+
+- accensione CRT all'avvio: il tubo si apre da una riga luminosa
+- ambilight: il glow del mobile segue il colore della sezione attiva
+- tracking VHS quasi impercettibile che rolla ogni ~26s
+- durante il caricamento P.xxx cicla numeri a caso e converge,
+  come il Televideo vero che cerca la pagina
+- battle juice: HP a tacche da 10 punti, barra fantasma che mostra il
+  danno con ritardo, contatore fluttuante -N stile JRPG, hit-stop di
+  85ms sull'impact frame
+- Press Start 2P come voce "sala giochi" (VS, rank, cut-in, timbri,
+  score finale); il corpo testo resta VT323
+- score del report finale con count-up da flipper
+- cieli posterizzati a bande in title screen e intro
+- ticker ULTIM'ORA in home 100 con i titoli dell'anno (solo desktop)
+
+Tutti gli effetti animati rispettano prefers-reduced-motion.
+
+Provato e scartato: il burst di statico al cambio canale (neve TV tra
+sezioni) risultava invasivo sulla navigazione fitta del hub ed e'
+stato rimosso dopo playtest.

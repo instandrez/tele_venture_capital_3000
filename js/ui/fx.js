@@ -34,49 +34,6 @@
   global.TVFX = FX;
 })(window);
 
-/* ---------- FX: cambio canale (burst di statico) ----------
-   Neve TV di ~200ms quando si salta a un'altra sezione o si
-   digita una pagina inesistente. */
-(function (global) {
-  const FX = global.TVFX;
-  if (!FX || !global.TVRender) return;
-
-  function section() {
-    const s = FX.screen();
-    if (!s) return null;
-    return s.classList.contains("console-mode") ? "console" : s.dataset.section;
-  }
-
-  function staticBurst(long) {
-    if (FX.reduced) return;
-    const s = FX.screen();
-    if (!s) return;
-    const prev = s.querySelector(".fx-static");
-    if (prev) prev.remove();
-    const el = document.createElement("div");
-    el.className = "fx-static" + (long ? " is-long" : "");
-    el.setAttribute("aria-hidden", "true");
-    s.appendChild(el);
-    setTimeout(() => el.remove(), long ? 380 : 240);
-  }
-  FX.staticBurst = staticBurst;
-
-  function withBurst(orig) {
-    return function (pageNum, html, opts) {
-      const before = section();
-      orig(pageNum, html, opts);
-      const after = section();
-      if (typeof html === "string" && html.indexOf("NON DISPONIBILE") !== -1) {
-        staticBurst(true);
-      } else if (before && after && before !== after) {
-        staticBurst(false);
-      }
-    };
-  }
-  FX.wrap(global.TVRender, "show", withBurst);
-  FX.wrap(global.TVRender, "showScene", withBurst);
-})(window);
-
 /* ---------- FX: il numero di pagina "cerca" durante il caricamento ----------
    Come il Televideo vero: mentre la pagina carica, P.xxx cicla
    numeri a caso e converge su quello richiesto. */

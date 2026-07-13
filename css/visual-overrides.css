@@ -37,17 +37,33 @@ body::after {
   opacity: 0.75;
 }
 
+/* ---------- ambilight: la stanza si illumina del colore di sezione ----------
+   Il glow del mobile segue --section-accent dello schermo (via :has).
+   Fallback per browser senza :has(): resta il ciano di base. */
 #crt {
+  --room-accent: var(--tv-cyan);
+  transition: box-shadow 0.55s linear;
   box-shadow:
     inset 0.12em 0.12em 0 rgba(255, 255, 255, 0.10),
     inset -0.18em -0.18em 0 rgba(0, 0, 0, 0.58),
     inset 0 0 0 0.11em #07080c,
     0.32em 0.38em 0 #03040a,
     0 1.4em 3em rgba(0, 0, 0, 0.88),
-    0 0 0 0.08em rgba(255, 226, 0, 0.28),
-    0 0 4.8em rgba(255, 61, 240, 0.22),
-    0 0 8em rgba(24, 224, 255, 0.15);
+    0 0 0 0.08em color-mix(in srgb, var(--room-accent) 34%, transparent),
+    0 0 4.8em color-mix(in srgb, var(--room-accent) 28%, transparent),
+    0 0 8em color-mix(in srgb, var(--room-accent) 18%, transparent);
 }
+#crt:has(#screen[data-section="system"])    { --room-accent: var(--tv-yellow); }
+#crt:has(#screen[data-section="news"])      { --room-accent: var(--tv-red); }
+#crt:has(#screen[data-section="dealflow"])  { --room-accent: var(--tv-green); }
+#crt:has(#screen[data-section="battle"])    { --room-accent: var(--tv-magenta); }
+#crt:has(#screen[data-section="portfolio"]) { --room-accent: var(--tv-cyan); }
+#crt:has(#screen[data-section="committee"]) { --room-accent: var(--tv-orange); }
+#crt:has(#screen[data-section="lp"])        { --room-accent: var(--tv-yellow); }
+#crt:has(#screen[data-section="report"])    { --room-accent: var(--tv-cyan); }
+#crt:has(#screen[data-section="ranking"])   { --room-accent: var(--tv-magenta); }
+#crt:has(#screen[data-section="credits"])   { --room-accent: var(--tv-blue); }
+#crt:has(#screen.console-mode)              { --room-accent: var(--tv-magenta); }
 
 #screen {
   box-shadow:
@@ -687,6 +703,59 @@ body::after {
   .end-title {
     font-size: clamp(24px, 4.2vw, 48px);
   }
+}
+
+/* =========================================================
+   FX PASS — effetti aggiunti dal layer grafico (fx.js + CSS).
+   Ogni blocco e' indipendente e rimovibile da solo.
+   ========================================================= */
+
+/* ---------- FX: accensione CRT all'avvio ----------
+   Il tubo parte da una riga orizzontale luminosa e si apre. */
+#screen {
+  animation:
+    fx-poweron 0.62s steps(8, end) 0.05s both,
+    crt-breathe 3.6s ease-in-out 0.75s infinite;
+}
+@keyframes fx-poweron {
+  0%   { transform: scaleX(var(--stretch)) scaleY(0.004); filter: brightness(9) saturate(0); }
+  28%  { transform: scaleX(var(--stretch)) scaleY(0.012); filter: brightness(7) saturate(0.2); }
+  52%  { transform: scaleX(var(--stretch)) scaleY(0.6);   filter: brightness(2.6); }
+  74%  { transform: scaleX(var(--stretch)) scaleY(1.04);  filter: brightness(1.6); }
+  100% { transform: scaleX(var(--stretch)) scaleY(1);     filter: brightness(1); }
+}
+
+/* ---------- FX: tracking error periodico (disturbo VHS) ----------
+   Banda chiara quasi invisibile che rolla verso il basso ogni ~26s. */
+.fx-tracking {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -12%;
+  height: 10%;
+  z-index: 12;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    repeating-linear-gradient(90deg,
+      transparent 0 7px, rgba(255,255,255,0.05) 7px 9px),
+    linear-gradient(to bottom,
+      transparent, rgba(210, 225, 255, 0.05) 30%,
+      rgba(255, 255, 255, 0.10) 50%,
+      rgba(210, 225, 255, 0.05) 70%, transparent);
+  animation: fx-tracking-roll 26s linear infinite;
+}
+@keyframes fx-tracking-roll {
+  0%, 90.4% { transform: translateY(0); opacity: 0; }
+  91%       { opacity: 1; }
+  98.5%     { opacity: 0.8; }
+  100%      { transform: translateY(1250%); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #screen { animation: none; }
+  #crt { transition: none; }
+  .fx-tracking { display: none; }
 }
 
 @media (max-width: 700px) {

@@ -1,5 +1,9 @@
 # Campagna di lancio — Tele Venture Capital 3000
 
+## Pacchetto teaser v2
+
+Il nuovo pacchetto creativo con gameplay autentico, carousel, stories e trailer per Instagram e LinkedIn si trova in [`assets/social/teasers-v2`](assets/social/teasers-v2/README.md). Include formati pronti da pubblicare, ordine delle slide e copy consigliato.
+
 ## Link e messaggio
 
 - Pagina pubblica: https://instandrez.github.io/tele_venture_capital_3000/

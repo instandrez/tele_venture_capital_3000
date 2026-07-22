@@ -21,7 +21,7 @@
     lines.push("");
     lines.push(" Scegli il formato:");
     lines.push(" " + r.color("c-green", "1 QUICK RUN") +
-      r.color("c-white", " 2 anni, 3 deal/anno"));
+      r.color("c-white", " 3 anni, 3 deal/anno"));
     lines.push(" " + r.color("c-cyan", "2 PARTNER MODE") +
       r.color("c-white", " 3 anni, 5 deal/anno"));
     lines.push(" Entrambe contengono abbastanza tesi");

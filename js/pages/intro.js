@@ -178,7 +178,7 @@
         '</div>' +
         (startMode === "naming" ? startNameHtml() : startMenuHtml(hasSave)) +
         '<div class="start-ticker"><span>VC3000 // ' + saveLine +
-          ' // QUICK RUN 2Y/3 DEAL // PARTNER MODE 3Y/5 DEAL // NEWS IS ALPHA // VEICOLO PAZIENTE NON COMMENTA</span></div>' +
+          ' // QUICK RUN 3Y/3 DEAL // PARTNER MODE 3Y/5 DEAL // NEWS IS ALPHA // VEICOLO PAZIENTE NON COMMENTA</span></div>' +
       '</section>'
     );
   }

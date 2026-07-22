@@ -1,12 +1,14 @@
 # Tele Venture Capital 3000
 
 Browser game ironico-didattico in stile Televideo RAI anni '90: gestisci un
-fondo VC da 100M€ in una **Quick Run** da 2 anni, 3 deal/anno, oppure in
+fondo VC da 100M€ in una **Quick Run** da 3 anni, 3 deal/anno, oppure in
 **Partner Mode** da 3 anni, 5 deal/anno, con 90M€ investibili dopo le fee,
 navigando
 **solo per numeri di pagina**, come nel
 teletext originale. Puoi digitare i numeri o cliccare/tappare i controlli
 numerici: la tastiera resta il ritmo principale, il touch non deve tradire.
+
+**[Gioca online](https://instandrez.github.io/tele_venture_capital_3000/)**
 
 Il cuore del gioco è il **motore di news**: il Televideo è pieno di pagine
 (ultim'ora, politica, borsa, cronaca startup, corporate watch) e nessuna è lì
@@ -93,8 +95,8 @@ GAMEPLAY_MECHANICS_MAP.md
   `scope` (es. la regolazione AI colpisce `AI_FOUNDATION`, non `AI_INFRA`).
 - Gli eventi di liquidità sono scriptati in `exitEvents.js` e allineati alle
   news di Cronaca: chi legge sa in anticipo chi esce bene e chi muore.
-  La run pubblica di default chiude in 2 anni; Partner Mode usa la timeline
-  completa a 3 anni.
+  La run pubblica di default e la Partner Mode usano entrambe la timeline
+  completa a 3 anni, con un numero diverso di deal per anno.
   La timeline è compressa sul fondo a 3 anni: l'anno 2 porta il primo
   assaggio di liquidità, l'anno 3 è la stagione del raccolto (exit, IPO
   e write-off arrivano tutti prima del report finale).

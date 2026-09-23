@@ -11,7 +11,9 @@
    - 7    negozia      (più la guardia è bassa, più funziona)
    - 8    co-invest    (-30k)
    - 9    passa        (fuga)
-   - 0    INVESTI      (lanci il term sheet: 1M/3M/5M)
+   - 0    INVESTI      (ticket per stage oppure custom)
+
+   DD, ref e co-invest condividono due slot per deal; le news sono gratuite.
 
    POSTA IN GIOCO: credibilità a zero = il founder ti butta fuori
    dal round. Deal perso, -2 reputazione. La guardia a zero = la
@@ -25,6 +27,7 @@
 
   // ---------- entry ----------
   function start(st, pageNum) {
+    stop();
     const s = TVState.current;
     const rv = reveals(s, st.id);
     const intel = TVIntel.forStartup(s, st);
@@ -40,6 +43,17 @@
         }),
         rv.snap
       );
+      // Puoi uscire a cercare una prova e rientrare. Accreditiamo solo
+      // le nuove coperture, senza ricaricare quelle gia' consumate.
+      const granted = typeof rv.snap.intelShieldGranted === "number"
+        ? rv.snap.intelShieldGranted : intel.shield;
+      battle.intelShield += Math.max(0, intel.shield - granted);
+      battle.intelShieldGranted = Math.max(granted, intel.shield);
+      if (!battle.intelMove && intel.lead) {
+        battle.intelMove = intel.lead.move;
+        battle.intelStrikeAvailable = true;
+      }
+      if (battle.intelStrikeAvailable) battle.intelPower = intel.leadPower;
       resumed = true;
     } else {
       battle = TVPitchBattle.newBattle(st.founderProfile, {
@@ -48,6 +62,7 @@
         intelPower: intel.leadPower
       });
     }
+    if (typeof battle.intelShieldGranted !== "number") battle.intelShieldGranted = intel.shield;
     if (!battle.usedMoves) battle.usedMoves = {};
     const stage = battleStage(st);
     const musicTheme = battleMusicTheme(st, battle.profile);
@@ -80,20 +95,33 @@
       seqTimer: null
     };
 
-    // idle bob: il founder ondeggia in attesa, come su console
-    const t = setInterval(function () {
-      if (!B || B.bobTimer !== t || !alive()) { clearInterval(t); return; }
-      if (!B.busy && !B.battle.over && B.fx.enemyReveal >= 9) {
-        B.fx.bob = B.fx.bob ? 0 : 1;
-        draw();
-      }
-    }, 680);
-    B.bobTimer = t;
-
     TVAudio.startBattleMusic(B.musicTheme);
     arm();
 
+    if (rv.decisionReceipt && !rv.decisionReceipt.acknowledged) {
+      B.lastDecisionSummary = rv.decisionReceipt.summary;
+      startPostBattleEvent(rv.decisionReceipt.decision);
+      return;
+    }
+
+    // Recupero dei vecchi save salvati a fine scontro prima del premio.
+    if (battle.over && battle.won && !rv.pitchWon) {
+      rv.pitchWon = true;
+      rv.pitchTruth = TVPitchBattle.truthFor(st);
+      s.reputation = Math.min(100, s.reputation + 1);
+      snap();
+    }
+    if (battle.over && !battle.won && !rv.pitchLost) {
+      rv.pitchLost = true;
+      s.reputation = Math.max(0, s.reputation - 2);
+      TVDealflow.setDecision(s, st.id, "passed");
+      B.lastDecisionSummary = { decision: "lost" };
+      startPostBattleEvent("lost");
+      return;
+    }
+
     if (resumed) {
+      snap();
       B.log = battle.over && battle.won
         ? [c("c-yellow", "Il founder e' gia' crollato."), c("c-white", "Resta solo da decidere.")]
         : [c("c-yellow", "Riprendi la trattativa"), c("c-yellow", "dove l'avevi lasciata.")];
@@ -121,6 +149,7 @@
     B.rv.snap = {
       guard: b.guard, cred: b.cred, credMax: b.credMax,
       intelShield: b.intelShield, turn: b.turn,
+      intelShieldGranted: b.intelShieldGranted,
       intelMove: b.intelMove,
       intelPower: b.intelPower,
       intelStrikeAvailable: b.intelStrikeAvailable,
@@ -156,25 +185,6 @@
     if (value >= goodAt) return "forte";
     if (value <= badAt) return "debole";
     return "misto";
-  }
-
-  function unitLabel(value) {
-    if (value >= 0.35) return "margini veri, non solo crescita";
-    if (value >= 0.05) return "unit economics quasi in equilibrio";
-    if (value >= -0.35) return "ogni cliente costa ancora capitale";
-    return "burn per cliente molto pesante";
-  }
-
-  function unitShortLabel(value) {
-    if (value >= 0.35) return "UE solidi";
-    if (value >= 0.05) return "UE quasi pari";
-    if (value >= -0.35) return "CAC non ripaga";
-    return "burn cliente pesante";
-  }
-
-  function valuationMultiple(st) {
-    const traction = Math.max(1, st.traction || 0);
-    return st.valuation / traction;
   }
 
   const DEAL_CONTEXT = {
@@ -216,64 +226,6 @@
     return String((st && st.sectorTag) || "UNKNOWN").split("_")[0];
   }
 
-  function scriptedFate(st) {
-    const exits = global.TVExits && TVExits.EXIT_EVENTS;
-    return exits && exits.find(e => e.startupId === st.id);
-  }
-
-  function fateLine(st) {
-    const ev = scriptedFate(st);
-    const horizon = (TVState.current && TVState.current.maxYear) || 3;
-    if (!ev) {
-      if (st.id === "saltcore") {
-        return "OUTCOME: markup probabile ma DPI lontano; carta ricca, exit lenta.";
-      }
-      return "OUTCOME: nessuna exit facile in calendario; deve crescere sul serio.";
-    }
-    if (ev.year > horizon) {
-      if (ev.kind === "exit" || ev.kind === "ipo") {
-        return "OUTCOME: upside oltre i 3 anni; non aspettarti DPI rapido.";
-      }
-      if (ev.kind === "writeoff" || ev.kind === "writedown") {
-        return "OUTCOME: rischio lungo in coda; serve prezzo basso e disciplina.";
-      }
-      return "OUTCOME: liquidita' fuori orizzonte; conta il mark, non il cash.";
-    }
-    if (ev.kind === "exit" || ev.kind === "ipo") {
-      return "OUTCOME: finestra positiva anno " + ev.year + " - " + ev.note + ".";
-    }
-    if (ev.kind === "acquihire") {
-      return "OUTCOME: salva il team, non il prodotto - " + ev.note + ".";
-    }
-    if (ev.kind === "writedown") {
-      return "OUTCOME: valuation trap - " + ev.note + ".";
-    }
-    return "OUTCOME: downside reale anno " + ev.year + " - " + ev.note + ".";
-  }
-
-  function investorRead(st, outcome) {
-    const score =
-      (st.team || 0) * 0.23 +
-      (st.traction || 0) * 0.25 +
-      (st.strategicFit || 0) * 0.14 +
-      ((st.unitEconomics || 0) + 1) * 2.1 -
-      (st.hype || 0) * 0.07 -
-      (st.hypeDecay || 0) * 1.4;
-    const prefix = outcome === "resist" ? "VC READ: risposta bella, prova debole. " : "VC READ: ";
-    if (score >= 6.6) return prefix + "sostanza sopra teatro, prezzo da negoziare.";
-    if (score >= 4.8) return prefix + "opzione vera, ma serve sconto o prova esterna.";
-    return prefix + "rischio narrativo alto: paghi molto futuro non verificato.";
-  }
-
-  function marketRead(st) {
-    const reg = (st.regulatoryExposure || 0) < -0.35
-      ? "regolazione contro"
-      : ((st.regulatoryExposure || 0) > 0.35 ? "regolazione a favore" : "regolazione neutra");
-    const heat = (st.hype || 0) >= 8 || (st.hypeDecay || 0) >= 0.6
-      ? "mercato caldo ma fragile"
-      : "mercato meno rumoroso";
-    return "MARKET: " + rootSector(st) + ", " + heat + ", " + reg + ".";
-  }
 
   function competitionRead(st) {
     const root = rootSector(st);
@@ -286,66 +238,16 @@
     return "COMPETITION: differenziazione da provare con clienti paganti.";
   }
 
-  function technologyRead(st) {
-    const fit = st.strategicFit || 0;
-    if (fit >= 8) return "TECHNOLOGY: asset strategico credibile, serve verifica IP/integrazione.";
-    if ((st.traction || 0) >= 6) return "TECHNOLOGY: prodotto abbastanza maturo da reggere clienti veri.";
-    if ((st.hype || 0) >= 8 && (st.traction || 0) <= 2) {
-      return "TECHNOLOGY: demo forte, produzione ancora da dimostrare.";
-    }
-    return "TECHNOLOGY: vantaggio possibile, ma non ancora evidente nel dato.";
-  }
-
-  function priceRead(st) {
-    const traction = Math.max(1, st.traction || 0);
-    const valPerTraction = Math.round((st.valuation || 0) / traction);
-    const heat = valPerTraction > 9_000_000 || (st.hype || 0) >= 8
-      ? "prezzo da narrative round"
-      : "prezzo non folle se i dati tengono";
-    return "VALUATION: ask " + TVRender.eur(st.valuation) + ", " + heat + ".";
-  }
-
   function meetingNoteForMove(st, moveId, outcome) {
-    const business = DEAL_CONTEXT[st.id] || (st.name + ": segnali da interpretare.");
-    if (moveId === 1) {
-      return [
-        "BUSINESS: " + business + ".",
-        "TRACTION: " + (st.traction || 0) + "/10, " + unitShortLabel(st.unitEconomics || 0) + ".",
-        "UPSIDE: " + st.hiddenUpside + ".",
-        investorRead(st, outcome)
-      ].join("\n");
-    }
-    if (moveId === 2) {
-      return [
-        "BUSINESS: " + business + ".",
-        marketRead(st),
-        competitionRead(st),
-        "RED FLAG: " + st.hiddenRisk + ".",
-        fateLine(st)
-      ].join("\n");
-    }
-    if (moveId === 3) {
-      return [
-        "BUSINESS: " + business + ".",
-        "TEAM: " + scoreLabel(st.team || 0, 8, 4) +
-          ", founder " + TVPitchBattle.founderLabel(st.founderProfile) + ".",
-        "EXECUTION: strategic fit " + (st.strategicFit || 0) + "/10.",
-        "GOVERNANCE: " + st.hiddenRisk + ".",
-        investorRead(st, outcome)
-      ].join("\n");
-    }
-    if (moveId === 4) {
-      return [
-        "BUSINESS: " + business + ".",
-        priceRead(st),
-        technologyRead(st),
-        "FOUNDER SIGNAL: " + (outcome === "resist"
-          ? "regge il vuoto; forse controlla davvero il round."
-          : "nel silenzio lascia cadere il dettaglio che conta."),
-        fateLine(st)
-      ].join("\n");
-    }
-    return "";
+    // Le domande danno osservazioni, non accesso alla tabella delle exit.
+    const business = DEAL_CONTEXT[st.id] || st.sector;
+    if (outcome === "resist") return "RISPOSTA EVASIVA: il pitch non ha aggiunto prove. Cambia angolo.";
+    if (moveId === 1) return "TRACTION: " + st.traction + "/10. " +
+      (B.rv.pitchTruth || "I margini reali restano da verificare.");
+    if (moveId === 2) return competitionRead(st);
+    if (moveId === 3) return "TEAM: " + scoreLabel(st.team || 0, 8, 4) +
+      ". " + (B.rv.refCall ? TVPitchBattle.founderLabel(st.founderProfile) : "Il CV non sostituisce una reference.");
+    return "DAL TAVOLO: " + business + ".";
   }
 
   function addMeetingNote(moveId, text) {
@@ -355,16 +257,6 @@
     const existing = B.rv.meetingNotes.find(n => n.key === key);
     if (existing) existing.text = text;
     else B.rv.meetingNotes.push({ key: key, move: moveId, text: text });
-  }
-
-  function noteLines(text) {
-    const out = [c("c-yellow", "MEETING NOTE // " + B.st.name)];
-    String(text || "").split(/\n+/).filter(Boolean).forEach(part => {
-      wrap(part, 42).forEach((line, idx) => {
-        out.push(c("c-white", idx ? "  " + line : line));
-      });
-    });
-    return out;
   }
 
   // ---------- rendering ----------
@@ -432,6 +324,53 @@
       c("c-cyan", "Ask valuation: " + TVRender.eur(payVal))
     ];
     draw();
+  }
+
+  function takeResearch(kind) {
+    const offer = TVGameplay.takeResearch(TVState.current, B.rv, kind, B.intel);
+    if (!offer.allowed) {
+      miniLog(c("c-yellow", offer.reason || "Controllo non disponibile."));
+      TVAudio.error();
+      return false;
+    }
+    TVState.save();
+    return true;
+  }
+
+  function archiveHtml() {
+    if (B.phase === "postEvent") return "";
+    const r = TVRender;
+    const rows = (TVPitches.forStartup(B.st.id) || []).map(r.escape);
+    (B.rv.meetingNotes || []).forEach(note => rows.push(r.escape(note.text)));
+    (B.rv.ddTexts || []).forEach(note => rows.push(r.escape("DD: " + note)));
+    if (B.rv.refCall) rows.push(r.escape("REFERENCE: " + TVPitchBattle.PROFILES[B.battle.profile].hint));
+    if (B.rv.coInvest) rows.push(r.escape("CO-INVEST: " + TVPitchBattle.coInvestSignal(B.st)));
+    return '<details class="battle-archive"><summary>PITCH E APPUNTI // RIAPRI</summary><div>' +
+      rows.map(row => '<p>' + row + '</p>').join("") + '</div></details>';
+  }
+
+  function decisionContextHtml() {
+    if (B.busy || B.phase === "postEvent") return "";
+    if (B.phase === "invest") {
+      const s = TVState.current;
+      const amount = currentCustomTicket();
+      const a = TVGameplay.allocation(s, B.st, amount);
+      const leverage = TVDealAccess.leverageFor(s, B.st, {
+        rv: B.rv, intel: B.intel, battle: B.battle
+      });
+      const required = TVDealAccess.requiredLeverage(B.st);
+      return '<div class="battle-decision-context">' +
+        TVRender.escape("Custom: cash dopo " + TVRender.eur(a.cashAfter) +
+          " // " + Math.round(a.fundShare * 100) + "% del fondo. ") +
+        (a.concentrated ? "CONCENTRAZIONE ALTA. " : "") +
+        (a.thinReserve ? "RISERVA SOTTILE PER I PROSSIMI ROUND. " : "") +
+        TVRender.escape("Accesso " + leverage + "/" + required +
+          (leverage >= required ? ": leva sufficiente." : ": il founder puo' rifiutare.")) +
+        '</div>';
+    }
+    return '<div class="battle-decision-context">' +
+      TVRender.escape("Agenda: " + TVGameplay.researchRemaining(B.rv) +
+        "/2 controlli. DD = rischio; REF = punto debole; CO-INVEST = accesso. News gratuite.") + '</div>';
   }
 
   function battleMusicTheme(st, profile) {
@@ -543,7 +482,7 @@
       : "CASH " + r.eur(s.cash) + " // REP " + s.reputation;
     const reveal = founder ? B.fx.enemyReveal / 9 : 1;
     const defeated = founder ? B.fx.enemyDrop >= 9 : B.fx.playerDrop >= 5;
-    const bobbing = founder && !B.battle.over && B.fx.enemyReveal >= 9 && B.fx.bob;
+    const bobbing = founder && !B.battle.over && B.fx.enemyReveal >= 9;
     const artClass = "fighter-art" +
       (bobbing ? " is-bobbing" : "") +
       (defeated ? " is-defeated" : "");
@@ -567,7 +506,7 @@
 
   function command(num, label, cls, done) {
     return '<button type="button" data-action="' + num + '" class="battle-command ' +
-      (cls || "") + (done ? " is-done" : "") + '">' +
+      (cls || "") + (done ? ' is-done" disabled aria-disabled="true' : '') + '">' +
       '<span class="keycap">' + num + '</span><span>' + label + "</span></button>";
   }
 
@@ -590,19 +529,20 @@
         return command(index + 1,
           (option.capped ? "MAX TS " : "TS ") +
             TVRender.eur(option.amount) + " // " + ownership.toFixed(1) + "%",
-          "is-invest");
+          "is-invest", option.amount > TVState.current.cash);
       });
       return fixed.concat([
         command(4, "-1M TICKET", "is-research"),
         command(5, "+1M TICKET", "is-research"),
-        command(6, "INVIA " + TVRender.eur(custom) + " // " + customOwnership.toFixed(1) + "%", "is-invest"),
+        command(6, "INVIA " + TVRender.eur(custom) + " // " + customOwnership.toFixed(1) + "%", "is-invest", custom > TVState.current.cash),
         command(0, "ANNULLA", "is-danger")
       ]).join("");
     }
     if (B.phase === "rescue") {
       return [
-        command(1, "ALZA VALUATION", "is-invest"),
-        command(2, "PORTA LEAD", "is-research"),
+        command(1, "ALZA VALUATION +12%", "is-invest"),
+        command(2, B.rv.coInvest ? "ATTIVA IL LEAD" : "PORTA LEAD 100k", "is-research",
+          !B.rv.coInvest && TVGameplay.researchRemaining(B.rv) === 0),
         command(9, "WALK AWAY", "is-danger"),
         command(0, "ANNULLA", "is-danger")
       ].join("");
@@ -628,10 +568,11 @@
     const broken = B.phase === "broken";
     const leadMove = B.battle.intelStrikeAvailable ? B.battle.intelMove : null;
     const usedMoves = B.battle.usedMoves || {};
+    const canResearch = kind => TVGameplay.researchOffer(TVState.current, rv, kind, B.intel).allowed;
     function moveDone(id) {
       return broken || !!usedMoves[id];
     }
-    return [
+    return (broken ? [] : [
       command(1, (leadMove === 1 ? "★ " : "") + "NUMERI",
         leadMove === 1 ? "is-intel" : "", moveDone(1)),
       command(2, (leadMove === 2 ? "★ " : "") + "COMPETITOR",
@@ -639,16 +580,17 @@
       command(3, (leadMove === 3 ? "★ " : "") + "TEAM",
         leadMove === 3 ? "is-intel" : "", moveDone(3)),
       command(4, (leadMove === 4 ? "★ " : "") + "SILENZIO",
-        leadMove === 4 ? "is-intel" : "", moveDone(4)),
-      command(5, rv.dd ? "DD COMPLETA" : "DD " + TVRender.eur(B.intel.ddCost), "is-research", rv.dd),
-      command(6, rv.refCall ? "REF COMPLETA" : "REF CALL 50k", "is-research", rv.refCall),
+        leadMove === 4 ? "is-intel" : "", moveDone(4))
+    ]).concat([
+      command(5, rv.dd ? "DD COMPLETA" : "DD " + TVRender.eur(B.intel.ddCost), "is-research", !canResearch("dd")),
+      command(6, rv.refCall ? "REF COMPLETA" : "REF CALL 50k", "is-research", !canResearch("refCall")),
       command(7, rv.negotiated
         ? (rv.negotiatedValuation ? "VALUATION LOCK" : "NEGOZIA FALLITA")
         : "NEGOZIA VAL.", "is-research", rv.negotiated),
-      command(8, rv.coInvest ? "CO-INVEST OK" : "CO-INVEST", "is-research", rv.coInvest),
+      command(8, rv.coInvest ? "CO-INVEST OK" : "CO-INVEST 30k", "is-research", !canResearch("coInvest")),
       command(9, "PASSA", "is-danger"),
       command(0, "TERM SHEET", "is-invest")
-    ].join("");
+    ]).join("");
   }
 
   function hintHtml() {
@@ -685,7 +627,7 @@
     return '<div class="battle-intel ' + cls + '">' +
       '<span>PROVE ' + "#".repeat(filled) + ".".repeat(5 - filled) + '</span>' +
       '<span>PRESSIONE ' + pressure + "/" + TVPitchBattle.GUARD_MAX + '</span>' +
-      '<span>ASK VAL ' + TVRender.eur(valuation) + '</span>' +
+      '<span>CONTROLLI ' + TVGameplay.researchRemaining(B.rv) + '/2</span>' +
     '</div>';
   }
 
@@ -727,9 +669,8 @@
   }
 
   function memoTone(decision) {
-    if (decision === "invested") return B.intel && B.intel.level >= 2 ? "TESI CON DENTI" : "FOMO PAGATA";
-    if (decision === "passed") return B.intel && B.intel.level >= 2 ? "PASS DA ADULTO" : "PASS O PANICO";
-    return "FUORI DAL ROUND";
+    return TVGameplay.decisionRead(TVState.current, B.st, B.rv, B.intel,
+      decision, B.lastDecisionSummary).stamp;
   }
 
   function memoPosterHtml() {
@@ -764,7 +705,7 @@
     const s = TVState.current;
     const isMeetingNote = B.log.some(line => String(line).includes("MEETING NOTE"));
     const allLogLines = B.log.filter(line => line !== "");
-    let logZone = allLogLines.slice(-4);
+    let logZone = allLogLines;
     if (isMeetingNote) {
       let noteStart = 0;
       for (let i = allLogLines.length - 1; i >= 0; i--) {
@@ -804,7 +745,9 @@
             '<div class="dialogue-speaker">' + TVRender.escape(B.st.name) + '</div>' +
             memoPosterHtml() +
             '<div class="dialogue-lines">' + dialogue + '</div>' +
+            archiveHtml() +
             '<div class="battle-hint">' + hintHtml() + '</div>' +
+            decisionContextHtml() +
           '</section>' +
           '<section class="battle-commands">' + commandsHtml() + '</section>' +
         '</div>' +
@@ -827,11 +770,12 @@
      fermo finche' il giocatore non preme un tasto. Gli altri step
      sono accelerabili, ma il tasto non viene accodato come mossa. */
   function seq(steps, done) {
+    const scene = B;
     B.busy = true;
     B.awaitingAdvance = false;
     let i = 0;
     const finish = () => {
-      if (!B) return;
+      if (B !== scene || !alive()) return;
       B.busy = false;
       B.awaitingAdvance = false;
       B.advance = null;
@@ -839,7 +783,7 @@
       if (done) done();
     };
     const next = () => {
-      if (!alive()) { if (B) B.busy = false; return; }
+      if (B !== scene || !alive()) return;
       B.advance = null;
       B.seqTimer = null;
       if (i >= steps.length) { finish(); return; }
@@ -860,7 +804,8 @@
           next();
         };
       } else {
-        B.seqTimer = setTimeout(next, stp.ms || 450);
+        const reduced = global.matchMedia && global.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        B.seqTimer = setTimeout(next, reduced ? 0 : Math.min(stp.ms || 450, 450));
         B.advance = () => {
           if (!B || B.awaitingAdvance) return;
           clearTimeout(B.seqTimer);
@@ -872,99 +817,21 @@
     next();
   }
 
-  /* drena una barra un blocco alla volta (tick sonoro per blocco) */
-  function drainSteps(prop, target, fromValue) {
-    const steps = [];
-    const from = typeof fromValue === "number" ? fromValue : B[prop];
-    for (let v = from - 1; v >= target; v--) {
-      steps.push({
-        fn: (val => () => { B[prop] = val; })(v),
-        ms: 90,
-        sound: () => TVAudio.keyPress()
-      });
-    }
-    return steps;
-  }
-
   // ---------- intro ----------
   function playIntro() {
-    const st = B.st;
-    const pitch = (TVPitches.forStartup(st.id) || []).slice(0, 4);
     const s = TVState.current;
-
-    const steps = [];
-    /* VS screen stile cabinato: i due contendenti si sbattono dentro,
-       il founder resta in silhouette (lo sprite si rivela solo in sala).
-       Un tasto qualsiasi la salta, come ogni splash arcade che si rispetti. */
-    steps.push(
-      { fn: () => { B.fx.vs = 1; }, ms: 1500, sound: () => TVAudio.fanfare() },
-      { fn: () => { B.fx.vs = 2; }, ms: 650 },
-      { fn: () => { B.fx.vs = 0; }, ms: 120 }
-    );
-    if (!s.tutorialFlags) s.tutorialFlags = {};
-    if (!s.tutorialFlags.pitchBattle) {
-      s.tutorialFlags.pitchBattle = true;
-      TVState.save();
-      steps.push(
-        { log: [c("c-yellow", "PITCH BATTLE = DUE OBIETTIVI"),
-                c("c-white", "1 capire se il deal vale"),
-                c("c-white", "2 ottenere condizioni migliori")],
-          waitForInput: true },
-        { log: [c("c-cyan", "DOMANDE 1-4"),
-                c("c-white", "abbassano la resistenza founder."),
-                c("c-white", "Resistenza giu' = ASK VAL giu'."),
-                c("c-white", "Meno valuation = piu' ownership.")],
-          waitForInput: true },
-        { log: [c("c-green", "INFORMAZIONI"),
-                c("c-white", "DD scopre rischio/upside."),
-                c("c-white", "Ref call rivela il tipo founder."),
-                c("c-white", "Co-invest dice chi c'e' nel round.")],
-          waitForInput: true },
-        { log: [c("c-magenta", "TERM SHEET"),
-                c("c-white", "Premi 7 per provare l'affondo."),
-                c("c-white", "Premi 0 solo quando sai"),
-                c("c-white", "se il prezzo ha senso.")],
-          waitForInput: true }
-      );
-    }
-
-    steps.push.apply(steps, [
-      { log: [c("c-white", "Sala riunioni. Neon. Acqua frizzante.")], ms: 800 },
-      { push: [
-          c(B.intel.level >= 2 ? "c-green" : "c-red",
-            "TACCUINO: " + B.intel.label + " (" +
-              B.intel.evidenceScore.toFixed(1) + "/5 prove)"),
-          c("c-white", B.intel.shield
-            ? B.intel.shield + " contrattacchi saranno assorbiti."
-            : "Nessuna copertura: ogni domanda costa controllo.")
-        ].concat(B.intel.lead
-          ? [c("c-green", "DOMANDA ARMATA: " + B.intel.lead.move + " " +
-              B.intel.lead.label)]
-          : []).concat(B.intel.privateClue
-          ? [c("c-magenta", "FONTE INTERNA: " + B.intel.privateClue)]
-          : []), waitForInput: true },
-      { push: [c("c-white", "IL FOUNDER ENTRA IN SALA...")], ms: 700,
-        sound: () => TVAudio.pageChange() }
-    ]);
-    // lo sprite si materializza riga per riga (decode teletext)
-    for (let i = 1; i <= 9; i++) {
-      steps.push({
-        fn: (v => () => { B.fx.enemyReveal = v; })(i),
-        ms: 100, sound: () => TVAudio.keyPress()
-      });
-    }
-    steps.push({ log: [c("c-yellow", "Un FOUNDER selvaggio ti pitcha:")], ms: 650,
-                 sound: () => TVAudio.success() });
-    // niente virgolette e niente riga "COSA FAI?": le 4 righe del
-    // pitch devono restare TUTTE nel box — e' li' che si legge la
-    // debolezza. Il menu sotto e' gia' la domanda.
-    pitch.forEach(line => {
-      const pitchLines = wrap(line, 36).slice(0, 2).map(l => c("c-cyan", l));
-      steps.push({ push: pitchLines, ms: 520,
-                   sound: () => TVAudio.keyPress() });
-    });
-
-    seq(steps, () => arm());
+    const pitch = TVPitches.forStartup(B.st.id) || [];
+    const first = !s.tutorialFlags.pitchBattle;
+    s.tutorialFlags.pitchBattle = true;
+    snap();
+    const lines = pitch.map(line => c("c-cyan", line));
+    if (first) lines.push(c("c-yellow",
+      "Domande 1-4: scopri il punto debole. Due controlli extra a scelta. Puoi investire o passare senza vincere."));
+    lines.push(c("c-white", "Il founder attende. Il suo 'ultimo slot' esiste da marzo."));
+    seq([
+      { fn: () => { B.fx.vs = 1; }, ms: 600, sound: () => TVAudio.fanfare() },
+      { fn: () => { B.fx.vs = 0; B.fx.enemyReveal = 9; }, log: lines, ms: 180 }
+    ], () => arm());
   }
 
   // ---------- mosse: domande (1-4) ----------
@@ -976,204 +843,61 @@
     const p = TVPitchBattle.PROFILES[b.profile];
     const guardBefore = b.guard;
     const credBefore = b.cred;
-    const pressureBefore = pressurePoints(guardBefore);
-    const valuationBefore = dealValuationForGuard(guardBefore);
-
     TVPitchBattle.applyMove(b, moveId);
-    const guardHit = guardBefore - b.guard;   // PV tolti al founder
-    const pressureAfter = pressurePoints(b.guard);
-    const pressureGain = pressureAfter - pressureBefore;
-    const valuationAfter = dealValuationForGuard(b.guard);
-    const valuationLine = valuationAfter < valuationBefore
-      ? c("c-cyan", "ASK VAL " + TVRender.eur(valuationBefore) +
-          " -> " + TVRender.eur(valuationAfter))
-      : null;
-    const noteText = meetingNoteForMove(B.st, moveId, b.lastOutcome);
-    addMeetingNote(moveId, noteText);
+    if (b.lastOutcome === "repeat") return;
+    if (!B.rv.moveOutcomes) B.rv.moveOutcomes = {};
+    B.rv.moveOutcomes[moveId] = b.lastOutcome;
 
-    const youLine = c("c-white", "TU usi ") + c("c-yellow", MOVE_NAMES[moveId]) + c("c-white", "!");
-    const steps = [
-      { log: [youLine], ms: 550, sound: () => TVAudio.keyPress() },
-      { log: [youLine, c("c-cyan", "      ►►►")], ms: 130 },
-      { log: [youLine, c("c-cyan", "            ►►►")], ms: 130 },
-      { log: [youLine, c("c-cyan", "                  ►►►")], ms: 130 }
+    // Le conseguenze precedono l'animazione: ESC/reload non annullano il turno.
+    if (b.over && b.won && !B.rv.pitchWon) {
+      B.rv.pitchWon = true;
+      B.rv.pitchTruth = TVPitchBattle.truthFor(B.st);
+      TVState.current.reputation = Math.min(100, TVState.current.reputation + 1);
+      B.phase = "broken";
+      B.fx.rank = battleRank(true, b);
+    } else if (b.over && !b.won && !B.rv.pitchLost) {
+      B.rv.pitchLost = true;
+      TVState.current.reputation = Math.max(0, TVState.current.reputation - 2);
+      TVDealflow.setDecision(TVState.current, B.st.id, "passed");
+      TVState.current.history.push({ year: TVState.current.year, type: "pass",
+        startup: B.st.name, note: "buttato fuori dal pitch" });
+      B.lastDecisionSummary = { decision: "lost" };
+      recordDecision("lost");
+    }
+    const note = meetingNoteForMove(B.st, moveId, b.lastOutcome);
+    addMeetingNote(moveId, note);
+    snap();
+
+    const hit = guardBefore - b.guard;
+    const loss = credBefore - b.cred;
+    const outcome = b.intelTriggered ? "DOSSIER STRIKE" :
+      (b.lastOutcome === "weak" ? "DOMANDA SUPER EFFICACE" :
+      (b.lastOutcome === "resist" ? "PARATA DEL FOUNDER" : "IL PITCH CEDE"));
+    const lines = [
+      c(b.lastOutcome === "resist" ? "c-red" : "c-green", outcome),
+      c("c-white", p.react[moveId]),
+      c("c-cyan", "Resistenza -" + hit + " // Controllo -" + loss +
+        " // Ask " + TVRender.eur(currentDealValuation()))
     ];
-
-    // la domanda armata merita il trattamento super-move: cut-in
-    // a schermo intero prima dell'impatto, stile fighting game
-    if (b.intelTriggered) {
-      steps.push(
-        { fn: () => { B.fx.cutin = 1; }, ms: 1000, flash: true,
-          sound: () => TVAudio.fanfare() },
-        { fn: () => { B.fx.cutin = 0; }, ms: 120 }
-      );
-    }
-
-    // impatto — col numero di danno, gusto Pokemon
-    if (b.lastOutcome === "weak") {
-      steps.push({ log: [youLine, c("c-green", "DOMANDA FORTE!  ") +
-                         c("c-yellow", "PRESSIONE +" + pressureGain)]
-                         .concat(b.intelTriggered
-                           ? [c("c-green", "★ DOSSIER STRIKE: la prova entra nel verbale.")]
-                           : []),
-                   ms: 700, shake: true, shield: b.intelTriggered,
-                   sound: () => TVAudio.success() });
-      steps.push.apply(steps, drainSteps("dispGuard", b.guard));
-    } else if (b.lastOutcome === "resist") {
-      const parryLog = [youLine, c("c-red", "PARATA! Perdi controllo della sala  ") +
-                        c("c-yellow", "-2")];
-      if (b.intelTriggered) {
-        parryLog.push(c("c-green", "★ MA LA PROVA LO INCASTRA: -" +
-          b.intelPower + " pressione"));
-      }
-      steps.push({ log: parryLog, ms: 700, shake: true,
-                   shield: b.intelTriggered, sound: () => TVAudio.error() });
-      steps.push.apply(steps, drainSteps("dispCred", Math.max(0, credBefore - 2)));
-      if (b.intelTriggered) steps.push.apply(steps, drainSteps("dispGuard", b.guard));
-    } else {
-      steps.push({ log: [youLine, c("c-cyan", "Il pitch-script cede.  ") +
-                         c("c-yellow", "PRESSIONE +" + pressureGain)]
-                         .concat(b.intelTriggered
-                           ? [c("c-green", "★ DOSSIER STRIKE: +" +
-                               b.intelPower + " pressione, replica negata.")]
-                           : []),
-                   ms: 700, shield: b.intelTriggered,
-                   sound: () => TVAudio.pageChange() });
-      steps.push.apply(steps, drainSteps("dispGuard", b.guard));
-    }
-
-    if (valuationLine) {
-      steps.push({ push: [valuationLine], ms: 520,
-                   sound: () => TVAudio.pageChange() });
-    }
-
-    // reazione del founder
-    const reaction = wrap(p.react[moveId] || "", 36).map(l => c("c-white", l));
-    steps.push({ push: reaction, waitForInput: true });
-    if (noteText) {
-      steps.push({ log: noteLines(noteText),
-                   waitForInput: true, sound: () => TVAudio.success() });
-    }
-
-    if (b.over && b.won) {
-      // vittoria!
-      steps.push({ log: [c("c-yellow", "RESISTENZA FOUNDER A ZERO!")],
-                   ms: 600, flash: true, sound: () => TVAudio.fanfare() });
-      steps.push.apply(steps, drainSteps("dispGuard", 0));
-      // lo sprite del founder cade dietro la pedana, riga per riga
-      for (let d = 1; d <= 9; d++) {
-        steps.push({ fn: (v => () => { B.fx.enemyDrop = v; })(d),
-                     ms: 75, sound: () => TVAudio.keyPress() });
-      }
-      const crack = wrap(p.crack, 36).map(l => c("c-yellow", l));
-      steps.push({ push: crack, waitForInput: true });
-      const rank = battleRank(true, b);
-      steps.push({
-        fn: () => { B.fx.rank = rank; },
-        push: ["", c(rank === "S" ? "c-yellow" : "c-cyan",
-          "RANK " + rank + " — " + RANK_LINES[rank])],
-        ms: 900, flash: rank === "S", sound: () => TVAudio.success()
-      });
-      steps.push({
-        fn: () => {
-          B.rv.pitchWon = true;
-          B.rv.pitchTruth = TVPitchBattle.truthFor(B.st);
-          TVState.current.reputation = Math.min(100, TVState.current.reputation + 1);
-          B.phase = "broken";
-          snap();
-        },
-        push: [c("c-white", "LA VERITA':")]
-          .concat(wrap(TVPitchBattle.truthFor(B.st), 34).map(l => c("c-green", l)))
-          .concat([c("c-cyan", "ASK VAL: " + TVRender.eur(currentDealValuation())),
-                   c("c-cyan", "+1 reputazione. Ora decidi.")]),
-        waitForInput: true
-      });
-      seq(steps, () => arm());
-      return;
-    }
-
-    // Ogni domanda cede tempo al founder. Il dossier puo' assorbire
-    // i primi contrattacchi e rende tangibile il valore delle news lette.
-    if (b.counterBlocked) {
-      const blockTitle = b.counterBlockSource === "strong"
-        ? "DOMANDA PERFETTA: IL FOUNDER NON RILANCIA."
-        : (b.counterBlockSource === "lead"
-          ? "IL DOSSIER SMONTA " + p.attack + "!"
-          : "LA TEORIA ANTICIPA " + p.attack + "!");
-      const blockDetail = b.counterBlockSource === "strong"
-        ? "Hai guadagnato pressione senza perdere controllo sala."
-        : (b.counterBlockSource === "lead"
-          ? "Prova citata. Il founder non puo' cambiare discorso."
-          : "Contrattacco bloccato. Controllo invariato.");
-      steps.push({ push: ["", c("c-green", blockTitle),
-                          c("c-cyan", blockDetail)],
-                   waitForInput: true, shield: true, sound: () => TVAudio.success() });
-    } else {
-      // il contrattacco cresce col turno: -1, poi -2, poi -3
-      const counterCost = b.lastCounterCost || 1;
-      const mood = counterCost >= 3 ? "La sala ormai pende dalle sue labbra."
-        : (counterCost >= 2 ? "La sala comincia a spazientirsi." : null);
-      // la battuta del contrattacco ruota col turno: a match lungo
-      // il founder non si ripete mai due volte di fila
-      const attackFlavor = (p.attackLines && p.attackLines.length)
-        ? p.attackLines[(b.turn - 1) % p.attackLines.length]
-        : p.attackLine;
-      const counterLines = ["",
-        c("c-magenta", b.lastOutcome === "resist"
-          ? "FOUNDER ribalta " + p.attack + "."
-          : "FOUNDER usa " + p.attack + "!"),
-        c("c-yellow", "CONTRATTACCO: -" + counterCost + " CONTROLLO SALA"),
-        c("c-white", attackFlavor)];
-      if (mood) counterLines.push(c("c-red", mood));
-      steps.push({ push: counterLines,
-                   waitForInput: true, sound: () => TVAudio.error() });
-      const counterFrom = b.lastOutcome === "resist" ? Math.max(0, credBefore - 2) : undefined;
-      steps.push.apply(steps, drainSteps("dispCred", b.cred, counterFrom));
-    }
-
-    if (b.over && !b.won) {
-      // sconfitta: fuori dal round — stavolta cadi tu
-      steps.push({ log: [c("c-red", "HAI PERSO IL CONTROLLO DELLA SALA.")],
-                   ms: 900, shake: true, sound: () => TVAudio.dirge() });
-      for (let d = 1; d <= 5; d++) {
-        steps.push({ fn: (v => () => { B.fx.playerDrop = v; })(d),
-                     ms: 90, sound: () => TVAudio.keyPress() });
-      }
-      steps.push({
-        fn: () => { B.fx.rank = "KO"; },
-        push: ["", c("c-red", "RANK KO — " + RANK_LINES.KO)],
-        ms: 900, sound: () => TVAudio.error()
-      });
-      steps.push({ push: [c("c-white", "Il founder guarda l'orologio."),
-                          c("c-yellow", '"Abbiamo altri 12 fondi in coda."')],
-                   waitForInput: true });
-      steps.push({
-        fn: () => {
-          const s = TVState.current;
-          B.rv.pitchLost = true;
-          s.reputation = Math.max(0, s.reputation - 2);
-          TVDealflow.setDecision(s, B.st.id, "passed");
-          s.history.push({ year: s.year, type: "pass", startup: B.st.name,
-                           note: "buttato fuori dal pitch" });
-          B.lastDecisionSummary = { decision: "lost" };
-          snap();
-        },
-        push: ["", c("c-red", "SEI FUORI DAL DEAL. -2 reputazione.")],
-        waitForInput: true, sound: () => TVAudio.error()
-      });
-      seq(steps, () => startPostBattleEvent("lost"));
-      return;
-    }
-
-    steps.push({ push: ["",
-                        c("c-cyan", "STATO: PRESSIONE " + pressureAfter + "/" +
-                          TVPitchBattle.GUARD_MAX + " | ASK VAL " +
-                          TVRender.eur(valuationAfter)),
-                        c("c-cyan", "SALA " + b.cred + "/" +
-                          (b.credMax || TVPitchBattle.CRED_MAX)),
-                        c("c-white", "COSA FAI?")], ms: 260,
-                 fn: () => snap() });
-    seq(steps, () => arm());
+    if (b.intelTriggered && moveId === p.resist)
+      lines[1] = c("c-white", "Prova sul tavolo. Stavolta la battuta pronta non basta.");
+    if (b.counterBlocked) lines.push(c("c-green", "Replica bloccata. La sala resta tua."));
+    else if (!b.over) lines.push(c("c-magenta", p.attack + ": " +
+      p.attackLines[(b.turn - 1) % p.attackLines.length]));
+    if (b.won) lines.push(c("c-yellow", "VERITA': " + B.rv.pitchTruth),
+      c("c-white", "Battle vinta. Investimento buono? E' un'altra domanda."));
+    else if (!b.over) lines.push(c("c-yellow", "Prossima replica: fino a -" +
+      TVPitchBattle.counterCostFor(b.turn + 1) + " controllo. Puoi gia' decidere."));
+    seq([
+      { log: [c("c-yellow", MOVE_NAMES[moveId])], ms: 160,
+        sound: () => TVAudio.keyPress() },
+      { log: lines, ms: 240, fn: () => {
+          B.dispGuard = b.guard; B.dispCred = b.cred;
+          if (b.won) B.fx.enemyDrop = 9;
+          if (b.over && !b.won) { B.fx.playerDrop = 5; B.fx.rank = "KO"; }
+        }, shake: b.lastOutcome === "resist", shield: b.intelTriggered,
+        sound: () => b.lastOutcome === "resist" ? TVAudio.error() : TVAudio.success() }
+    ], () => b.over && !b.won ? startPostBattleEvent("lost") : arm());
   }
 
   // ---------- azioni di ricerca (5/6/8) e negoziazione (7) ----------
@@ -1181,13 +905,8 @@
     const s = TVState.current;
     const st = B.st;
     const rv = B.rv;
-    if (rv.dd) { miniLog(c("c-blue", "DD gia' fatta.")); return; }
     const dossier = B.intel.level >= 2;
-    const cost = B.intel.ddCost;
-    if (s.cash < cost) { miniLog(c("c-red", "CASH INSUFFICIENTE.")); TVAudio.error(); return; }
-    s.cash -= cost;
-    s.researchSpent += cost;
-    rv.dd = true;
+    if (!takeResearch("dd")) return;
     if (dossier) {
       rv.ddTexts = ["rischio - " + st.hiddenRisk, "upside + " + st.hiddenUpside];
     } else {
@@ -1216,11 +935,7 @@
   function doRefCall() {
     const s = TVState.current;
     const rv = B.rv;
-    if (rv.refCall) { miniLog(c("c-blue", "Ref call gia' fatta.")); return; }
-    if (s.cash < 50_000) { miniLog(c("c-red", "CASH INSUFFICIENTE.")); TVAudio.error(); return; }
-    s.cash -= 50_000;
-    s.researchSpent += 50_000;
-    rv.refCall = true;
+    if (!takeResearch("refCall")) return;
     TVState.save();
 
     const p = TVPitchBattle.PROFILES[B.battle.profile];
@@ -1235,61 +950,11 @@
   }
 
   function doNegotiate() {
-    const s = TVState.current;
-    const st = B.st;
-    const rv = B.rv;
-    const b = B.battle;
-    if (rv.negotiated) { miniLog(c("c-blue", "Gia' negoziata.")); return; }
-    const initialVal = currentDealValuation();
-    B.negotiationValuation = Math.max(1_000_000, Math.round(initialVal * 0.88));
+    if (B.rv.negotiated) { miniLog(c("c-blue", "Gia' negoziata.")); return; }
+    B.negotiationValuation = Math.max(1_000_000, Math.round(currentDealValuation() * 0.88));
     B.phase = "negotiate";
     B.log = negotiationLog();
-    draw();
     arm();
-    return;
-
-    // più hai scalfito la guardia, più il founder cede al tavolo
-    let prob = 0.35 +
-      (1 - b.guard / TVPitchBattle.GUARD_MAX) * 0.35 +
-      (rv.dd ? 0.10 : 0) +
-      B.intel.negotiationBonus;
-    const chance = Math.round(Math.max(0, Math.min(0.95, prob)) * 100);
-    const ok = TVState.roll("nego|" + st.id + "|" + s.year) < prob;
-    const currentVal = currentDealValuation();
-    rv.negotiated = true;
-
-    const steps = [
-      { log: [c("c-white", "Butti li':"),
-              c("c-cyan", "Pressione negoziale: " +
-                pressurePoints(b.guard) + "/" + TVPitchBattle.GUARD_MAX),
-              c("c-cyan", "ASK VAL attuale: " + TVRender.eur(currentVal)),
-              c("c-yellow", "Chance stimata: " + chance + "%")], ms: 900 },
-      { push: [c("c-yellow", "\"Quella valuation... e' un'opinione.\"")], ms: 1100,
-        sound: () => TVAudio.keyPress() }
-    ];
-    if (ok) {
-      rv.negotiatedValuation = Math.round(currentVal * 0.88);
-      steps.push({ push: ["", c("c-white", "Il founder espira. A lungo."),
-                          c("c-green", "ACCETTA. Odiandoti."),
-                          c("c-green", "VALUATION " + TVRender.eur(currentVal) +
-                            " -> " + TVRender.eur(rv.negotiatedValuation)),
-                          c("c-cyan", "A parita' di ticket compri piu' ownership.")], ms: 900,
-                   sound: () => TVAudio.fanfare() });
-    } else {
-      s.reputation = Math.max(0, s.reputation - 3);
-      steps.push({ push: ["", c("c-yellow", '"La porta e\' quella."'),
-                          c("c-red", "Rifiutata. -3 reputazione.")], ms: 900,
-                   shake: true, sound: () => TVAudio.error() });
-    }
-    TVState.save();
-    seq(steps, () => {
-      if (ok) {
-        openInvestPhase();
-      } else {
-        B.phase = B.battle.over && B.battle.won ? "broken" : "menu";
-        arm();
-      }
-    });
   }
 
   function negotiationLeverage() {
@@ -1317,7 +982,8 @@
         " (-" + Math.round(discount * 100) + "%)"),
       c("c-white", "Pressione negoziale: " +
         pressurePoints(B.battle.guard) + "/" + TVPitchBattle.GUARD_MAX),
-      c("c-yellow", "La chance verra' rivelata solo quando proponi.")
+      c("c-yellow", "Probabilita': " + Math.round(negotiationChance(proposed) * 100) +
+        "% // rifiuto: -3 reputazione. Un solo tentativo.")
     ];
   }
 
@@ -1340,49 +1006,6 @@
       return;
     }
     resolveNegotiation(proposedVal);
-  }
-
-  function openNegotiationModal() {
-    const currentVal = currentDealValuation();
-    const suggested = Math.round(currentVal * 0.88);
-    TVRender.askText({
-      title: "NEGOZIA VALUATION",
-      message: "ASK attuale: " + TVRender.eur(currentVal) +
-        "\nScrivi la valuation che vuoi proporre. Esempi: 12M, 12.5, 12500000.",
-      label: "PROPOSTA",
-      value: (suggested / 1_000_000).toFixed(suggested % 1_000_000 ? 1 : 0) + "M",
-      maxLength: 16,
-      confirmLabel: "PROPONI",
-      cancelLabel: "ANNULLA"
-    }).then(value => {
-      if (!alive()) return;
-      if (value == null) { draw(); arm(); return; }
-      const proposedVal = parseValuationInput(value);
-      if (!proposedVal || proposedVal < 1_000_000 || proposedVal >= currentVal) {
-        miniLog(c("c-red", "Valuation non valida: deve essere sotto ASK e sopra 1M."));
-        TVAudio.error();
-        return;
-      }
-      resolveNegotiation(proposedVal);
-    });
-  }
-
-  function parseValuationInput(value) {
-    let raw = String(value || "").trim().toLowerCase();
-    if (!raw) return 0;
-    raw = raw.replace(/€/g, "").replace(/\s+/g, "").replace(",", ".");
-    let mult = 1;
-    if (raw.endsWith("m")) {
-      mult = 1_000_000;
-      raw = raw.slice(0, -1);
-    } else if (raw.endsWith("k")) {
-      mult = 1_000;
-      raw = raw.slice(0, -1);
-    }
-    const num = parseFloat(raw);
-    if (!isFinite(num) || num <= 0) return 0;
-    if (mult === 1 && num < 1000) mult = 1_000_000;
-    return Math.round(num * mult);
   }
 
   function resolveNegotiation(proposedVal) {
@@ -1437,11 +1060,7 @@
   function doCoInvest() {
     const s = TVState.current;
     const rv = B.rv;
-    if (rv.coInvest) { miniLog(c("c-blue", "Gia' verificato.")); return; }
-    if (s.cash < 30_000) { miniLog(c("c-red", "CASH INSUFFICIENTE.")); TVAudio.error(); return; }
-    s.cash -= 30_000;
-    s.researchSpent += 30_000;
-    rv.coInvest = true;
+    if (!takeResearch("coInvest")) return;
     TVState.save();
 
     seq([
@@ -1458,6 +1077,7 @@
     const s = TVState.current;
     const st = B.st;
     const rv = B.rv;
+    if (TVDealflow.getDecision(s, st.id) !== "pending") return;
     amount = TVFundMath.capTicketAmount(amount, payVal);
     if (s.cash < amount) {
       miniLog(c("c-red", "CASH INSUFFICIENTE."));
@@ -1473,7 +1093,7 @@
       id: st.id, name: st.name, sector: st.sector, sectorTag: st.sectorTag,
       investedAmount: amount, entryValuation: payVal, equityPct: equityPct,
       entryYear: s.year,
-      currentValueMultiplier: TVFundMath.entryMultiplier(st.valuation, payVal),
+      currentValueMultiplier: TVFundMath.entryMultiplier(st.valuation, payVal, amount),
       status: "active", realizedAmount: 0,
       revealed: Object.assign({}, rv)
     });
@@ -1489,10 +1109,11 @@
       equityPct: equityPct,
       note: label || "term sheet accepted"
     };
+    recordDecision("invested");
     TVState.save();
 
     const eur = TVRender.eur(amount);
-    const entryMult = TVFundMath.entryMultiplier(st.valuation, payVal);
+    const entryMult = TVFundMath.entryMultiplier(st.valuation, payVal, amount);
     const closeLines = ["", c("c-green", "HA GIA' FIRMATO."),
       c("c-green", "AFFARE FATTO: " + eur + " // " +
         (equityPct * 100).toFixed(1) + "%"),
@@ -1521,6 +1142,7 @@
     const st = B.st;
     const payVal = currentDealValuation();
     amount = TVFundMath.capTicketAmount(amount, payVal);
+    if (s.cash < amount) { miniLog(c("c-red", "CASH INSUFFICIENTE.")); TVAudio.error(); return; }
     const verdict = global.TVDealAccess
       ? TVDealAccess.termSheetVerdict(s, st, {
           rv: B.rv, intel: B.intel, battle: B.battle,
@@ -1535,18 +1157,14 @@
 
     B.pendingTermSheet = { amount: amount, payVal: payVal, verdict: verdict };
     B.phase = "rescue";
-    seq([
-      { log: [c("c-white", "Prepari il term sheet da " + TVRender.eur(amount) + "...")], ms: 800,
-        sound: () => TVAudio.keyPress() },
-      { push: ["", c("c-red", "IL FOUNDER NON FIRMA."),
-               c("c-yellow", "Motivo: " + verdict.reason),
-               c("c-cyan", "Leverage " + verdict.leverage + "/" + verdict.required +
-                 " // heat " + verdict.heat + "/8")],
-        waitForInput: true, sound: () => TVAudio.error() },
-      { push: [c("c-white", "Puoi migliorare le condizioni, portare un lead"),
-               c("c-white", "o camminare via prima di inseguire FOMO.")],
-        waitForInput: true }
-    ], () => arm());
+    B.log = [c("c-red", "IL FOUNDER NON FIRMA."),
+      c("c-yellow", "Motivo: " + verdict.reason),
+      c("c-cyan", "Leverage " + verdict.leverage + "/" + verdict.required +
+        " // heat " + verdict.heat + "/8"),
+      c("c-white", "Ultimo slot? Curioso: il prezzo ha appena trovato spazio."),
+      c("c-white", "Scegli: paghi di piu', porti un lead o lasci il tavolo.")];
+    TVAudio.error();
+    draw();
   }
 
   function doRescue(num) {
@@ -1577,6 +1195,10 @@
       return;
     }
     if (num === 2) {
+      if (!B.rv.coInvest && TVGameplay.researchRemaining(B.rv) === 0) {
+        miniLog(c("c-yellow", "Agenda esaurita. Senza lead gia' contattato: alza il prezzo o passa."));
+        return;
+      }
       const cost = B.rv.coInvest ? 0 : 100_000;
       const amount = TVFundMath.capTicketAmount(pending.amount, pending.payVal);
       if (s.cash < cost + amount) {
@@ -1593,59 +1215,26 @@
   }
 
   function decisionFeedback(decision, summary) {
-    const lines = ["", c("c-yellow", "VERDETTO ANALISTA")];
-    const intelReady = B.intel && B.intel.level >= 2;
-    const contacted = B.intel && B.intel.chain && B.intel.chain.contacted;
-    const fate = scriptedFate(B.st);
-    let why;
-    let lesson;
+    const read = TVGameplay.decisionRead(TVState.current, B.st, B.rv, B.intel, decision, summary);
+    return [c(read.tone, read.line), c("c-white", read.lesson)];
+  }
 
-    if (decision === "invested") {
-      if (contacted) {
-        why = c("c-green", "Buona: hai investito con una fonte vera, non con il deck.");
-      } else if (intelReady) {
-        why = c("c-green", "Buona: ritagli + leva. Questa e' tesi, non karaoke VC.");
-      } else if (B.rv.dd || B.rv.refCall || B.rv.coInvest) {
-        why = c("c-yellow", "Mista: hai pagato controlli, ma il memo resta sudato.");
-      } else {
-        why = c("c-red", "Stupida: term sheet nudo. Se va bene sara' fortuna post-razionalizzata.");
-      }
-      lesson = c("c-white", "Prezzo: " + TVRender.eur(summary.valuation || currentDealValuation()) +
-        " // own " + (((summary.equityPct || 0) * 100).toFixed(1)) +
-        "%. La FOMO si paga in cap table.");
-      lines.push(why, lesson);
-      return lines;
-    }
-
-    if (decision === "passed") {
-      if (fate && (fate.kind === "exit" || fate.kind === "ipo")) {
-        why = c("c-magenta", "Rischiosa: il Televideo odorava liquidita', tu hai chiuso il naso.");
-      } else if (intelReady) {
-        why = c("c-green", "Buona: pass documentato. Raro, quasi elegante.");
-      } else {
-        why = c("c-yellow", "Mista: pass con poche prove. Disciplina o paura del comitato?");
-      }
-      lesson = c("c-white", "Niente cash bruciato. Ma ogni pass diventa genius o rimpianto al prossimo aperitivo.");
-      lines.push(why, lesson);
-      return lines;
-    }
-
-    lines.push(c("c-red", "Stupida: hai perso la sala. Troppe domande deboli, zero alpha."));
-    lines.push(c("c-white", "La prossima volta leggi 190 prima di entrare in boardroom."));
-    return lines;
+  function recordDecision(decision) {
+    if (B.rv.decisionReceipt) return B.rv.decisionReceipt;
+    const s = TVState.current;
+    const context = { decision, rv: B.rv, intel: B.intel, battle: B.battle };
+    const ops = TVPostBattleEvents.recordAfterBattle(s, B.st, context);
+    TVPortfolioIncidents.queueAfterBattle(s, B.st, context);
+    B.rv.decisionReceipt = {
+      decision, summary: B.lastDecisionSummary || { decision }, ops, acknowledged: false
+    };
+    TVState.save();
+    return B.rv.decisionReceipt;
   }
 
   function startPostBattleEvent(decision) {
     const s = TVState.current;
-    let ops = null;
-    if (global.TVPostBattleEvents && TVPostBattleEvents.recordAfterBattle) {
-      ops = TVPostBattleEvents.recordAfterBattle(s, B.st, {
-          decision: decision,
-          rv: B.rv,
-          intel: B.intel,
-          battle: B.battle
-      });
-    }
+    const ops = recordDecision(decision).ops;
     const summary = B.lastDecisionSummary || { decision: decision };
     B.postBattleEvent = { summary: true, decision: decision };
     B.phase = "postEvent";
@@ -1697,42 +1286,28 @@
         wrap(n.text, 42).forEach(line => lines.push(c("c-magenta", line)));
       });
     }
-    lines.push("", c("c-white", "PREMI 1: TORNA AL DEALFLOW E RILEGGI LE NEWS."));
-    seq([{ log: lines, waitForInput: true, sound: () => TVAudio.pageChange() }], () => arm());
+    B.log = lines;
+    B.busy = false;
+    arm();
   }
 
   function finishPostBattleEvent() {
-    const s = TVState.current;
-    const queued = global.TVPortfolioIncidents && TVPortfolioIncidents.queueAfterBattle
-      ? TVPortfolioIncidents.queueAfterBattle(s, B.st, {
-          decision: (B.lastDecisionSummary && B.lastDecisionSummary.decision) ||
-            (B.postBattleEvent && B.postBattleEvent.decision) || "memo",
-          rv: B.rv,
-          intel: B.intel,
-          battle: B.battle
-        })
-      : null;
+    if (B.rv.decisionReceipt) B.rv.decisionReceipt.acknowledged = true;
+    TVState.save();
     B.postBattleEvent = null;
-    if (queued) {
-      TVRouter.flash("PORTFOLIO COMPANY IN LINEA");
-    }
     exitToDealflow();
   }
 
   function doPass() {
     const s = TVState.current;
+    if (TVDealflow.getDecision(s, B.st.id) !== "pending") return;
     TVDealflow.setDecision(s, B.st.id, "passed");
     s.history.push({ year: s.year, type: "pass", startup: B.st.name });
     B.lastDecisionSummary = { decision: "passed" };
-    TVState.save();
-
-    seq([
-      { log: [c("c-white", "Ti alzi con eleganza.")], ms: 800 },
-      { push: [c("c-yellow", "\"Vi terremo aggiornati\", menti.")], ms: 1000,
-        sound: () => TVAudio.keyPress() },
-      { push: ["", c("c-magenta", "Il founder ti rimuove da LinkedIn.")], ms: 1200,
-        sound: () => TVAudio.pageChange() }
-    ], () => startPostBattleEvent("passed"));
+    recordDecision("passed");
+    seq([{ log: [c("c-yellow", "'Vi teniamo nel radar.' Il radar era spento."),
+      c("c-magenta", "Il founder aggiorna la lista dei fondi che 'non capiscono il mercato'.")],
+      ms: 300, sound: () => TVAudio.pageChange() }], () => startPostBattleEvent("passed"));
   }
 
   // ---------- routing input ----------
@@ -1757,7 +1332,7 @@
       return;
     }
     if (B.phase === "postEvent") {
-      finishPostBattleEvent();
+      if (num === 1) finishPostBattleEvent();
       return;
     }
     if (B.phase === "rescue") {
@@ -1809,11 +1384,18 @@
   }
 
   function exitToDealflow() {
-    TVAudio.stopBattleMusic();
-    if (B && B.bobTimer) clearInterval(B.bobTimer);
-    B = null;
+    stop();
     TVRouter.goto(200, { skipLoading: true });
   }
 
-  global.TVPitchLive = { start };
+  function stop() {
+    if (B) {
+      clearTimeout(B.seqTimer);
+      B.advance = null;
+    }
+    B = null;
+    if (TVAudio.stopBattleMusic) TVAudio.stopBattleMusic();
+  }
+
+  global.TVPitchLive = { start, stop };
 })(window);

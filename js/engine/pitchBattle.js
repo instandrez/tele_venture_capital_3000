@@ -231,7 +231,7 @@
 
   /* Applica una mossa. Muta e ritorna la battle. */
   function applyMove(b, moveId) {
-    if (b.over) return b;
+    if (b.over || !MOVES.some(move => move.id === moveId)) return b;
     const p = PROFILES[b.profile];
     let outcome;
     if (!b.usedMoves) b.usedMoves = {};
@@ -246,8 +246,9 @@
     }
 
     b.usedMoves[moveId] = true;
+    const armed = b.intelStrikeAvailable && moveId === b.intelMove;
     if (moveId === p.weak) { b.guard -= 6; outcome = "weak"; }
-    else if (moveId === p.resist) { b.cred -= 2; outcome = "resist"; }
+    else if (moveId === p.resist && !armed) { b.cred -= 2; outcome = "resist"; }
     else { b.guard -= 3; outcome = "neutral"; }
     if (b.intelStrikeAvailable && moveId === b.intelMove) {
       b.guard -= b.intelPower;

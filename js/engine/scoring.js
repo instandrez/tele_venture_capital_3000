@@ -12,6 +12,10 @@
       ? (portfolioValue + state.realized) / state.invested : 0;
     const dpi  = state.invested > 0
       ? state.realized / state.invested : 0;
+    // Non confondere un bel multiplo su un ticket piccolo con un fondo
+    // che ha restituito i commitments. Include cassa e fee gia' sottratte.
+    const fundMultiple = (portfolioValue + state.realized + (state.cash || 0)) /
+      Math.max(1, state.fundSize || 100_000_000);
 
     // LP Sat aggregate = media dei 4
     const lps = state.lpSat || { pensione: 50, family: 50, sovereign: 50, endowment: 50 };
@@ -21,6 +25,9 @@
     // Cap alti abbastanza da non saturare col gioco perfetto: 4x MOIC
     // e 2.5x DPI valgono 100, così migliorare conta fino in fondo.
     const moicScore = Math.min(100, Math.max(0, moic * 25)); // 4x → 100
+    // Rendimento dell'intero fondo: la cassa inattiva non fa carry.
+    // 0.9x = sole fee; 3x commitments = massimo della componente.
+    const fundScore = Math.min(100, Math.max(0, (fundMultiple - 0.9) / 2.1 * 100));
     const dpiScore  = Math.min(100, Math.max(0, dpi * 40));  // 2.5x → 100
     const lpScore   = Math.min(100, Math.max(0, lpSatAvg));
     const repScore  = Math.min(100, Math.max(0, state.reputation || 0));
@@ -34,7 +41,8 @@
     const deploymentScore = Math.min(100, Math.max(0, deploymentRate / deploymentTarget * 100));
 
     const score = Math.round(
-      0.35 * moicScore +
+      0.20 * moicScore +
+      0.15 * fundScore +
       0.15 * dpiScore +
       0.15 * lpScore +
       0.10 * repScore +
@@ -43,7 +51,7 @@
     );
 
     return {
-      portfolioValue, moic, dpi,
+      portfolioValue, moic, dpi, fundMultiple,
       lpSat: lps, lpSatAvg,
       reputation: state.reputation,
       impact: state.innovationImpact,

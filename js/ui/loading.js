@@ -2,6 +2,8 @@
    Mostra "CARICAMENTO PAGINA XXX" con barra che si riempie. */
 (function (global) {
   const R = () => global.TVRender;
+  let timer = null;
+  let generation = 0;
 
   function loadingHtml(pageNum, progress) {
     const W = 30;
@@ -23,20 +25,24 @@
   }
 
   global.TVLoading = {
+    cancel() { generation++; clearTimeout(timer); },
     play(pageNum, then) {
+      this.cancel();
+      const run = generation;
       const content = document.getElementById("tv-content");
       if (!content) { then(); return; }
       const steps = 5;
       let i = 0;
       const tick = () => {
+        if (run !== generation) return;
         i++;
         const p = i / steps;
         content.innerHTML = loadingHtml(pageNum, p);
         if (i < steps) {
-          setTimeout(tick, 60);
+          timer = setTimeout(tick, 35);
         } else {
           TVAudio.pageChange();
-          setTimeout(then, 80);
+          timer = setTimeout(() => { if (run === generation) then(); }, 30);
         }
       };
       tick();

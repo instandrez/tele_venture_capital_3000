@@ -1,8 +1,9 @@
 /* Eventi di liquidità scriptati, allineati al calendario news.
    Se il giocatore ha in portfolio la startup nell'anno indicato,
-   l'evento si applica a fine anno durante la chiusura automatica.
+   l'evento si applica a fine anno durante la chiusura confermata.
 
-   MODELLO: proceeds = investedAmount × currentValueMultiplier × premium
+   MODELLO: proceeds = investedAmount × currentValueMultiplier × premio maturato
+   Per premium > 1, la parte extra matura per 1/3 per anno detenuto.
    Il multiplo accumulato (news, baseline, negoziazione) resta quindi
    determinante: la stessa exit ripaga di più chi è entrato bene.
 
@@ -13,8 +14,8 @@
    - "writeoff"  premium 0-0.15   (azzeramento, talvolta asset sale)
    - "writedown" factor           (nessuna exit: taglio secco del multiplo)
 
-   Le news corrispondenti sono già nel calendario: chi legge la
-   Cronaca sa in anticipo chi esce bene e chi muore. */
+   Le news corrispondenti sono nel calendario: si possono leggere solo
+   dopo la pubblicazione, mentre fonti e meeting non svelano questa tabella. */
 (function (global) {
 
   /* Timeline compressa sul fondo a 3 anni: l'anno 2 offre il primo

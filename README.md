@@ -10,6 +10,9 @@ numerici: la tastiera resta il ritmo principale, il touch non deve tradire.
 
 **[Gioca online](https://instandrez.github.io/tele_venture_capital_3000/)**
 
+Assessment, modifiche di gameplay e risultati dei test:
+[`GAMEPLAY_ASSESSMENT.md`](GAMEPLAY_ASSESSMENT.md).
+
 Il cuore del gioco è il **motore di news**: il Televideo è pieno di pagine
 (ultim'ora, politica, borsa, cronaca startup, corporate watch) e nessuna è lì
 per caso. Chi legge e incrocia le informazioni costruisce il portfolio
@@ -44,7 +47,7 @@ python -m http.server 5173
 | 000 | Start Game / schermata titolo arcade |
 | 100 | Home / indice |
 | 101–109 | Nuovo fondo, riprendi, regole, gestione save |
-| 105 | Tutorial / sigla d'apertura: al termine torna alla home 100 |
+| 105 | Sigla in quattro scene: al termine porta al prossimo passo della run |
 | 110–119 | Ultim'Ora (+ dettagli anni 2-3 su 211+, 311+) |
 | 120–139 | Politica & Regolazione |
 | 140–159 | Borsa & indici settoriali (live, signal inclusi) |
@@ -62,7 +65,7 @@ python -m http.server 5173
 | 700 / 701 | Report finale / post-mortem |
 | 800 | Classifica locale |
 | 900 | Crediti & easter egg |
-| 910–941 | Fonti private sbloccate dalle catene investigative |
+| 910–944 | Fonti private sbloccate dalle catene investigative |
 
 ## Struttura del progetto
 
@@ -81,8 +84,12 @@ js/engine/            marketEngine (signal→effetti), intelligence (prove/
 js/pages/             una funzione render per pagina
 js/ui/                render monospace, header, effetto loading
 tests/run.js          test del motore (node, zero dipendenze)
+tests/gameplay.js     regressioni di router, pagine e partite complete con DOM simulato
+tests/balance.js      confronto riproducibile di strategie economiche
+GAMEPLAY_ASSESSMENT.md
+                      assessment della giocabilita', revisione e limiti verificati
 GAMEPLAY_MECHANICS_MAP.md
-                      mappa passo-passo di flussi, script e leve di design
+                      guida di design storica con le leve da commentare
 ```
 
 ## Come funziona il motore (per chi scrive contenuti)
@@ -94,7 +101,8 @@ GAMEPLAY_MECHANICS_MAP.md
   colpiscono solo le startup il cui `sectorTag` / `corporateFitTag` matcha lo
   `scope` (es. la regolazione AI colpisce `AI_FOUNDATION`, non `AI_INFRA`).
 - Gli eventi di liquidità sono scriptati in `exitEvents.js` e allineati alle
-  news di Cronaca: chi legge sa in anticipo chi esce bene e chi muore.
+  news di Cronaca. Fonti e domande aiutano a interpretare il rischio senza
+  rivelare la tabella delle exit. Leggere non cambia il risultato di mercato.
   La run pubblica di default e la Partner Mode usano entrambe la timeline
   completa a 3 anni, con un numero diverso di deal per anno.
   La timeline è compressa sul fondo a 3 anni: l'anno 2 porta il primo
@@ -115,7 +123,7 @@ GAMEPLAY_MECHANICS_MAP.md
   risolvere il caso: serve a tenere la run breve e leggibile.
 - **Catene investigative**: una teoria con almeno due firme diverse
   (Mercato, Regole, Persone, Exit o Contesto) può aprire una pagina interna
-  9xx. Il giocatore deve annotarla e navigarci manualmente. Verificare la
+  9xx, raggiungibile anche dal dealflow. Verificare la
   fonte rivela un rischio privato, aggiunge una copertura, porta il Dossier
   Strike a 3 danni extra e riduce la DD a 25k.
 - **Matematica del fondo**: i 100M sono commitments; 10M coprono fee e
@@ -123,6 +131,16 @@ GAMEPLAY_MECHANICS_MAP.md
   (Pre-seed 2/4/6M, Seed 3/6/9M, Series A 5/8/12M), la quota è calcolata
   post-money e il gioco mostra un target di deployment crescente ogni anno.
   Il deployment pesa anche nel punteggio finale.
+- **Decisioni leggibili**: il term sheet mostra disponibilita' residua,
+  concentrazione del ticket e accesso al round; la negoziazione espone chance
+  e costo del rifiuto prima della proposta. DD, reference e co-invest condividono
+  due slot per deal. Le news restano gratuite.
+- **Mercato e rendimento**: i margini contano piu' dell'hype, il contesto non
+  somma all'infinito titoli sullo stesso ciclo, pagare sopra l'ask penalizza
+  il mark. La parte extra del premio exit matura con gli anni detenuti.
+  Un'incertezza di esecuzione di circa ±10 punti e' fissata dal seed.
+  Il report distingue MOIC dei ticket e valore dell'intero fondo, inclusi
+  cassa, realizzato, NAV e fee. Entrambi contribuiscono al punteggio.
 - DD e negoziazioni usano un RNG deterministico legato al `gameSeed`
   (`TVState.roll`): ricaricare il save non cambia gli esiti.
 - **Scocca CRT responsive**: il televisore occupa quasi tutto il viewport;
@@ -134,13 +152,10 @@ GAMEPLAY_MECHANICS_MAP.md
 - **Doppia modalità visiva**: le pagine informative restano un hub
   Televideo ampio e leggibile; sigla e Pitch Battle passano a una
   `console mode` 16:9 che usa quasi tutto il viewport.
-- **Tutorial cinematic in-engine**: pagina 105 con fondale pixel-art,
-  camera lenta, titoli e avanzamento automatico. Introduce news, dealflow,
-  taccuino, pitch battle come leva negoziale, term sheet, portfolio,
-  classifica e LP. Non è un MP4: resta nitida,
-  adattabile e controllabile con `1` / `0`.
-  Fine sigla e skip portano alla pagina 100, che resta l'ingresso canonico
-  della Quick Run.
+- **Sigla in-engine**: quattro scene introducono il mondo e la prima scelta,
+  con fondale pixel-art, titoli e avanzamento automatico. `1` avanza e `0`
+  salta. Entrambe portano al prossimo passo della run, direttamente al
+  dealflow per una nuova partita. Le regole si imparano al tavolo.
 - **Start screen a due modalità**: la schermata 000 propone Quick Run come
   default pubblico e Partner Mode come versione completa per chi vuole più
   deal, più news e più occasioni di farsi male.
@@ -165,13 +180,12 @@ GAMEPLAY_MECHANICS_MAP.md
   co-invest, passa, investi (tre ticket coerenti con lo stage). Controllo sala a zero =
   fuori dal round, deal perso (e il tuo sprite crolla). La debolezza
   si deduce dal pitch qualitativo (`js/data/pitches.js`) o dalla ref
-  call. Colpi, parate, reazioni e contrattacchi importanti restano fermi
-  finché il giocatore non preme un tasto: le animazioni brevi si possono
-  accelerare, ma il comando non viene accodato come mossa successiva.
-  Lo stato della battaglia si salva a ogni turno (`rv.snap`): niente retry
-  da save.
-- **Deal memo post-battle**: dopo invest/pass/deal perso il memo spiega in due
-  righe se la decisione era alpha, disciplina o FOMO. La schermata genera
+  call. Ogni domanda produce un breve scambio: la risposta resta leggibile
+  mentre tornano disponibili i comandi. Pitch e note sono riapribili.
+  Le animazioni si possono accelerare senza accodare mosse. Lo stato e le
+  conseguenze si salvano prima dell'animazione (`rv.snap`): niente retry da save.
+- **Deal memo post-battle**: dopo invest/pass/deal perso il memo commenta
+  prove, prezzo e rischio della scelta, lasciando il verdetto al mercato. La schermata genera
   anche una memo-card visuale pensata per screenshot social.
 - **LP Call**: triggerate dalle condizioni di portfolio
   (`js/data/lpCalls.js`). Quando una call è attiva, le pagine principali
@@ -183,6 +197,11 @@ GAMEPLAY_MECHANICS_MAP.md
   plant visit del Nordest, bando minuscolo e bridge/burn alert. Il bersaglio
   è il VC italiano allusivo: family office, corporate innovation, anchor
   pubblico, comitati e portali, senza nomi reali.
+  Quick Run propone al massimo una nuova call per anno; Partner Mode due.
+- **Ritmo della run**: «Riprendi il filo» indica il prossimo gesto; dal
+  dealflow si apre una pista o il founder. La chiusura anno e' esplicita e
+  mostra il costo delle LP call ignorate. Il recap non taglia le ultime exit.
+  Dal finale si puo' rigiocare lo stesso mercato con scelte diverse.
 
 ### Aggiungere una startup
 
@@ -199,16 +218,21 @@ max ~36 caratteri per riga. Se ha un `signal`, verifica che `sector` esista in
 
 ```
 node tests/run.js
+node tests/gameplay.js
+node tests/balance.js 300
 ```
 
-92 test su render, input, stato iniziale, migrazioni, relazioni LP, fund math,
+92 test del motore e 24 regressioni gameplay su render, input, stato iniziale, migrazioni, relazioni LP, fund math,
 dealflow, Intelligence Network, deal access, eventi post-battle,
 decisioni, scoring, exit/write-off, pitch battle, sprite e integrità dei dati
 (inclusi: exit raggiungibili nei 3 anni, signal senza orfani e mark
 d'ingresso dallo sconto negoziato).
 Vanno eseguiti prima di ogni
 commit che tocca il motore. La stessa suite gira in CI su ogni push/PR
-verso `master` (`.github/workflows/ci.yml`).
+verso `master` (`.github/workflows/ci.yml`), insieme al benchmark economico.
+Il benchmark confronta 1.800 scenari di strategie automatiche, senza follow-on
+o telefonate: non rappresenta i tassi di vittoria di giocatori reali.
+Le regressioni usano un DOM simulato, non sostituiscono il playtest visivo.
 
 La direzione grafica e sonora corrente è descritta in
 [`ART_DIRECTION_BRIEF.md`](ART_DIRECTION_BRIEF.md): "VC3000: Teletext Cartridge",

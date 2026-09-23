@@ -22,8 +22,8 @@
                         (boost localizzato); altrimenti ignorato
 
    ULTERIORI MODULAZIONI applicate ogni anno:
-   - hypeDecay: se hype era ≥8 a entry, dopo 2 anni dall'entry decade
-   - unitEconomics: contribuisce a baseline (-15% .. +15% per anno)
+   - hypeDecay: promesse senza traction si sgonfiano gia' al primo mark
+   - unitEconomics: contribuisce a baseline (-30% .. +30% per anno)
    - founderProfile.red_flag: -8% baseline persistente
    - founderProfile.competent: +5% baseline persistente
 */
@@ -65,7 +65,7 @@
 
       case "corporate_opp":
         if (signal.scope && startup.corporateFitTag === signal.scope) {
-          return Math.abs(delta) * 2 / 100;
+          return delta * 2 / 100;
         }
         return 0;
     }
@@ -75,16 +75,19 @@
   function baselineModulation(startup, yearsHeld) {
     let mod = 0;
     // unit economics: cumula nel tempo
-    mod += startup.unitEconomics * 0.06;
+    mod += startup.unitEconomics * 0.30;
     // founder profile
     if (startup.founderProfile === "red_flag")  mod -= 0.08;
     if (startup.founderProfile === "ego")       mod -= 0.03;
     if (startup.founderProfile === "competent") mod += 0.05;
     if (startup.founderProfile === "grit")      mod += 0.07;
     if (startup.founderProfile === "hustle")    mod += 0.02;
-    // hype decay dopo 2 anni dall'entry
-    if (yearsHeld >= 2 && startup.hype >= 8) {
-      mod -= startup.hypeDecay * 0.15;
+    // L'hype non e' automaticamente una condanna: la traction lo sostiene.
+    // Aspettare due anni rendeva immuni tutti i deal dell'ultimo anno.
+    if (startup.hype >= 8) {
+      const unproven = 1 - Math.min(10, startup.traction || 0) / 10;
+      mod -= startup.hypeDecay * ((startup.hype - 7) / 3) * unproven *
+        (0.25 + Math.min(2, yearsHeld) * 0.10);
     }
     return mod;
   }
@@ -99,21 +102,6 @@
     return forecast.effectPct || 0;
   }
 
-  function contactedForecast(state, pos, currentYear) {
-    const record = state.investigationSources && state.investigationSources[pos.id];
-    const forecast = record && record.contacted && record.forecast;
-    if (!forecast) return null;
-    if (forecast.materializeYear && forecast.materializeYear !== currentYear) return null;
-    return forecast;
-  }
-
-  function enforceContactedForecast(effect, forecast) {
-    if (!forecast) return effect;
-    if (forecast.tone === "positive") return Math.max(effect, 0.06);
-    if (forecast.tone === "negative") return Math.min(effect, -0.08);
-    return effect;
-  }
-
   function pendingCatalystsFor(state, pos, currentYear) {
     return (state.portfolioCatalysts || []).filter(c =>
       !c.applied &&
@@ -124,19 +112,25 @@
 
   // Applica gli effetti di un singolo anno a una posizione del portfolio
   function applyYearToPosition(state, pos, currentYear, allNews, startup) {
-    let effect = 0;
+    let contextEffect = 0;
+    let companyEffect = 0;
     const newsToApply = allNews.filter(n =>
-      n.signal && n.signal.materializeYear === currentYear
+      n.signal && n.year <= currentYear && n.signal.materializeYear === currentYear
     );
     const matchedNews = [];
     newsToApply.forEach(n => {
       const e = getSignalEffect(n.signal, startup);
       if (e !== 0) {
-        effect += e;
+        if (n.signal.type === "founder_risk") companyEffect += e;
+        else contextEffect += e;
         matchedNews.push({ news: n, effect: e });
       }
     });
-    const yearsHeld = currentYear - pos.entryYear;
+    // Titoli sullo stesso ciclo non sono rendimenti indipendenti. Evita
+    // che tre news sullo spazio regalino +80% a ogni startup del settore.
+    const marketContext = Math.max(-0.45, Math.min(0.40, contextEffect));
+    let effect = marketContext + companyEffect;
+    const yearsHeld = Math.max(0, currentYear - pos.entryYear);
     const baseline = baselineModulation(startup, yearsHeld);
     effect += baseline;
 
@@ -150,14 +144,13 @@
       c.appliedYear = currentYear;
     });
 
-    // rumore deterministico piccolo (non distrugge la modellazione)
-    const noiseSeed = (pos.id.charCodeAt(0) + currentYear * 17) % 100 / 100;
-    const noise = (noiseSeed - 0.5) * 0.06;
+    // Esecuzione incerta, riproducibile: stesso seed, stessa impresa,
+    // stesso anno. Leggere una pagina o ricaricare non cambia la realta'.
+    const key = (state.gameSeed || 0) + "|execution|" + pos.id + "|" + currentYear;
+    let hash = 2166136261;
+    for (let i = 0; i < key.length; i++) hash = Math.imul(hash ^ key.charCodeAt(i), 16777619);
+    const noise = (((hash >>> 0) % 10000) / 10000 - 0.5) * 0.20;
     effect += noise;
-
-    const forecast = contactedForecast(state, pos, currentYear);
-    const effectBeforeForecastRail = effect;
-    effect = enforceContactedForecast(effect, forecast);
 
     const before = pos.currentValueMultiplier;
     pos.currentValueMultiplier = Math.max(0.05, before * (1 + effect));
@@ -168,9 +161,9 @@
       effect: effect,
       matchedNews: matchedNews,
       baseline: baseline,
+      marketContext: marketContext,
       sourceReality: sourceReality,
       noise: noise,
-      forecastRail: effect - effectBeforeForecastRail,
       catalysts: catalysts
     };
   }
@@ -193,9 +186,7 @@
     if (Math.abs(result.baseline || 0) >= 0.015) {
       triggers.push("FONDAMENTALI: team/traction/unit economics " + pctLabel(result.baseline));
     }
-    if (Math.abs(result.forecastRail || 0) >= 0.01) {
-      triggers.push("FONTE: mark riallineato alla soffiata " + pctLabel(result.forecastRail));
-    }
+    triggers.push("ESECUZIONE: " + pctLabel(result.noise));
     return triggers;
   }
 
@@ -241,7 +232,11 @@
         return;
       }
 
-      const proceeds = Math.round(pos.investedAmount * pos.currentValueMultiplier * ev.premium);
+      // Una secondaria appena prima dell'IPO non paga il premio pieno
+      // di chi ha finanziato tre anni di rischio industriale.
+      const holdingShare = Math.min(1, Math.max(1, state.year - pos.entryYear + 1) / 3);
+      const premium = ev.premium > 1 ? 1 + (ev.premium - 1) * holdingShare : ev.premium;
+      const proceeds = Math.round(pos.investedAmount * pos.currentValueMultiplier * premium);
       state.realized += proceeds;
       pos.realizedAmount = proceeds;
       pos.status = (ev.kind === "writeoff") ? "writeoff" : "exited";

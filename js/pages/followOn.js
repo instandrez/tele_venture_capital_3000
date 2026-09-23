@@ -43,10 +43,37 @@
     return offersForYear(s).find(o => o.status === "pending") || null;
   }
 
+  function renderClose(pageNum, s) {
+    const r = TVRender;
+    const calls = TVLPCalls.pickCallsForYear(s);
+    const m = TVScoring.computeMetrics(s);
+    const lines = [
+      r.bg("bg-yellow", "  CHIUSURA ANNO " + s.year + " // ULTIMO CONTROLLO"), "",
+      " " + r.color("c-white", "Il mercato sta per correggere il tuo PowerPoint."), "",
+      " " + r.color("c-cyan", "Investito " + r.eur(s.invested) + " // Cash " + r.eur(s.cash)),
+      " " + r.color("c-white", "MOIC " + m.moic.toFixed(2) + "x // DPI " + m.dpi.toFixed(2) + "x"), "",
+      " " + r.color(calls.length ? "c-yellow" : "c-green", calls.length
+        ? calls.length + " LP call aperte: chiudere costa -6 satisfaction per call."
+        : "LP aggiornati. Il telefono tace. Per ora."), "",
+      '<button type="button" class="run-next" data-action="1">1 CHIUDI ANNO E SCOPRI I RISULTATI</button>',
+      calls.length ? '<button type="button" class="run-next" data-action="2">2 RISPONDI PRIMA AGLI LP</button>' : "",
+      r.color("c-white", " 400 PORTFOLIO    100 HOME")
+    ];
+    r.show(pageNum, lines.join("\n"), { title: "CHIUSURA ANNO", directAction: true });
+    let closed = false;
+    TVRouter.setActionHandler(num => {
+      if (num === 2 && calls.length) { TVRouter.goto(600, { skipLoading: true }); return; }
+      if (num !== 1 || closed || s.gameOver) return;
+      closed = true;
+      TVYearEnd.routeAfterClose(s);
+    });
+  }
+
   function render(pageNum) {
     const r = TVRender;
     const s = TVState.current;
     if (!s || !s.gameStarted) { TVRouter.goto(101, { skipLoading: true }); return; }
+    if (s.gameOver) { TVRouter.goto(700, { skipLoading: true }); return; }
     if (TVDealflow.pendingDeals(s).length > 0) {
       TVRouter.flash("PRIMA DELIBERA IL DEALFLOW");
       TVRouter.goto(200, { skipLoading: true });
@@ -56,13 +83,13 @@
       TVPortfolioIncidents.activeIncident(s);
     if (incident) {
       TVRouter.flash("PORTFOLIO COMPANY IN LINEA");
-      TVRouter.goto(100, { skipLoading: true });
+      TVRouter.goto(620, { skipLoading: true });
       return;
     }
 
     const offer = nextPending(s);
     if (!offer) {
-      TVYearEnd.routeAfterClose(s);
+      renderClose(pageNum, s);
       return;
     }
     const pos = s.portfolio.find(p => p.id === offer.id);
@@ -93,6 +120,7 @@
     r.show(pageNum, lines.join("\n"), { title: "FOLLOW-ON" });
 
     TVRouter.setActionHandler(num => {
+      if (offer.status !== "pending") return;
       function investMore(amount) {
         if (s.cash < amount) {
           TVAudio.error();
@@ -115,14 +143,14 @@
         TVState.save();
         TVAudio.success();
         TVRouter.flash("PRO-RATA " + r.eur(offer.cost));
-        setTimeout(() => render(pageNum), 400);
+        render(pageNum);
       } else if (num === 2) {
         if (!investMore(offer.cost * 2)) return;
         offer.status = "done";
         TVState.save();
         TVAudio.success();
         TVRouter.flash("RADDOPPIO " + r.eur(offer.cost * 2));
-        setTimeout(() => render(pageNum), 400);
+        render(pageNum);
       } else if (num === 9) {
         pos.currentValueMultiplier *= 0.85;
         offer.status = "done";
@@ -130,7 +158,7 @@
         TVState.save();
         TVAudio.pageChange();
         TVRouter.flash("DILUITO -15%");
-        setTimeout(() => render(pageNum), 400);
+        render(pageNum);
       }
     });
   }

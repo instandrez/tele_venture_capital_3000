@@ -23,7 +23,7 @@
 
   function makeNewState() {
     const state = {
-      version: 7,
+      version: 8,
       year: 1,
       runMode: "quick",
       runModeLabel: RUN_MODES.quick.label,
@@ -79,7 +79,7 @@
     if (previousVersion < 3 && typeof s.cash === "number") {
       s.cash = Math.max(0, s.cash - 10_000_000);
     }
-    if (!s.gameSeed) s.gameSeed = Math.floor(Math.random() * 1e9);
+    if (!Number.isInteger(s.gameSeed) || s.gameSeed < 0) s.gameSeed = Math.floor(Math.random() * 1e9);
     if (!s.runMode) {
       // I save precedenti erano la run completa a 3 anni / 5 deal.
       s.runMode = previousVersion < 6 && s.gameStarted ? "partner" : "quick";
@@ -121,7 +121,8 @@
       }
     });
     if (!s.gameOver && s.year > s.maxYear) s.year = s.maxYear;
-    s.version = 7;
+    if (previousVersion < 8 && s.lastYearOutcome) s.lastYearOutcome.acknowledged = true;
+    s.version = 8;
     return s;
   }
 
@@ -136,6 +137,9 @@
       options = options || {};
       this.current = makeNewState();
       applyRunMode(this.current, options.runMode);
+      if (Number.isInteger(options.gameSeed) && options.gameSeed >= 0 && options.gameSeed < 1e9) {
+        this.current.gameSeed = options.gameSeed;
+      }
       this.current.gameStarted = true;
       if (options.fundName) this.current.fundName = String(options.fundName).slice(0, 24);
       if (options.nickname) this.current.nickname = String(options.nickname).slice(0, 16);

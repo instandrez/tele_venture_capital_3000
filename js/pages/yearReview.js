@@ -55,14 +55,14 @@
 
     if (result.events && result.events.length) {
       lines.push(" " + r.color("c-yellow", "RIVALUTAZIONI"));
-      result.events.slice(0, 6).forEach(ev => {
+      result.events.forEach(ev => {
         lines.push(statusLine(r, ev));
         const trigger = ev.triggers && ev.triggers[0];
         if (trigger) {
           const prefix = /^FONTE:|^CATALYST:|^FONDAMENTALI:|^OPERATING:/.test(trigger)
             ? ""
             : "news: ";
-          wrapText(prefix + trigger, 48).slice(0, 1).forEach(line => {
+          wrapText(prefix + trigger, 48).forEach(line => {
             lines.push("   " + r.color("c-cyan", line));
           });
         }
@@ -74,9 +74,11 @@
     if (result.exits && result.exits.length) {
       lines.push("");
       lines.push(" " + r.color("c-yellow", "EVENTI DI LIQUIDITA"));
-      result.exits.slice(0, 3).forEach(ev => {
-        lines.push(" " + r.color("c-green", ev.startup + " // " + ev.kind) +
+      result.exits.forEach(ev => {
+        const tone = ["writeoff", "writedown"].includes(ev.kind) ? "c-red" : "c-green";
+        lines.push(" " + r.color(tone, ev.startup + " // " + ev.kind) +
           r.color("c-white", ev.proceeds ? " // " + r.eur(ev.proceeds) : ""));
+        wrapText(ev.note, 48).forEach(line => lines.push("   " + r.color("c-cyan", line)));
       });
     }
 
@@ -94,7 +96,11 @@
     r.show(pageNum, lines.join("\n"), { title: "PORTFOLIO UPDATE", directAction: true });
 
     TVRouter.setActionHandler(num => {
-      if (num === 1) TVRouter.goto(outcome.final ? 700 : 100, { skipLoading: true });
+      if (num === 1) {
+        outcome.acknowledged = true;
+        TVState.save();
+        TVRouter.goto(outcome.final ? 700 : 100, { skipLoading: true });
+      }
       else if (num === 4) TVRouter.goto(400, { skipLoading: true });
     });
   }

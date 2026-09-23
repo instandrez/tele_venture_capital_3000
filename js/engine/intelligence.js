@@ -341,8 +341,8 @@
           tone: "positive",
           materializeYear: ev.year,
           effectPct: 0.18,
-          message: "La linea vera e' liquidita' anno " + ev.year + ": " + ev.note + ".",
-          implication: "Se entri, il punto non e' il mark: e' arrivare vivo all'evento.",
+          message: "Un industriale sta guardando il dossier. Interesse non significa offerta firmata.",
+          implication: "Una possibile via d'uscita, non una data certa: controlla prezzo e condizioni.",
           check: "Controlla ownership, clausole e concentrazione del cliente che compra."
         };
       }
@@ -352,7 +352,7 @@
           tone: "mixed",
           materializeYear: ev.year,
           effectPct: -0.06,
-          message: "Il prodotto non regge il piano: anno " + ev.year + " finisce in acqui-hire.",
+          message: "I buyer chiedono del team, molto meno del prodotto. Non e' la stessa exit.",
           implication: "Puoi salvare parte del capitale, ma non pagare multipli software.",
           check: "Valuta team quality e prezzo di entrata, non il TAM del deck."
         };
@@ -362,8 +362,8 @@
         tone: "negative",
         materializeYear: ev.year,
         effectPct: -0.22,
-        message: "Il downside e' gia' nel sistema: anno " + ev.year + " " + ev.note + ".",
-        implication: "Entra solo se il prezzo compensa davvero il rischio di zero.",
+        message: "La data room ha buchi seri. Il prossimo round potrebbe non coprire il runway.",
+        implication: "Un prezzo basso non basta se la continuita' aziendale non regge.",
         check: "Cerca burn, governance e segnali legali prima del term sheet."
       };
     }
@@ -376,7 +376,7 @@
         materializeYear: null,
         effectPct: 0.10,
         message: "Il dato sporco e' migliore del deck: clienti e margine stanno tenendo.",
-        implication: "La startup dovrebbe rivalutarsi, ma solo se non strapaghi l'entry.",
+        implication: "E' un segnale operativo, non una promessa sul prossimo mark.",
         check: "Verifica retention, pricing power e qualita' dei ricavi."
       };
     }
@@ -446,7 +446,7 @@
     const record = state && state.investigationSources &&
       state.investigationSources[startup.id];
     const persona = sourcePersona(startup);
-    const forecast = record && record.forecast ? record.forecast : persona.forecast;
+    const forecast = persona.forecast;
     return {
       fragments: kinds.length,
       kinds,

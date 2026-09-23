@@ -37,8 +37,8 @@
     const s = TVState.current;
     if (!s || !s.gameStarted) { TVRouter.goto(101, { skipLoading: true }); return; }
 
-    const fallbackDeal = TVDealflow.currentYearDealflow(s)[pageNum - 301];
-    const id = (s._dealflowMap || {})[pageNum] || (fallbackDeal && fallbackDeal.id);
+    const currentDeal = TVDealflow.currentYearDealflow(s)[pageNum - 301];
+    const id = currentDeal && currentDeal.id;
     const st = id ? TVStartups.byId(id) : null;
     if (!st) {
       TVRouter.goto(200, { skipLoading: true });
@@ -47,7 +47,8 @@
     const decision = TVDealflow.getDecision(s, id);
 
     // deal pendente → si combatte
-    if (decision === "pending") {
+    const receipt = reveals(s, id).decisionReceipt;
+    if (decision === "pending" || (receipt && !receipt.acknowledged)) {
       TVPitchLive.start(st, pageNum);
       return;
     }

@@ -514,6 +514,12 @@
     if (!state || !state.gameStarted || state.gameOver) return null;
     if (!activePositions(state).length) return null;
     if (!state.portfolioIncidentQueue) state.portfolioIncidentQueue = [];
+    // Una scena operativa memorabile, non una centralinista a ogni deal.
+    // Include anche la call annuale gia' proposta; non elimina code dei save.
+    const limit = state.runMode === "partner" ? 2 : 1;
+    const offered = state.portfolioIncidentQueue.filter(i => i && i.year === state.year).length +
+      (state.portfolioIncidentCache && state.portfolioIncidentCache[keyFor(state)] ? 1 : 0);
+    if (offered >= limit) return null;
     const triggerKey = keyFor(state) + "|battle|" +
       ((startup && startup.id) || "unknown") + "|" +
       (ctx.decision || "memo") + "|" + ((state.history || []).length);

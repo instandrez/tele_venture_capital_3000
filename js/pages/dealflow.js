@@ -18,7 +18,7 @@
       TVPortfolioIncidents.activeIncident(s);
     if (incident) {
       TVRouter.flash("PORTFOLIO COMPANY IN LINEA");
-      TVRouter.goto(100, { skipLoading: true });
+      TVRouter.goto(620, { skipLoading: true });
       return;
     }
     TVRouter.goto(450, { skipLoading: true });
@@ -31,9 +31,17 @@
       TVRouter.goto(101, { skipLoading: true });
       return;
     }
+    if (s.gameOver) { TVRouter.goto(700, { skipLoading: true }); return; }
     confirmCloseArmed = false;
 
     const picks = TVDealflow.currentYearDealflow(s);
+    s._dealflowMap = {};
+    picks.forEach((st, i) => { s._dealflowMap[301 + i] = st.id; });
+    const unreadMemo = picks.findIndex(st => {
+      const receipt = s.startupReveals && s.startupReveals[st.id] && s.startupReveals[st.id].decisionReceipt;
+      return receipt && !receipt.acknowledged;
+    });
+    if (unreadMemo >= 0) { TVRouter.goto(301 + unreadMemo, { skipLoading: true }); return; }
     const pending = TVDealflow.pendingDeals(s);
     if (pending.length === 0) {
       TVRouter.flash("ANNO DELIBERATO");
@@ -97,11 +105,20 @@
           r.color(intelCls,
             "TACCUINO " + intel.label +
             (intel.lead ? " LEVA " + intel.lead.move : "") + chainTag));
+        if (decision === "pending") {
+          const nextClue = intel.unread[0];
+          const prepPage = intel.chain.unlocked && !intel.chain.contacted
+            ? intel.chain.page : (nextClue && nextClue.news.page);
+          lines.push('<span class="deal-actions">' +
+            (prepPage ? '<button type="button" data-page="' + prepPage + '">' +
+              (intel.chain.unlocked ? "VERIFICA FONTE" : "SEGUI UNA PISTA") + ' // ' + prepPage + '</button>' : '') +
+            '<button type="button" data-page="' + pageId + '">INCONTRA IL FOUNDER // ' + pageId + '</button></span>');
+        }
       });
     }
 
     lines.push(" " + r.color("c-yellow", pending.length + " deal da deliberare") +
-               r.color("c-white", " prima della chiusura auto"));
+               r.color("c-white", " // " + (picks.length - pending.length) + "/" + picks.length + " completati"));
 
     const alert = r.lpAlert(s);
     if (alert) lines.push(alert);
@@ -127,7 +144,10 @@
         TVRouter.flash(stillPending.length + " DEAL PENDENTI - 9 PASSA TUTTI");
         return;
       }
-      stillPending.forEach(st => TVDealflow.setDecision(s, st.id, "passed"));
+      stillPending.forEach(st => {
+        TVDealflow.setDecision(s, st.id, "passed");
+        s.history.push({ year: s.year, type: "pass", startup: st.name, note: "pass dal dealflow" });
+      });
       TVState.save();
       routeAfterDealflow(s);
     });

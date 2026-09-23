@@ -23,6 +23,9 @@
     lines.push(r.color("c-yellow", r.center("« il teletext che ti rovina il fondo »")));
     lines.push("");
     if (activeGame) {
+      const next = TVGameplay.nextStep(s);
+      lines.push('<button type="button" class="run-next" data-page="' + next.page + '">' +
+        'RIPRENDI IL FILO // ' + r.escape(next.label) + ' // ' + next.page + '</button>');
       lines.push(r.bg("bg-cyan", "  FONDO ATTIVO                           "));
       const modeLabel = s.runMode === "partner" ? "PARTNER" : "QUICK";
       lines.push("  " + r.color("c-yellow", (s.fundName || "Fund I").slice(0, 18)) +

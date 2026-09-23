@@ -910,6 +910,79 @@ body::after {
   .fx-dmg { font-size: 13px; }
 }
 
+/* ---------- Ritmo e leggibilita': niente testo perso fuori dal tubo ---------- */
+#tv-content { overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; }
+.run-next, .deal-actions button {
+  appearance: none;
+  font: inherit;
+  color: var(--tv-cyan);
+  background: #07132c;
+  border: 1px solid #2e566f;
+  padding: 0.25em 0.45em;
+  cursor: pointer;
+  white-space: normal;
+  text-align: left;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+.run-next { width: 100%; color: var(--tv-yellow); border-color: var(--tv-yellow); }
+.deal-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+.deal-actions button { flex: 1 1 180px; font-size: 0.85em; }
+.run-next:focus-visible, .deal-actions button:focus-visible,
+.battle-archive summary:focus-visible { outline: 2px solid var(--tv-yellow); outline-offset: 2px; }
+.battle-dialogue { overflow-y: auto; padding-bottom: 16px; max-height: 46vh; }
+.battle-hint { position: static; margin-top: 12px; max-height: none; overflow: visible; }
+.battle-decision-context { margin-top: 10px; padding-top: 8px; border-top: 1px dashed #4b5680;
+  color: #b1c4e6; font-size: clamp(14px, 1.15vw, 19px); line-height: 1.2; }
+.battle-archive { margin-top: 12px; border-top: 1px solid #293656; color: #b1c4e6;
+  font-size: clamp(15px, 1.2vw, 20px); }
+.battle-archive summary { cursor: pointer; padding: 10px 0; min-height: 24px; color: var(--tv-cyan); }
+.battle-archive p { margin: 0 0 0.65em; line-height: 1.18; }
+.battle-command:disabled { opacity: 0.4; cursor: default; filter: none; }
+.battle-command { min-height: 44px; }
+.fighter-founder .fighter-art.is-bobbing { animation: founder-idle 1.4s steps(2, end) infinite; }
+@keyframes founder-idle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+@media (max-width: 700px), (max-height: 480px) and (pointer: coarse) {
+  /* Un'unica superficie scrollabile: niente menu di cinque righe dentro
+     una seconda scrollbar. HUD/sprite compatti, testo e tasti in flusso. */
+  #screen.console-mode #console-stage.battle-console { overflow-y: auto; overflow-x: hidden; }
+  #console-stage.battle-console .battle-scene {
+    position: relative;
+    inset: auto;
+    min-height: 100%;
+    overflow: visible;
+    padding: 232px 0 8px;
+    box-sizing: border-box;
+  }
+  #console-stage.battle-console .battle-bottom {
+    position: relative;
+    inset: auto;
+    margin: 0 8px;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+  }
+  .battle-bottom .battle-dialogue { max-height: none; overflow: visible; }
+  .battle-bottom .battle-commands { max-height: none; overflow: visible; }
+  .battle-bottom .dialogue-lines { font-size: 17px; line-height: 1.16; }
+  .battle-bottom .battle-command { min-height: 48px; font-size: 15px; }
+  .battle-decision-context, .battle-archive { font-size: 16px; }
+  .battle-bottom .battle-hint { font-size: 15px; max-height: none; }
+  .deal-actions { display: grid; grid-template-columns: 1fr; }
+  .deal-actions button, .run-next { font-size: 16px; }
+}
+@media (min-width: 701px) and (max-height: 480px) and (pointer: coarse) {
+  .battle-console .fighter { top: 82px; bottom: auto; min-width: 0; width: 42%; }
+  .battle-console .fighter-art { width: 100px; height: 80px; margin-top: 5px; }
+  .battle-console .fighter-hud { font-size: 13px; padding: 6px; }
+  .battle-console .battle-intel { top: 54px; font-size: 12px; }
+  .battle-console .battle-topbar { top: 4px; min-height: 36px; font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fighter-founder .fighter-art.is-bobbing { animation: none; transform: none; }
+}
+
 /* ---------- FX: ticker news in home 100 ---------- */
 .fx-ticker {
   position: absolute;

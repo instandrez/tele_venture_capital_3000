@@ -233,6 +233,16 @@
 
       while (lines.length < 19) lines.push("");
       lines.push(r.color("c-white", " " + sectionRoot + " TORNA ALLA SEZIONE    100 HOME"));
+      const linked = intel.deals.find(st => TVDealflow.getDecision(TVState.current, st.id) === "pending");
+      if (linked) {
+        const caseIntel = TVIntel.forStartup(TVState.current, linked);
+        const deals = TVDealflow.currentYearDealflow(TVState.current);
+        const dealPage = 301 + deals.findIndex(st => st.id === linked.id);
+        lines.push('<span class="deal-actions">' +
+          (caseIntel.level < 2 && caseIntel.unread[0] ?
+            '<button type="button" data-page="' + caseIntel.unread[0].news.page + '">INCROCIA UNA SECONDA PISTA</button>' : '') +
+          '<button type="button" data-page="' + dealPage + '">INCONTRA ' + r.escape(linked.name) + '</button></span>');
+      }
       r.show(pageNum, lines.join("\n"), { title: meta.title });
     };
   }

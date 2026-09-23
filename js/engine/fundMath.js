@@ -25,10 +25,13 @@
   // sotto il prezzo pieno parte già sopra 1x (modello a multiplo). Il tetto
   // a 1.5x tiene la leva dentro un range sano (pressione + negoziazione
   // valgono al massimo ~1.39x).
-  function entryMultiplier(fullValuation, paidValuation) {
+  function entryMultiplier(fullValuation, paidValuation, amount) {
     const full = Math.max(1, fullValuation || 0);
     const paid = Math.max(1, paidValuation || 0);
-    return Math.max(1, Math.min(1.5, full / paid));
+    const ticket = Math.max(0, amount || 0);
+    // Il confronto e' post-money, come l'ownership. Anche pagare SOPRA
+    // l'ask conta: il mark non puo' magicamente tornare a 1x.
+    return Math.max(0.05, Math.min(1.5, (full + ticket) / (paid + ticket)));
   }
 
   function maxTicketForOwnership(preMoneyValuation, cap) {
@@ -77,7 +80,8 @@
   function targetForYear(state) {
     const investable = state.investableCapital || INVESTABLE;
     const maxYear = state.maxYear || 3;
-    return Math.round(investable * Math.min(maxYear, state.year || 1) / maxYear);
+    const targetRate = state.runMode === "quick" ? 0.60 : 0.80;
+    return Math.round(investable * targetRate * Math.min(maxYear, state.year || 1) / maxYear);
   }
 
   function deployment(state) {

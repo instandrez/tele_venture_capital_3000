@@ -3,6 +3,7 @@
 (function (global) {
 
   let actionHandler = null;
+  let navigationId = 0;
 
   const router = {
     setActionHandler(fn) { actionHandler = fn; },
@@ -11,6 +12,14 @@
       opts = opts || {};
       pageNum = parseInt(pageNum, 10);
       if (isNaN(pageNum)) return;
+
+      const state = TVState.current;
+      const news = global.TVNews && TVNews.byPage(pageNum);
+      if (news && news.year > ((state && state.year) || 1)) {
+        TVAudio.error();
+        flashFooter("EDIZIONE FUTURA: NON ANCORA IN ONDA");
+        return;
+      }
 
       // se non esiste una pagina specifica, prova fallback per range
       const page = resolvePage(pageNum);
@@ -21,7 +30,9 @@
       }
 
       const doRender = () => {
+        if (requestId !== navigationId) return;
         actionHandler = null; // resetta su ogni cambio pagina
+        if (global.TVPitchLive && TVPitchLive.stop) TVPitchLive.stop();
         // la musica della pitch battle non sopravvive alla navigazione
         if (TVAudio.stopBattleMusic) TVAudio.stopBattleMusic();
         // Stato PRIMA del render: se la pagina fa redirect durante il
@@ -46,6 +57,8 @@
         if (TVState.current && TVState.current.gameStarted) TVState.save();
       };
 
+      const requestId = ++navigationId;
+      if (global.TVLoading && TVLoading.cancel) TVLoading.cancel();
       if (opts.skipLoading) doRender();
       else TVLoading.play(pageNum, doRender);
     }
@@ -142,6 +155,8 @@
   }
 
   function handleKey(e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target && e.target.closest && e.target.closest("input,textarea,select,[contenteditable='true']")) return;
     const key = e.key;
     if (key >= "0" && key <= "9") {
       if (isDirectActionMode()) {
@@ -170,7 +185,7 @@
           router.goto(target);
         }
       }
-      e.preventDefault();
+      if (!(e.target && e.target.closest && e.target.closest("button,summary"))) e.preventDefault();
     } else if (key === "Backspace") {
       buffer = buffer.slice(0, -1);
       updateInputDisplay();

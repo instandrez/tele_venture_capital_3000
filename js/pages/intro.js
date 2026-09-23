@@ -9,89 +9,35 @@
   let startMode = "menu";
   let selectedRunMode = "quick";
 
+  // La sigla vende il mondo; le regole si imparano al primo tavolo.
   const FRAMES = [
     {
-      shot: "shot-arrival",
-      accent: "#18e0ff",
-      eyebrow: "NEW MILAN // LINEA MAGLEV 3000 // 06:12",
-      title: "SEI IL GENERAL PARTNER",
-      body: 'Hai appena chiuso Fund I: <span class="hot">100M EUR</span> raccolti, 90M investibili e una run breve per non annoiare il gruppo WhatsApp dei VC.',
-      hold: 4600,
-      logo: true,
-      setpiece: "arrival"
+      shot: "shot-arrival", accent: "#18e0ff",
+      eyebrow: "NEW MILAN // ANNO 3000 // 06:12",
+      title: "IL FUTURO HA TRE CIFRE",
+      body: "Internet e' un pitch deck a pagamento. L'ultima informazione libera viaggia sul Televideo. Tu gestisci 100M. Gli LP hanno ancora WhatsApp.",
+      hold: 5000, logo: true, setpiece: "arrival"
     },
     {
-      shot: "shot-teletext",
-      accent: "#ffe200",
-      eyebrow: "COME SI GIOCA // PAGINE 110-190",
-      title: "LE NEWS SONO ALPHA",
-      body: "Ogni anno le news parlano del dealflow di quell'anno. Leggerle prima della battle crea prove, dubbi e segnali da usare.",
-      hold: 4900,
-      setpiece: "teletext"
+      shot: "shot-teletext", accent: "#ffe200",
+      eyebrow: "PRIMA DELLA CALL // SEGUI UNA PISTA",
+      title: "IL DECK DICE UNA COSA. LA PAGINA 160 UN'ALTRA.",
+      body: "Nel dealflow trovi le piste. Leggi, collega gli indizi, entra preparato: una prova puo' bucare la migliore supercazzola del founder.",
+      hold: 5000, setpiece: "teletext"
     },
     {
-      shot: "shot-office",
-      accent: "#33ff66",
-      eyebrow: "DEALFLOW // PAGINA 200",
-      title: "SCEGLI I DEAL DELL'ANNO",
-      body: "Quick Run: tre startup per anno. Aprile, confrontale con 110/120/140/160/180, poi entra nelle schede 301-303.",
-      hold: 5400,
-      setpiece: "terminal"
+      shot: "shot-office", accent: "#33ff66",
+      eyebrow: "UN FOUNDER SELVATICO VUOLE IL TUO TERM SHEET",
+      title: "SCEGLI DOVE COLPIRE",
+      body: "Numeri, competitor, team o silenzio. Mettilo in difficolta', strappa un prezzo. Puoi investire o passare quando vuoi: vincere la call non significa comprare bene.",
+      hold: 5500, setpiece: "terminal"
     },
     {
-      shot: "shot-teletext",
-      accent: "#18e0ff",
-      eyebrow: "TACCUINO // PAGINA 190",
-      title: "COSTRUISCI IL CASO",
-      body: "Due ritagli indipendenti possono aprire una fonte riservata. Piu' prove hai, meno costa la DD e piu' forti sono le domande.",
-      hold: 5600,
-      setpiece: "teletext"
-    },
-    {
-      shot: "shot-office",
-      accent: "#ffe200",
-      eyebrow: "BATTLE // DOMANDE = LEVE",
-      title: "NON E' UN QUIZ",
-      body: "NUMERI, COMPETITOR, TEAM e SILENZIO servono a estrarre informazioni business, non a indovinare la risposta giusta.",
-      hold: 5600,
-      setpiece: "terminal"
-    },
-    {
-      shot: "shot-office",
-      accent: "#ff4030",
-      eyebrow: "CONTROLLO SALA // RESISTENZA FOUNDER",
-      title: "OGNI MOSSA HA UN COSTO",
-      body: "Domande deboli o parate fanno perdere controllo sala. Domande preparate abbassano ask valuation e possono rivelare red flag.",
-      hold: 5600,
-      setpiece: "terminal"
-    },
-    {
-      shot: "shot-teletext",
-      accent: "#33ff66",
-      eyebrow: "TERM SHEET // VALUATION // OWNERSHIP",
-      title: "INVESTI SOLO QUANDO SAI PERCHE'",
-      body: "DD, ref call, co-invest e pressione determinano leverage. Alcuni founder non firmano senza condizioni o accesso al round.",
-      hold: 5600,
-      setpiece: "teletext"
-    },
-    {
-      shot: "shot-office",
-      accent: "#ff3df0",
-      eyebrow: "FUND OPS // LP // PORTFOLIO",
-      title: "TRA UNA BATTLE E L'ALTRA SUCCEDE ROBA",
-      body: "LP call, portfolio company call e catalyst possono comparire mentre torni a news e dealflow. Ignorarli costa punteggio.",
-      hold: 5600,
-      setpiece: "terminal"
-    },
-    {
-      shot: "shot-fund",
-      accent: "#ff3df0",
-      eyebrow: "PORTFOLIO // LP // FINE ANNO",
-      title: "VINCI LA RUN",
-      body: "Ora parti dalla pagina 100: indice, news, taccuino e dealflow. Il FOMO resta facoltativo, purtroppo.",
-      hold: 0,
-      final: true,
-      setpiece: "fund"
+      shot: "shot-fund", accent: "#ff3df0",
+      eyebrow: "TRE ANNI // UN FONDO // ZERO ALIBI",
+      title: "FAI SOLDI. O ALMENO UNA BELLA FIGURA.",
+      body: "I founder promettono. Le partecipate telefonano. A fine anno il mercato presenta il conto. Il carry non si paga in visibilita'.",
+      hold: 0, final: true, setpiece: "fund"
     }
   ];
 
@@ -321,7 +267,7 @@
     const logo = frame.logo
       ? '<div class="intro-logo"><strong><span class="mark-vc">VC</span><span class="mark-3000">3000</span></strong><small>VENTURE CAPITAL SIMULATOR</small></div>'
       : "";
-    const action = frame.final ? "PRIMO DEALFLOW" : "AVANTI";
+    const action = frame.final ? "ENTRA IN GIOCO" : "AVANTI";
     const mission = String(idx + 1).padStart(2, "0") + "/" + String(FRAMES.length).padStart(2, "0");
     const progress = Math.round(((idx + 1) / FRAMES.length) * 100);
     return (
@@ -371,7 +317,7 @@
   function begin() {
     gen += 1;
     clearTimers();
-    TVRouter.goto(100, { skipLoading: true });
+    TVRouter.goto(TVGameplay.nextStep(TVState.current).page, { skipLoading: true });
   }
 
   function render() {

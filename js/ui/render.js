@@ -179,6 +179,10 @@
         const prefix = match[1] || "";
         if (token.length !== 1 && token.length !== 3) continue;
         if (token.length === 1 && /[/.]/.test(prefix)) continue;
+        // Il testo narrativo non e' una tastiera: "3 anni" non e'
+        // il comando 3. Restano attivi i tasti isolati e le etichette.
+        if (text.trim() !== token && !/^\s+[A-ZÀÈÉÌÒÙ][A-ZÀÈÉÌÒÙ' /-]/.test(text.slice(start + token.length)) &&
+            !/(?:pag(?:ina)?|fonte|interno)\s*$/i.test(text.slice(0, start))) continue;
         if (start > last) frag.appendChild(document.createTextNode(text.slice(last, start)));
 
         const button = document.createElement("button");
@@ -302,15 +306,8 @@
     const content = document.getElementById("tv-content");
     if (!content) return;
     setMode("teletext", pageNum);
-    const rawLines = String(html).split("\n");
-    if (!mobileViewport() && rawLines.length > ROWS) {
-      const overflow = rawLines.length - (ROWS - 1);
-      const truncated = rawLines.slice(0, ROWS - 1);
-      truncated.push('<span class="c-red">▼ +' + overflow + " righe nascoste ▼</span>");
-      content.innerHTML = truncated.join("\n");
-    } else {
-      content.innerHTML = html;
-    }
+    content.innerHTML = html;
+    if (lastPage !== pageNum) content.scrollTop = 0;
     linkifyControls(content);
     bindInlineControls(content);
     delete content.dataset.page;
@@ -336,7 +333,9 @@
     setMode("console", pageNum);
     stage.className = opts.className || "";
     stage.innerHTML = html;
-    linkifyControls(stage);
+    // Le scene hanno pulsanti espliciti. Non trasformare HP, anni,
+    // percentuali o punteggi in comandi; solo i footer legacy.
+    if (stage.querySelectorAll) stage.querySelectorAll("footer").forEach(linkifyControls);
     bindInlineControls(stage);
     delete stage.dataset.page;
     if (opts.directAction) stage.dataset.directAction = "1";

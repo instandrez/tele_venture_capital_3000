@@ -29,60 +29,10 @@
         TVRouter.goto(701);
       } else if (num === 3) {
         copyShareCard(s, m, title);
-      } else if (num === 9) {
-        TVState.clear();
-        TVState.newGame({ runMode: s.runMode || "quick" });
-        TVRouter.goto(100);
-      }
-    });
-    return;
-
-    const lines = [];
-    lines.push(r.bg("bg-red", "  " + r.pad("REPORT FINALE — FINE PARTITA", 38)));
-    lines.push("");
-    lines.push(r.color("c-yellow", r.center("TITOLO ASSEGNATO")));
-    lines.push(r.color("c-magenta", r.center("« " + title + " »")));
-    lines.push("");
-    lines.push(r.color("c-blue", " " + "─".repeat(38)));
-    lines.push(" " + r.color("c-yellow", "Investito:  ") + r.color("c-white", r.eur(s.invested)));
-    lines.push(" " + r.color("c-yellow", "Portfolio:  ") + r.color("c-green", r.eur(m.portfolioValue)));
-    lines.push(" " + r.color("c-yellow", "Realizzato: ") + r.color("c-green", r.eur(s.realized)));
-    lines.push(" " + r.color("c-yellow", "MOIC: ") + r.color("c-cyan", m.moic.toFixed(2) + "x") +
-               "    " + r.color("c-yellow", "DPI: ") + r.color("c-cyan", m.dpi.toFixed(2) + "x"));
-    lines.push(" " + r.color("c-yellow", "Deployment: ") +
-      r.color(m.deploymentRate >= 0.8 ? "c-green" : "c-magenta",
-        Math.round(m.deploymentRate * 100) + "% di 90M"));
-    lines.push(r.color("c-blue", " " + "─".repeat(38)));
-    lines.push(" " + r.color("c-yellow", "LP SAT  ") +
-               r.color("c-white", "Pen ") + s.lpSat.pensione +
-               r.color("c-white", " Fam ") + s.lpSat.family +
-               r.color("c-white", " Sov ") + s.lpSat.sovereign +
-               r.color("c-white", " End ") + s.lpSat.endowment);
-    lines.push(" " + r.color("c-yellow", "Reputation: ") + r.color("c-white", s.reputation) +
-               "   " + r.color("c-yellow", "Impact: ") + r.color("c-white", s.innovationImpact));
-    lines.push(r.color("c-blue", " " + "─".repeat(38)));
-    lines.push(" " + r.color("c-yellow", r.pad("SCORE FINALE", 16)) +
-               r.color("c-green", String(m.score) + " / 100"));
-    lines.push(r.bg("bg-blue", "  SHARE CARD                            "));
-    lines.push(" " + r.color("c-white", shareText(s, m, title).slice(0, 52)));
-    lines.push("");
-    lines.push(r.color("c-yellow", " 1 SALVA IN CLASSIFICA"));
-    lines.push(r.color("c-yellow", " 2 POST-MORTEM DEL FONDO"));
-    lines.push(r.color("c-yellow", " 3 COPIA SHARE CARD"));
-    lines.push(r.color("c-yellow", " 9 NUOVA PARTITA"));
-
-    while (lines.length < 21) lines.push("");
-    lines.push(r.color("c-white", " 800 CLASSIFICA   100 HOME   900 CREDITI"));
-
-    r.show(pageNum, lines.join("\n"), { title: "REPORT FINALE" });
-
-    TVRouter.setActionHandler(num => {
-      if (num === 1) {
-        saveWithNames(s, m, title);
-      } else if (num === 2) {
-        TVRouter.goto(701);
-      } else if (num === 3) {
-        copyShareCard(s, m, title);
+      } else if (num === 4) {
+        TVState.newGame({ runMode: s.runMode, gameSeed: s.gameSeed,
+          fundName: s.fundName, nickname: s.nickname });
+        TVRouter.goto(100, { skipLoading: true });
       } else if (num === 9) {
         TVState.clear();
         TVState.newGame({ runMode: s.runMode || "quick" });
@@ -96,7 +46,8 @@
     const mode = s.runMode === "partner" ? "Partner Mode" : "Quick Run";
     return "VC3000 // " + fund + " // " + title +
       " // Score " + m.score + "/100 // MOIC " + m.moic.toFixed(2) +
-      "x // DPI " + m.dpi.toFixed(2) + "x // " + mode;
+      "x // DPI " + m.dpi.toFixed(2) + "x // Fondo " + m.fundMultiple.toFixed(2) +
+      "x // " + mode + " // Seed " + s.gameSeed;
   }
 
   function esc(value) {
@@ -182,11 +133,11 @@
           '<div class="end-metrics">' +
             metricCard("MOIC", m.moic.toFixed(2) + "x", "paper + cash", m.moic >= 1 ? "up" : "down") +
             metricCard("DPI", m.dpi.toFixed(2) + "x", "cash back", m.dpi >= 0.5 ? "up" : "") +
-            metricCard("INVESTED", money(s.invested), "dry powder deployed", deployment >= 80 ? "up" : "warn") +
-            metricCard("REALIZED", money(s.realized), "distribuzioni", s.realized > 0 ? "up" : "") +
+            metricCard("INVESTED", money(s.invested), "dry powder deployed", m.deploymentScore >= 100 ? "up" : "warn") +
+            metricCard("FONDO", m.fundMultiple.toFixed(2) + "x", "cassa + realizzato + NAV / 100M", m.fundMultiple >= 1 ? "up" : "down") +
           '</div>' +
           '<div class="end-bars">' +
-            meter("DEPLOYMENT", deployment, deployment >= 80 ? "up" : "warn") +
+            meter("DEPLOYMENT", deployment, m.deploymentScore >= 100 ? "up" : "warn") +
             meter("LP AVG", lpAvg, lpAvg >= 60 ? "up" : (lpAvg < 40 ? "down" : "")) +
             meter("REPUTATION", s.reputation || 0, (s.reputation || 0) >= 60 ? "up" : "") +
             meter("IMPACT", s.innovationImpact || 0, (s.innovationImpact || 0) >= 60 ? "up" : "") +
@@ -197,6 +148,7 @@
             '<button type="button" data-action="1"><b>1</b>SALVA</button>' +
             '<button type="button" data-action="2"><b>2</b>POST-MORTEM</button>' +
             '<button type="button" data-action="3"><b>3</b>COPIA</button>' +
+            '<button type="button" data-action="4"><b>4</b>RIVINCITA: STESSO MERCATO</button>' +
             '<button type="button" data-action="9"><b>9</b>NUOVA RUN</button>' +
           '</div>' +
         '</div>' +

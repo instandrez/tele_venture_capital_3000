@@ -1,6 +1,12 @@
 # VC3000 - Guida Completa Modificabile Alle Meccaniche
 
-Questo file e' il documento di controllo del gioco.
+Questa e' la guida di design storica, conservata per commentare le leve.
+
+**Revisione gameplay 2026-09-23:** flusso, ritmo, formule e verifiche attuali
+sono documentati in [GAMEPLAY_ASSESSMENT.md](GAMEPLAY_ASSESSMENT.md).
+I capitoli dettagliati sotto descrivono anche comportamenti precedenti
+(conferme nelle battle, fonti, chiusura automatica): non usarli come specifica
+della build aggiornata. L'indice seguente riporta i valori principali correnti.
 
 Non e' codice eseguito dal browser: il gioco non legge questo Markdown.
 Serve a te per controllare, correggere, tagliare, riscrivere o commentare
@@ -28,7 +34,7 @@ Regola pratica:
 | Commitments fondo | 100M | `js/engine/fundMath.js`, `js/state.js` | cambia `COMMITMENTS` e stato iniziale |
 | Fee/struttura | 10M | `js/engine/fundMath.js`, `js/state.js` | cambia `MANAGEMENT_FEES` e `managementFeeBudget` |
 | Capitale investibile | 90M | derivato | se cambi fee, cambia anche stato/migrazioni |
-| Quick Run | 2 anni, 3 deal/anno | `js/state.js` | `RUN_MODES.quick` |
+| Quick Run | 3 anni, 3 deal/anno | `js/state.js` | `RUN_MODES.quick` |
 | Partner Mode | 3 anni, 5 deal/anno | `js/state.js` | `RUN_MODES.partner` |
 | News utili Quick Run | max 3 per deal | `js/engine/intelligence.js` | cap in `relevantNews()` |
 | News utili Partner | max 6 per deal | `js/engine/intelligence.js` | cap in `relevantNews()` |
@@ -42,11 +48,12 @@ Regola pratica:
 | DD con teoria | 50k | `js/engine/intelligence.js` | `ddCost` |
 | DD con fonte/caso solido | 25k | `js/engine/intelligence.js` | `ddCost` |
 | Ref call | 50k | `js/pages/pitchLive.js` | `doRefCall()` |
-| Co-invest | 100k | `js/pages/pitchLive.js` | `doCoInvest()` |
+| Co-invest | 30k | `js/pages/pitchLive.js` | `doCoInvest()` |
 | Max ownership | 50% | `js/engine/fundMath.js` | `MAX_OWNERSHIP` |
 | Follow-on trigger | mark >= 1.15x, 60% roll | `js/pages/followOn.js` | `offersForYear()` |
 | Follow-on rinuncia | -15% posizione | `js/pages/followOn.js` | scelta `9` |
-| Score finale MOIC | peso 35% | `js/engine/scoring.js` | formula `score` |
+| Score finale MOIC | peso 20% | `js/engine/scoring.js` | formula `score` |
+| Score rendimento fondo | peso 15% | `js/engine/scoring.js` | include cash, realizzato e NAV |
 | Score finale DPI | peso 15% | `js/engine/scoring.js` | formula `score` |
 | Score finale LP | peso 15% | `js/engine/scoring.js` | formula `score` |
 | Score deployment | peso 15% | `js/engine/scoring.js` | formula `score` |
@@ -1606,4 +1613,3 @@ fornitori, e meno effetto diretto sul multiplo.
 ```
 
 COMMENTI:
-

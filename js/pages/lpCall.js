@@ -279,7 +279,7 @@
       r.center(r.color("c-magenta", "approfittane.")),
     ];
     while (lines.length < 21) lines.push("");
-    lines.push(r.color("c-white", " 100 HOME    400 PORTFOLIO"));
+    lines.push(r.color("c-white", " 450 FOLLOW-ON / CHIUDI ANNO    100 HOME"));
     r.show(pageNum, lines.join("\n"), { title: "LP CALL" });
   }
 

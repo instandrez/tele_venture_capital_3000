@@ -58,8 +58,7 @@
       r.show(pageNum, lines.join("\n"), { title: "RIPRENDI" });
       return;
     }
-    // Vai direttamente al dealflow corrente
-    TVRouter.goto(200, { skipLoading: true });
+    TVRouter.goto(TVGameplay.nextStep(TVState.current).page, { skipLoading: true });
   }
 
   // ---------- 103 Regole ----------
@@ -100,7 +99,12 @@
     lines.push(r.color("c-yellow", " PITCH BATTLE"));
     lines.push(" Guardia founder a 0: si scopre.");
     lines.push(" Controllo sala a 0: perdi il deal.");
-    lines.push(" Ogni domanda costa 1 controllo.");
+    lines.push(" Domanda forte o prova: replica bloccata.");
+    lines.push(" Altre repliche: -1, poi -2, poi -3.");
+    lines.push(" Due controlli extra per deal: scegli");
+    lines.push(" tra DD, ref call e co-invest. News gratis.");
+    lines.push(" Non devi vincere per investire o passare.");
+    lines.push(" Vincere non rende buona una startup.");
     lines.push(" I ticket cambiano con lo stage.");
     lines.push(" Il target di deployment cresce ogni anno.");
     lines.push(r.color("c-white", " 100 HOME   190 INTEL   105 SIGLA"));
